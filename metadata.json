@@ -1,0 +1,6 @@
+{
+  "name": "The Royal Clay Oven",
+  "description": "Authentic Pakistani cuisine, flame-grilled favourites, kebabs, and pizzas. Order takeaway and book tables online.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

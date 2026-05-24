@@ -1,0 +1,349 @@
+/**
+ * @license
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+import React from 'react';
+import { ChefHat, ShoppingBag, Calendar, Phone, Clock, MapPin, ArrowRight, ShieldCheck, Heart } from 'lucide-react';
+import { MENU_ITEMS } from '../data/menu';
+
+interface HomeViewProps {
+  setCurrentTab: (tab: string) => void;
+}
+
+export const HomeView: React.FC<HomeViewProps> = ({ setCurrentTab }) => {
+  // Highlight some premium items
+  const featuredIds = ['pk-butter-chicken', 'pk-bbq-platter', 'co-lamb-chops', 'bg-smash'];
+  const featuredItems = MENU_ITEMS.filter((item) => featuredIds.includes(item.id));
+
+  return (
+    <div className="space-y-20 pb-20 animate-fade-in" id="home-view">
+      
+      {/* Editorial Hero Section */}
+      <section className="relative bg-brand-dark text-brand-beige border-b border-brand-dark px-4 py-16 sm:px-6 lg:px-8 lg:py-28 rounded-none">
+        <div className="absolute inset-0 opacity-20 pointer-events-none mix-blend-overlay">
+          <img 
+            src="https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=1600&q=80" 
+            alt="Smoky background" 
+            className="w-full h-full object-cover"
+            referrerPolicy="no-referrer"
+          />
+        </div>
+        
+        <div className="max-w-4xl mx-auto text-center relative z-10 space-y-8">
+          <div className="inline-flex items-center space-x-2 border border-brand-accent/40 px-3 py-1 bg-brand-accent/10">
+            <span className="font-mono text-sm sm:text-sm tracking-widest text-brand-accent uppercase font-bold">
+              ESTABLISHED IN IRELAND &bull; PAKISTANI HERITAGE
+            </span>
+          </div>
+          
+          <h1 className="font-serif text-4xl sm:text-6xl lg:text-7xl font-bold tracking-tight leading-none text-brand-beige">
+            FLAME, CLAY AND <br />
+            <span className="text-brand-accent italic font-normal">Authentic Heritage</span>
+          </h1>
+          
+          <p className="max-w-xl mx-auto font-sans text-sm sm:text-base text-brand-beige/80 leading-relaxed font-normal">
+            Welcome to <strong className="text-brand-beige font-semibold">The Royal Clay Oven</strong>. We fire up our traditional brick-lined tandoor daily, delivering premium Pakistani curries, dry-aged flame-grilled chops, spiced kebabs, and handcrafted pizzas.
+          </p>
+
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
+            <button
+              type="button"
+              id="hero-order-btn"
+              onClick={() => setCurrentTab('takeaway')}
+              className="w-full sm:w-auto bg-brand-accent text-white px-8 py-4 text-sm font-mono tracking-wider uppercase font-bold border border-transparent hover:bg-brand-beige hover:text-brand-dark hover:border-brand-dark transition-all duration-200 rounded-none flex items-center justify-center group"
+            >
+              Order Takeaway Now
+              <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
+            </button>
+            <button
+              type="button"
+              id="hero-book-btn"
+              onClick={() => setCurrentTab('booking')}
+              className="w-full sm:w-auto bg-transparent text-white px-8 py-4 text-sm font-mono tracking-wider uppercase font-bold border border-brand-beige/35 hover:border-white hover:bg-white/5 transition-all duration-200 rounded-none"
+            >
+              Reserve a Table
+            </button>
+          </div>
+        </div>
+      </section>
+
+      {/* Triple Advantage Row */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 border border-brand-dark/10 divide-y md:divide-y-0 md:divide-x divide-brand-dark/10 bg-white">
+          <div className="p-8 space-y-3">
+            <div className="p-3 bg-brand-beige inline-block border border-brand-dark/5">
+              <ChefHat className="w-5 h-5 text-brand-accent stroke-[1.5]" />
+            </div>
+            <h3 className="font-serif text-lg font-bold tracking-tight">The 400°C Clay Oven</h3>
+            <p className="text-sm text-brand-muted leading-relaxed font-normal">
+              Our traditional clay tandoor locking in deep smoky oak flavours, producing perfectly charred skewers and fluffy, blistered naan breads.
+            </p>
+          </div>
+          
+          <div className="p-8 space-y-3">
+            <div className="p-3 bg-brand-beige inline-block border border-brand-dark/5">
+              <Heart className="w-5 h-5 text-brand-accent stroke-[1.5]" />
+            </div>
+            <h3 className="font-serif text-lg font-bold tracking-tight">Caring Recipe Craft</h3>
+            <p className="text-sm text-brand-muted leading-relaxed font-normal">
+              Family-owned recipes passed down through generations. Prepared from scratch using locally sourced Irish ingredients and premium Pakistani spices.
+            </p>
+          </div>
+
+          <div className="p-8 space-y-3">
+            <div className="p-3 bg-brand-beige inline-block border border-brand-dark/5">
+              <ShieldCheck className="w-5 h-5 text-brand-accent stroke-[1.5]" />
+            </div>
+            <h3 className="font-serif text-lg font-bold tracking-tight">Allergens Declared</h3>
+            <p className="text-sm text-brand-muted leading-relaxed font-normal">
+              We are deeply transparent about our food. Each dish includes specific regulatory allergen lists to keep your dining safe and comfortable.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* Two-Column Heritage Section */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+        <div className="lg:col-span-5 space-y-6">
+          <span className="font-mono text-sm tracking-widest text-brand-accent uppercase font-bold block">
+            OUR STORY
+          </span>
+          <h2 className="font-serif text-3xl sm:text-4xl font-bold tracking-tight text-brand-dark leading-tight">
+            Family Roots, Flame-Grilled Passions.
+          </h2>
+          <div className="h-0.5 w-16 bg-brand-accent"></div>
+          <p className="text-sm sm:text-base text-brand-muted leading-relaxed font-normal">
+            The Royal Clay Oven is a proudly family-run restaurant serving high-grade, freshly prepared Pakistani cuisine in Ireland. Every single kebab, chicken thigh, and flatbread is cooked with extreme care and rich, authentic flavor profiles. 
+          </p>
+          <blockquote className="border-l-2 border-brand-accent pl-4 py-1 italic text-brand-dark font-serif text-base">
+            "Authenticity in every grain of rice, smoky char in every bite of meat."
+          </blockquote>
+          <p className="text-sm text-brand-muted font-normal leading-relaxed">
+            Furthermore, we cater for all parties, including special in-house celebrations (accommodating up to 50 guests) and corporate or outdoor events with tailored buffet services.
+          </p>
+          <div className="pt-2">
+            <button
+              type="button"
+              id="story-catering-btn"
+              onClick={() => setCurrentTab('booking')}
+              className="inline-flex items-center text-sm font-mono text-brand-dark hover:text-brand-accent tracking-widest font-bold uppercase transition-colors"
+            >
+              Inquire About Catering <ArrowRight className="w-3.5 h-3.5 ml-1.5" />
+            </button>
+          </div>
+        </div>
+
+        <div className="lg:col-span-7 grid grid-cols-2 gap-4">
+          <div className="space-y-4">
+            <div className="h-48 sm:h-64 border border-brand-dark/10 bg-white">
+              <img 
+                src="https://images.unsplash.com/photo-1627308595229-7830a5c91f9f?auto=format&fit=crop&w=600&q=80" 
+                alt="Karahi cooking" 
+                className="w-full h-full object-cover grayscale hover:grayscale-0 transition-all duration-300"
+                referrerPolicy="no-referrer"
+              />
+            </div>
+            <div className="p-6 border border-brand-dark/10 bg-white shadow-none space-y-2">
+              <span className="font-serif text-2xl font-bold block text-brand-dark">100%</span>
+              <span className="font-mono text-sm text-brand-muted tracking-wider uppercase block">Hand-Prepared Spices</span>
+            </div>
+          </div>
+
+          <div className="space-y-4 pt-8">
+            <div className="p-6 border border-brand-dark/10 bg-white shadow-none space-y-2">
+              <span className="font-serif text-2xl font-bold block text-brand-dark">50+</span>
+              <span className="font-mono text-sm text-brand-muted tracking-wider uppercase block">Guest Capacity Hall</span>
+            </div>
+            <div className="h-48 sm:h-64 border border-brand-dark/10 bg-white">
+              <img 
+                src="https://images.unsplash.com/photo-1603360946369-dc9bb6258143?auto=format&fit=crop&w=600&q=80" 
+                alt="Skewers roasting" 
+                className="w-full h-full object-cover grayscale hover:grayscale-0 transition-all duration-300"
+                referrerPolicy="no-referrer"
+              />
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Featured Specialties (Minimalist Bento Row) */}
+      <section className="bg-white border-y border-brand-dark/10 py-16">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex flex-col sm:flex-row items-baseline justify-between mb-12">
+            <div>
+              <span className="font-mono text-sm tracking-widest text-brand-accent uppercase font-bold block mb-2">
+                CLAY OVEN HIGHLIGHTS
+              </span>
+              <h2 className="font-serif text-3xl font-bold tracking-tight">
+                Our Signature Selection
+              </h2>
+            </div>
+            <button
+              type="button"
+              id="view-all-menu-btn"
+              onClick={() => setCurrentTab('menu')}
+              className="text-sm font-mono text-brand-dark hover:text-brand-accent tracking-widest font-bold uppercase border-b border-brand-dark transition-all duration-200 pb-1 mt-4 sm:mt-0"
+            >
+              VIEW THE ENTIRE MENU
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {featuredItems.map((item) => (
+              <div 
+                key={item.id} 
+                className="border border-brand-dark/10 bg-brand-beige p-6 space-y-4 flex flex-col justify-between hover:border-brand-dark hover:-translate-y-1 transition-all duration-300 rounded-none relative"
+              >
+                {item.isVeg && (
+                  <span className="absolute top-4 right-4 bg-emerald-50 text-emerald-800 font-mono text-xs tracking-wider font-bold border border-emerald-300/30 px-2 py-0.5 rounded-none uppercase">
+                    Vegan/Veg Option
+                  </span>
+                )}
+                
+                <div className="space-y-2">
+                  <span className="font-mono text-sm tracking-widest text-brand-accent uppercase block font-semibold">
+                    {item.category}
+                  </span>
+                  <h3 className="font-serif text-lg font-bold text-brand-dark">
+                    {item.name}
+                  </h3>
+                  <p className="text-sm text-brand-muted font-normal leading-relaxed line-clamp-3">
+                    {item.description}
+                  </p>
+                </div>
+
+                <div className="pt-4 flex items-center justify-between border-t border-brand-dark/5">
+                  <span className="font-mono text-base font-semibold text-brand-dark">
+                    &euro;{item.price.toFixed(2)}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      // Navigate to takeaway
+                      setCurrentTab('takeaway');
+                    }}
+                    className="text-sm font-mono font-bold uppercase tracking-widest text-brand-accent hover:text-brand-dark flex items-center space-x-1"
+                  >
+                    <span>Order Now</span>
+                    <ArrowRight className="w-3 h-3" />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Info, Hours, Map Column */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 border border-brand-dark/10 bg-white divide-y lg:divide-y-0 lg:divide-x divide-brand-dark/10">
+          
+          {/* Box 1: Address and Contact */}
+          <div className="p-8 sm:p-12 space-y-6 flex flex-col justify-between">
+            <div className="space-y-4">
+              <span className="font-mono text-sm text-brand-accent uppercase font-bold tracking-widest block">
+                FIND US
+              </span>
+              <h3 className="font-serif text-2xl font-bold tracking-tight">Location & Contact</h3>
+              
+              <div className="space-y-4 pt-2">
+                <div className="flex items-start">
+                  <MapPin className="w-4 h-4 text-brand-accent mr-3 mt-1 shrink-0" />
+                  <span className="text-sm text-brand-muted leading-relaxed font-normal">
+                    The Royal Clay Oven<br />
+                    Ballycasey Craft And Design Center,<br />
+                    Shannon, County Clare V14 AW71
+                  </span>
+                </div>
+
+                <div className="flex items-start">
+                  <Phone className="w-4 h-4 text-brand-accent mr-3 mt-1 shrink-0" />
+                  <div className="flex flex-col text-sm text-brand-muted font-mono space-y-1">
+                    <span>Phone: <a href="tel:061703636" className="hover:text-brand-dark">061 703 636</a></span>
+                    <span>Mobile: <a href="tel:0894899950" className="hover:text-brand-dark">089 489 9950</a></span>
+                    <span>Whatsapp: <a href="https://wa.me/353894899950" target="_blank" rel="noopener noreferrer" className="hover:text-brand-dark">wa.me/353894899950</a></span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="pt-4 border-t border-brand-dark/5 text-sm text-brand-muted font-normal">
+              Press buttons to book custom functions or home deliveries directly.
+            </div>
+          </div>
+
+          {/* Box 2: Working Hours */}
+          <div className="p-8 sm:p-12 space-y-6 flex flex-col justify-between">
+            <div className="space-y-4">
+              <span className="font-mono text-sm text-brand-accent uppercase font-bold tracking-widest block">
+                TIMINGS
+              </span>
+              <h3 className="font-serif text-2xl font-bold tracking-tight">Opening Hours</h3>
+              
+              <div className="space-y-3 pt-2 text-sm">
+                <div className="flex justify-between pb-1 border-b border-brand-dark/5 font-mono text-brand-muted">
+                  <span>MONDAY</span>
+                  <span className="text-brand-dark">12:00 PM - 11:00 PM</span>
+                </div>
+                <div className="flex justify-between pb-1 border-b border-brand-dark/5 font-mono text-brand-muted">
+                  <span>TUESDAY</span>
+                  <span className="text-brand-dark">12:00 PM - 11:00 PM</span>
+                </div>
+                <div className="flex justify-between pb-1 border-b border-brand-dark/5 font-mono text-brand-muted">
+                  <span>WEDNESDAY</span>
+                  <span className="text-brand-dark">12:00 PM - 11:00 PM</span>
+                </div>
+                <div className="flex justify-between pb-1 border-b border-brand-dark/5 font-mono text-brand-muted">
+                  <span>THURSDAY</span>
+                  <span className="text-brand-dark">12:00 PM - 11:00 PM</span>
+                </div>
+                <div className="flex justify-between pb-1 border-b border-brand-dark/5 font-mono text-brand-muted">
+                  <span>FRIDAY</span>
+                  <span className="text-brand-dark">12:00 PM - 11:30 PM</span>
+                </div>
+                <div className="flex justify-between pb-1 border-b border-brand-dark/5 font-mono text-brand-muted">
+                  <span>SATURDAY</span>
+                  <span className="text-brand-dark">12:00 PM - 11:30 PM</span>
+                </div>
+                <div className="flex justify-between pb-1 border-b border-brand-dark/5 font-mono text-brand-muted">
+                  <span>SUNDAY</span>
+                  <span className="text-brand-dark">1:00 PM - 11:00 PM</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center space-x-2 text-sm text-brand-accent font-semibold font-mono">
+              <Clock className="w-4 h-4" />
+              <span>KITCHEN CLOSES 15 MINS PRIOR</span>
+            </div>
+          </div>
+
+          {/* Box 3: Outdoor Events */}
+          <div className="p-8 sm:p-12 space-y-6 flex flex-col justify-between bg-brand-dark text-brand-beige">
+            <div className="space-y-4">
+              <span className="font-mono text-sm text-brand-accent uppercase font-bold tracking-widest block">
+                EVENTS
+              </span>
+              <h3 className="font-serif text-2xl font-bold tracking-tight">Outdoor Catering & Private Hall</h3>
+              <p className="text-sm text-brand-beige/80 leading-relaxed font-normal">
+                Host your family functions, birthdays, active corporate retreats or in-house celebrations of up to 50 guests. We formulate curated buffet plates, authentic grills and customizable dessert lists.
+              </p>
+            </div>
+
+            <button
+              type="button"
+              id="direct-book-table-btn"
+              onClick={() => setCurrentTab('booking')}
+              className="w-full bg-brand-accent text-white py-3.5 text-sm font-mono tracking-wider font-bold uppercase transition-all duration-200 hover:bg-brand-beige hover:text-brand-dark"
+            >
+              Inquire Event Space
+            </button>
+          </div>
+
+        </div>
+      </section>
+
+    </div>
+  );
+};
