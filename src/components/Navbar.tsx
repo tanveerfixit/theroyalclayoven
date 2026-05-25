@@ -149,7 +149,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           </div>
 
           {/* Right Accoutrements: Auth & Cart */}
-          <div className="flex items-center justify-end space-x-3 lg:space-x-4">
+          <div className="flex items-center justify-end space-x-1 lg:space-x-1">
             
             {/* Unified User Account Profile Console */}
             <div className="flex items-center">
