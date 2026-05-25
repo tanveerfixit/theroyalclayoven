@@ -474,14 +474,26 @@ app.post('/api/orders', async (req, res) => {
 app.delete('/api/orders/:id', async (req, res) => {
   const { id } = req.params;
   try {
-    const [result] = await pool.query('UPDATE orders SET is_archived = 1 WHERE id = ?', [id]);
-    if (result.affectedRows === 0) {
+    // Check if the order exists and its current archive state
+    const [rows] = await pool.query('SELECT is_archived FROM orders WHERE id = ?', [id]);
+    if (rows.length === 0) {
       return res.status(404).json({ error: 'Order not found' });
     }
-    res.json({ success: true, message: 'Order receipt log soft deleted' });
+
+    const isAlreadyArchived = rows[0].is_archived === 1;
+
+    if (isAlreadyArchived) {
+      // If already archived, permanently delete the order record
+      await pool.query('DELETE FROM orders WHERE id = ?', [id]);
+      res.json({ success: true, message: 'Order receipt log permanently deleted' });
+    } else {
+      // If not archived, soft delete (archive) it
+      await pool.query('UPDATE orders SET is_archived = 1 WHERE id = ?', [id]);
+      res.json({ success: true, message: 'Order receipt log soft deleted' });
+    }
   } catch (error) {
-    console.error('Error archiving order:', error);
-    res.status(500).json({ error: 'Database archiving failed' });
+    console.error('Error deleting/archiving order:', error);
+    res.status(500).json({ error: 'Database delete/archiving failed' });
   }
 });
 
