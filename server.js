@@ -71,6 +71,9 @@ app.get('/api/health', async (req, res) => {
     const [rows] = await connection.query('SELECT 1 AS alive');
     connection.release();
 
+    const distExists = fs.existsSync(path.join(__dirname, 'dist'));
+    const filesInDir = fs.readdirSync(__dirname).filter(f => !f.startsWith('.'));
+
     res.json({
       status: 'CONNECTED',
       database: process.env.DB_DATABASE || 'NOT SET',
@@ -79,9 +82,15 @@ app.get('/api/health', async (req, res) => {
       nodeEnv: process.env.NODE_ENV || 'NOT SET',
       port: process.env.PORT || 'NOT SET',
       serverTime: new Date().toISOString(),
+      distExists,
+      filesInDir,
+      dirname: __dirname,
       message: `Database is connected via ${connectionType}`
     });
   } catch (error) {
+    const distExists = fs.existsSync(path.join(__dirname, 'dist'));
+    const filesInDir = fs.readdirSync(__dirname).filter(f => !f.startsWith('.'));
+
     res.status(500).json({
       status: 'DISCONNECTED',
       database: process.env.DB_DATABASE || 'NOT SET',
@@ -90,6 +99,9 @@ app.get('/api/health', async (req, res) => {
       nodeEnv: process.env.NODE_ENV || 'NOT SET',
       port: process.env.PORT || 'NOT SET',
       serverTime: new Date().toISOString(),
+      distExists,
+      filesInDir,
+      dirname: __dirname,
       error: error.message,
       message: `Database connection FAILED via ${connectionType}`
     });
