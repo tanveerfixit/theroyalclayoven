@@ -136,15 +136,17 @@ export const HistoryView: React.FC<{ hideHeader?: boolean; showArchivedOnly?: bo
               {displayedOrders.map((order) => (
                 <div key={order.id} className="bg-white border border-brand-dark/10 p-6 space-y-4 relative">
                   
-                  {/* Understated actions */}
-                  <button
-                    type="button"
-                    onClick={() => handleDeleteOrderLog(order.id)}
-                    className="absolute top-4 right-4 text-brand-muted hover:text-red-600 transition-colors"
-                    title="Delete Receipt Log"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
+                  {/* Understated actions (only show in active transactions, not previous/archived) */}
+                  {!showArchivedOnly && (
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteOrderLog(order.id)}
+                      className="absolute top-4 right-4 text-brand-muted hover:text-red-600 transition-colors"
+                      title="Delete Receipt Log"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  )}
 
                   <div className="flex items-baseline justify-between pr-6">
                     <span className="font-mono text-sm font-bold text-brand-dark">
