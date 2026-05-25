@@ -5,6 +5,7 @@ import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import nodemailer from 'nodemailer';
+import fs from 'fs';
 
 dotenv.config();
 
@@ -553,15 +554,19 @@ app.get('/api/admin/bookings', async (req, res) => {
 
 /* --- PRODUCTION DEPLOYMENT MIDDLEWARE --- */
 
-if (process.env.NODE_ENV === 'production') {
-  console.log('Running in PRODUCTION mode. Serving Vite build assets...');
+// Always serve Vite build assets if dist/ folder exists
+// This ensures Hostinger serves the frontend regardless of NODE_ENV
+const distPath = path.join(__dirname, 'dist');
+
+if (fs.existsSync(distPath)) {
+  console.log('Serving Vite build assets from dist/ folder...');
   
   // Serve static files from Vite build output directory (dist)
-  app.use(express.static(path.join(__dirname, 'dist')));
+  app.use(express.static(distPath));
   
   // Catch-all route to serve index.html for React client-side routing
   app.get('*', (req, res) => {
-    res.sendFile(path.join(__dirname, 'dist', 'index.html'));
+    res.sendFile(path.join(distPath, 'index.html'));
   });
 }
 
