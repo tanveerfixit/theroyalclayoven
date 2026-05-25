@@ -120,7 +120,7 @@ export default function App() {
       />
 
       {/* Main Responsive Canvas */}
-      <main className="flex-grow pt-6 font-sans">
+      <main className="flex-grow pt-0 font-sans">
         <AnimatePresence mode="wait">
           <motion.div
             key={currentTab}
