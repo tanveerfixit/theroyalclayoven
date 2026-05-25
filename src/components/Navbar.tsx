@@ -25,6 +25,7 @@ export const Navbar: React.FC<NavbarProps> = ({
 }) => {
   const [isOpen, setIsOpen] = React.useState(false);
   const [user, setUser] = React.useState<UserProfile | null>(null);
+  const [isDropdownOpen, setIsDropdownOpen] = React.useState(false);
 
   const navRef = React.useRef<HTMLDivElement>(null);
 
@@ -46,6 +47,7 @@ export const Navbar: React.FC<NavbarProps> = ({
     // Auto-close on scroll
     const handleScroll = () => {
       setIsOpen(false);
+      setIsDropdownOpen(false);
     };
     window.addEventListener('scroll', handleScroll, { passive: true });
 
@@ -53,6 +55,7 @@ export const Navbar: React.FC<NavbarProps> = ({
     const handleClickOutside = (event: MouseEvent) => {
       if (navRef.current && !navRef.current.contains(event.target as Node)) {
         setIsOpen(false);
+        setIsDropdownOpen(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -77,8 +80,7 @@ export const Navbar: React.FC<NavbarProps> = ({
     { id: 'home', label: 'THE RESTAURANT', icon: Home },
     { id: 'menu', label: 'OUR MENU', icon: BookOpen },
     { id: 'takeaway', label: 'ORDER ONLINE / TAKEAWAY', icon: ShoppingBag },
-    { id: 'booking', label: 'BOOK A TABLE', icon: Calendar },
-    ...(user ? [{ id: 'profile', label: 'MY PROFILE', icon: User }] : [])
+    { id: 'booking', label: 'BOOK A TABLE', icon: Calendar }
   ];
 
   return (
@@ -149,21 +151,62 @@ export const Navbar: React.FC<NavbarProps> = ({
           {/* Right Accoutrements: Auth & Cart */}
           <div className="flex items-center justify-end space-x-3 lg:space-x-4">
             
-            {/* Desktop Auth */}
-            <div className="hidden lg:flex items-center">
+            {/* Unified User Account Profile Console */}
+            <div className="flex items-center">
               {user ? (
-                <div className="flex items-center space-x-3">
+                <div className="relative">
                   <button
-                    onClick={() => setCurrentTab('profile')}
-                    className="relative hover:opacity-75 transition-opacity"
-                    title="View Profile"
+                    onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                    className="relative flex items-center gap-2 focus:outline-none hover:opacity-85 transition-opacity"
+                    title="User Account"
+                    id="profile-dropdown-trigger"
                   >
-                    <img src={user.picture} alt={user.name} className="w-7 h-7 rounded-full border border-brand-dark/15" referrerPolicy="no-referrer" />
+                    <img
+                      src={user.picture}
+                      alt={user.name}
+                      className="w-8 h-8 rounded-full border border-brand-dark/15 p-0.5 bg-white shadow-[0_2px_8px_rgba(44,38,33,0.04)]"
+                      referrerPolicy="no-referrer"
+                    />
+                    <span className="hidden sm:inline font-mono text-[11px] font-bold text-brand-dark truncate max-w-[80px]">{user.name}</span>
                   </button>
-                  <span className="font-mono text-xs font-bold text-brand-dark truncate max-w-[120px]">{user.name}</span>
-                  <button onClick={handleLogout} className="p-1.5 text-brand-dark hover:text-brand-accent transition-colors" title="Logout">
-                    <LogOut className="w-3.5 h-3.5" />
-                  </button>
+
+                  {isDropdownOpen && (
+                    <div 
+                      className="absolute right-0 mt-3 w-56 bg-white border border-brand-dark/15 shadow-xl py-1.5 z-50 animate-fade-in rounded-none"
+                      id="profile-dropdown-menu"
+                    >
+                      {/* Header summary details */}
+                      <div className="px-4 py-3 border-b border-brand-dark/10">
+                        <p className="text-xs font-mono font-bold text-brand-dark truncate">{user.name}</p>
+                        <p className="text-[10px] font-mono text-brand-muted truncate mt-0.5">{user.email}</p>
+                      </div>
+
+                      {/* Dropdown Options */}
+                      <div className="py-1">
+                        <button
+                          onClick={() => {
+                            setCurrentTab('profile');
+                            setIsDropdownOpen(false);
+                          }}
+                          className="w-full flex items-center px-4 py-2.5 text-left text-xs font-mono text-brand-dark hover:bg-brand-dark hover:text-white transition-colors uppercase gap-2 rounded-none"
+                        >
+                          <User className="w-3.5 h-3.5" />
+                          <span>My Profile</span>
+                        </button>
+                        
+                        <button
+                          onClick={() => {
+                            handleLogout();
+                            setIsDropdownOpen(false);
+                          }}
+                          className="w-full flex items-center px-4 py-2.5 text-left text-xs font-mono text-red-600 hover:bg-red-50 transition-colors uppercase gap-2 border-t border-brand-dark/5 rounded-none"
+                        >
+                          <LogOut className="w-3.5 h-3.5" />
+                          <span>Exit / Logout</span>
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               ) : (
                 <button
@@ -173,27 +216,6 @@ export const Navbar: React.FC<NavbarProps> = ({
                   title="Login / Signup"
                 >
                   <User className="w-5 h-5 stroke-[1.5]" />
-                </button>
-              )}
-            </div>
-
-            {/* Mobile Auth Quick-Access Icon */}
-            <div className="flex lg:hidden items-center">
-              {user ? (
-                <button 
-                  onClick={() => setCurrentTab('profile')} 
-                  className="relative p-1 hover:opacity-75 transition-opacity"
-                  title="View Profile"
-                >
-                  <img src={user.picture} alt={user.name} className="w-7 h-7 rounded-full border border-brand-dark/15" referrerPolicy="no-referrer" />
-                </button>
-              ) : (
-                <button 
-                  onClick={onOpenAuthModal} 
-                  className="p-2 text-brand-dark hover:text-brand-accent transition-colors flex items-center justify-center"
-                  title="Login / Signup"
-                >
-                  <User className="w-4 h-4 stroke-[2]" />
                 </button>
               )}
             </div>
@@ -247,18 +269,44 @@ export const Navbar: React.FC<NavbarProps> = ({
               );
             })}
             
-            {/* Mobile Auth */}
+            {/* Mobile Drawer Auth Panel */}
             <div className="px-4 py-4 mt-2 border-t border-brand-dark/10">
               {user ? (
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col space-y-3.5">
                   <div className="flex items-center space-x-3">
-                    <img src={user.picture} alt={user.name} className="w-8 h-8 rounded-none" referrerPolicy="no-referrer" />
-                    <span className="font-mono text-sm font-bold text-brand-dark">{user.name}</span>
+                    <img 
+                      src={user.picture} 
+                      alt={user.name} 
+                      className="w-9 h-9 rounded-full border border-brand-dark/10 p-0.5 bg-white" 
+                      referrerPolicy="no-referrer" 
+                    />
+                    <div className="truncate">
+                      <p className="font-mono text-xs font-bold text-brand-dark truncate">{user.name}</p>
+                      <p className="font-mono text-[10px] text-brand-muted truncate mt-0.5">{user.email}</p>
+                    </div>
                   </div>
-                  <button onClick={handleLogout} className="flex items-center px-3 py-2 text-sm font-mono tracking-wider text-red-600 border border-red-200 hover:bg-red-50 uppercase">
-                    <LogOut className="w-4 h-4 mr-2" />
-                    Logout
-                  </button>
+                  <div className="grid grid-cols-2 gap-2 pt-1">
+                    <button
+                      onClick={() => {
+                        setCurrentTab('profile');
+                        setIsOpen(false);
+                      }}
+                      className="flex items-center justify-center px-3 py-2 text-xs font-mono tracking-wider text-brand-dark border border-brand-dark/15 hover:bg-brand-dark hover:text-white transition-colors uppercase gap-1.5 rounded-none"
+                    >
+                      <User className="w-3.5 h-3.5" />
+                      <span>Profile</span>
+                    </button>
+                    <button
+                      onClick={() => {
+                        handleLogout();
+                        setIsOpen(false);
+                      }}
+                      className="flex items-center justify-center px-3 py-2 text-xs font-mono tracking-wider text-red-600 border border-red-200 hover:bg-red-50 transition-colors uppercase gap-1.5 rounded-none"
+                    >
+                      <LogOut className="w-3.5 h-3.5" />
+                      <span>Logout</span>
+                    </button>
+                  </div>
                 </div>
               ) : (
                 <div className="flex justify-center">
@@ -268,7 +316,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                       setIsOpen(false);
                       onOpenAuthModal();
                     }}
-                    className="w-full bg-brand-dark text-white hover:bg-brand-accent py-3 text-xs font-mono uppercase tracking-widest font-bold text-center transition-colors"
+                    className="w-full bg-brand-dark text-white hover:bg-brand-accent py-3 text-xs font-mono uppercase tracking-widest font-bold text-center transition-colors rounded-none"
                   >
                     Login / Signup
                   </button>
