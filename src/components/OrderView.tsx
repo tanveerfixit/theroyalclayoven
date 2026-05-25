@@ -41,8 +41,7 @@ export const OrderView: React.FC<OrderViewProps> = ({
   const [checkoutNotes, setCheckoutNotes] = React.useState('');
   const [validationError, setValidationError] = React.useState('');
 
-  // Pre-fill user data from Google Login / Profile if available
-  React.useEffect(() => {
+  const loadUserProfile = () => {
     const storedUser = localStorage.getItem('clay_oven_google_user');
     if (storedUser) {
       try {
@@ -56,6 +55,15 @@ export const OrderView: React.FC<OrderViewProps> = ({
         console.error('Failed to parse Google user data for checkout', err);
       }
     }
+  };
+
+  // Pre-fill user data from Google Login / Profile if available
+  React.useEffect(() => {
+    loadUserProfile();
+    window.addEventListener('profile_updated', loadUserProfile);
+    return () => {
+      window.removeEventListener('profile_updated', loadUserProfile);
+    };
   }, []);
   
   // Successful order indicator
@@ -149,7 +157,7 @@ export const OrderView: React.FC<OrderViewProps> = ({
   const total = subtotal + packagingFee + deliveryCharges;
 
   // Checkout submission handler
-  const handlePlaceOrderSubmit = (e: React.FormEvent) => {
+  const handlePlaceOrderSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setValidationError('');
 
@@ -200,16 +208,71 @@ export const OrderView: React.FC<OrderViewProps> = ({
       createdAt: new Date().toISOString()
     };
 
-    // Store in LocalStorage
+    try {
+      const response = await fetch('/api/orders', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(finalOrder)
+      });
+      if (!response.ok) {
+        throw new Error('Database save failed');
+      }
+    } catch (err) {
+      console.error('Failed to submit order to server, saving locally', err);
+    }
+
+    // Store in LocalStorage as secondary backup / cache
     const existingOrdersJson = localStorage.getItem('clay_oven_orders');
     const existingOrders = existingOrdersJson ? JSON.parse(existingOrdersJson) : [];
     existingOrders.unshift(finalOrder); // Insert newest at beginning
     localStorage.setItem('clay_oven_orders', JSON.stringify(existingOrders));
 
+    // Sync customer details to local storage and database
+    const storedUser = localStorage.getItem('clay_oven_google_user');
+    let existingUser = {};
+    if (storedUser) {
+      try {
+        existingUser = JSON.parse(storedUser);
+      } catch (err) {
+        console.error('Failed to parse existing user', err);
+      }
+    }
+
+    const updatedUser = {
+      ...existingUser,
+      name: customerName,
+      email: customerEmail,
+      phone: customerPhone,
+      address: deliveryAddress || (existingUser as any).address || '',
+      eircode: eirCode || (existingUser as any).eircode || '',
+      picture: (existingUser as any).picture || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=120'
+    };
+
+    // Save to local storage
+    localStorage.setItem('clay_oven_google_user', JSON.stringify(updatedUser));
+
+    // Save to database
+    try {
+      await fetch('/api/users', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(updatedUser)
+      });
+    } catch (err) {
+      console.error('Failed to upsert user profile to server', err);
+    }
+
     // Reset current Cart and trigger state success
     setCart([]);
     setPlacedOrder(finalOrder);
     setIsCheckoutMode(false);
+
+    // Notify all views of the profile update
+    window.dispatchEvent(new Event('profile_updated'));
   };
 
   // Reset variables for starting a new order
@@ -223,45 +286,46 @@ export const OrderView: React.FC<OrderViewProps> = ({
 
   if (placedOrder) {
     return (
-      <div className="max-w-xl mx-auto px-4 py-12 text-center space-y-8 animate-fade-in" id="order-success-screen">
-        <div className="border border-brand-dark p-8 sm:p-12 bg-white relative space-y-6">
-          <div className="w-16 h-16 bg-brand-dark text-white font-serif text-3xl flex items-center justify-center font-bold mx-auto">
-            ✓
-          </div>
-          
-          <div className="space-y-2">
-            <span className="font-mono text-sm tracking-widest text-brand-accent uppercase font-bold">
-              PAKISTANI KITCHEN ORDER CONFIRMED
-            </span>
-            <h2 className="font-serif text-2xl sm:text-3xl font-bold tracking-tight text-brand-dark">
-              Thank You For Your Order!
-            </h2>
-            <p className="font-mono text-sm text-brand-muted uppercase">
-              Ref ID: <span className="text-brand-dark font-bold">{placedOrder.id}</span>
-            </p>
-          </div>
-
-          <div className="border-t border-b border-brand-dark/10 py-6 text-left space-y-3 font-mono text-sm text-brand-muted">
-            <div className="flex justify-between font-bold text-brand-dark">
-              <span>Fulfillment Type</span>
-              <span className="uppercase">{placedOrder.serviceType}</span>
-            </div>
-            <div className="flex justify-between">
-              <span>Customer Name</span>
-              <span className="text-brand-dark">{placedOrder.customerInfo.name}</span>
-            </div>
-            <div className="flex justify-between">
-              <span>Fulfillment Time</span>
-              <span className="text-brand-dark">{placedOrder.customerInfo.preferredTime}</span>
+      <div className="min-h-[75vh] flex items-center justify-center px-4 py-8 animate-fade-in" id="order-success-screen">
+        <div className="max-w-xl w-full text-center space-y-8">
+          <div className="border border-brand-dark p-8 sm:p-12 bg-white relative space-y-6">
+            <div className="w-16 h-16 bg-brand-dark text-white font-serif text-3xl flex items-center justify-center font-bold mx-auto">
+              ✓
             </div>
             
-            {placedOrder.customerInfo.address && (
-              <div className="border-t border-dashed border-brand-dark/5 pt-2">
-                <span className="font-semibold text-brand-dark block mb-1">Deliver To:</span>
-                <span className="text-brand-muted">{placedOrder.customerInfo.address}</span>
+            <div className="space-y-2">
+              <span className="font-mono text-sm tracking-widest text-brand-accent uppercase font-bold">
+                PAKISTANI KITCHEN ORDER CONFIRMED
+              </span>
+              <h2 className="font-serif text-2xl sm:text-3xl font-bold tracking-tight text-brand-dark">
+                Thank You For Your Order!
+              </h2>
+              <p className="font-mono text-sm text-brand-muted uppercase">
+                Ref ID: <span className="text-brand-dark font-bold">{placedOrder.id}</span>
+              </p>
+            </div>
+
+            <div className="border-t border-b border-brand-dark/10 py-6 text-left space-y-3 font-mono text-sm text-brand-muted">
+              <div className="flex justify-between font-bold text-brand-dark">
+                <span>Fulfillment Type</span>
+                <span className="uppercase">{placedOrder.serviceType}</span>
               </div>
-            )}
-          </div>
+              <div className="flex justify-between">
+                <span>Customer Name</span>
+                <span className="text-brand-dark">{placedOrder.customerInfo.name}</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Fulfillment Time</span>
+                <span className="text-brand-dark">{placedOrder.customerInfo.preferredTime}</span>
+              </div>
+              
+              {placedOrder.customerInfo.address && (
+                <div className="border-t border-dashed border-brand-dark/5 pt-2">
+                  <span className="font-semibold text-brand-dark block mb-1">Deliver To:</span>
+                  <span className="text-brand-muted">{placedOrder.customerInfo.address}</span>
+                </div>
+              )}
+            </div>
 
           <div className="space-y-3 text-left">
             <h4 className="font-serif text-base font-bold text-brand-dark">Order Items Summarized:</h4>
@@ -300,29 +364,32 @@ export const OrderView: React.FC<OrderViewProps> = ({
           </button>
         </div>
       </div>
+    </div>
     );
   }
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-20 animate-fade-in" id="order-takeaway-view">
       
-      {/* Editorial Header */}
-      <div className="text-center max-w-xl mx-auto pt-8 space-y-3 mb-10">
-        <span className="font-mono text-sm tracking-widest text-brand-accent uppercase font-bold">
-          FAST ONLINE ORDER
-        </span>
-        <h1 className="font-serif text-3xl sm:text-4xl font-bold tracking-tight text-brand-dark">
-          Order &amp; Takeaway Service
-        </h1>
-        <p className="text-sm text-brand-muted leading-relaxed font-normal">
-          Enjoy the same high-grade clay oven flavor at home. Choose self-collection or speedy delivery inside our local radius. A statutory €0.95 packaging fee applies.
-        </p>
-      </div>
+      {/* Editorial Header - Hidden in Checkout Mode to center form at top of fold */}
+      {!isCheckoutMode && (
+        <div className="text-center max-w-xl mx-auto pt-8 space-y-3 mb-10">
+          <span className="font-mono text-sm tracking-widest text-brand-accent uppercase font-bold">
+            FAST ONLINE ORDER
+          </span>
+          <h1 className="font-serif text-3xl sm:text-4xl font-bold tracking-tight text-brand-dark">
+            Order &amp; Takeaway Service
+          </h1>
+          <p className="text-sm text-brand-muted leading-relaxed font-normal">
+            Enjoy the same high-grade clay oven flavor at home. Choose self-collection or speedy delivery inside our local radius. A statutory €0.95 packaging fee applies.
+          </p>
+        </div>
+      )}
 
       {isCheckoutMode ? (
         
         /* CHECKOUT EXPERIENCE STEP */
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start max-w-5xl mx-auto" id="checkout-container">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start max-w-5xl mx-auto pt-4 sm:pt-6" id="checkout-container">
           
           {/* Back button */}
           <div className="lg:col-span-12">
@@ -337,9 +404,9 @@ export const OrderView: React.FC<OrderViewProps> = ({
             </button>
           </div>
 
-          {/* Form Side */}
-          <form onSubmit={handlePlaceOrderSubmit} className="lg:col-span-7 bg-white border border-brand-dark/10 p-6 sm:p-10 space-y-6">
-            <h2 className="font-serif text-2xl font-bold tracking-tight border-b border-brand-dark/10 pb-4">
+          {/* Form Side - Decreased gaps and optimized padding for mobile centering */}
+          <form onSubmit={handlePlaceOrderSubmit} className="lg:col-span-7 bg-white border border-brand-dark/10 p-5 sm:p-8 space-y-4">
+            <h2 className="font-serif text-xl sm:text-2xl font-bold tracking-tight border-b border-brand-dark/10 pb-3">
               Fulfillment &amp; Customer Details
             </h2>
 
@@ -350,8 +417,8 @@ export const OrderView: React.FC<OrderViewProps> = ({
             )}
 
             {/* Service Selection */}
-            <div className="space-y-2">
-              <span className="block font-mono text-sm tracking-widest text-brand-accent uppercase font-bold">
+            <div className="space-y-1.5">
+              <span className="block font-mono text-xs text-brand-accent uppercase tracking-widest font-bold">
                 FULFILLMENT METHOD
               </span>
               <div className="grid grid-cols-2 gap-4">
@@ -359,7 +426,7 @@ export const OrderView: React.FC<OrderViewProps> = ({
                   type="button"
                   id="checkout-option-takeaway"
                   onClick={() => setServiceType('takeaway')}
-                  className={`py-4 px-6 border text-sm font-mono font-bold uppercase transition-all flex flex-col items-center justify-center space-y-2 ${
+                  className={`py-3 px-4 border text-sm font-mono font-bold uppercase transition-all flex flex-col items-center justify-center space-y-1.5 ${
                     serviceType === 'takeaway'
                       ? 'border-brand-dark bg-brand-dark text-white'
                       : 'border-brand-dark/15 text-brand-dark hover:bg-brand-dark/5'
@@ -372,7 +439,7 @@ export const OrderView: React.FC<OrderViewProps> = ({
                   type="button"
                   id="checkout-option-delivery"
                   onClick={() => setServiceType('delivery')}
-                  className={`py-4 px-6 border text-sm font-mono font-bold uppercase transition-all flex flex-col items-center justify-center space-y-2 ${
+                  className={`py-3 px-4 border text-sm font-mono font-bold uppercase transition-all flex flex-col items-center justify-center space-y-1.5 ${
                     serviceType === 'delivery'
                       ? 'border-brand-dark bg-brand-dark text-white'
                       : 'border-brand-dark/15 text-brand-dark hover:bg-brand-dark/5'
@@ -385,7 +452,7 @@ export const OrderView: React.FC<OrderViewProps> = ({
             </div>
 
             {/* Text Inputs */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
               <div className="space-y-1">
                 <label htmlFor="chk-custname" className="block font-mono text-xs text-brand-accent uppercase tracking-widest font-bold">
                   NAME
@@ -397,7 +464,7 @@ export const OrderView: React.FC<OrderViewProps> = ({
                   placeholder="e.g. Liam O'Brien"
                   value={customerName}
                   onChange={(e) => setCustomerName(e.target.value)}
-                  className="w-full border border-brand-dark/10 p-3 text-sm font-mono focus:border-brand-dark outline-none bg-brand-beige/10"
+                  className="w-full border border-brand-dark/10 p-2.5 text-sm font-mono focus:border-brand-dark outline-none bg-brand-beige/10 rounded-none"
                 />
               </div>
 
@@ -412,7 +479,7 @@ export const OrderView: React.FC<OrderViewProps> = ({
                   placeholder="e.g. 087 123 4567"
                   value={customerPhone}
                   onChange={(e) => setCustomerPhone(e.target.value)}
-                  className="w-full border border-brand-dark/10 p-3 text-sm font-mono focus:border-brand-dark outline-none bg-brand-beige/10"
+                  className="w-full border border-brand-dark/10 p-2.5 text-sm font-mono focus:border-brand-dark outline-none bg-brand-beige/10 rounded-none"
                 />
               </div>
             </div>
@@ -428,12 +495,12 @@ export const OrderView: React.FC<OrderViewProps> = ({
                 placeholder="e.g. liam@example.ie"
                 value={customerEmail}
                 onChange={(e) => setCustomerEmail(e.target.value)}
-                className="w-full border border-brand-dark/10 p-3 text-sm font-mono focus:border-brand-dark outline-none bg-brand-beige/10"
+                className="w-full border border-brand-dark/10 p-2.5 text-sm font-mono focus:border-brand-dark outline-none bg-brand-beige/10 rounded-none"
               />
             </div>
 
             {serviceType === 'delivery' && (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 animate-fade-in" id="delivery-address-area">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 animate-fade-in" id="delivery-address-area">
                 <div className="space-y-1">
                   <label htmlFor="chk-custaddress" className="block font-mono text-xs text-brand-accent uppercase tracking-widest font-bold">
                     STREET ADDRESS (LIMERICK CITY ONLY)
@@ -445,7 +512,7 @@ export const OrderView: React.FC<OrderViewProps> = ({
                     placeholder="Street Address, Apartment or Suite number"
                     value={deliveryAddress}
                     onChange={(e) => setDeliveryAddress(e.target.value)}
-                    className="w-full border border-brand-dark/10 p-3 text-sm font-mono focus:border-brand-dark outline-none bg-brand-beige/10"
+                    className="w-full border border-brand-dark/10 p-2.5 text-sm font-mono focus:border-brand-dark outline-none bg-brand-beige/10 rounded-none resize-none"
                   ></textarea>
                 </div>
                 <div className="space-y-1">
@@ -459,7 +526,7 @@ export const OrderView: React.FC<OrderViewProps> = ({
                     placeholder="e.g. V14 AW71"
                     value={eirCode}
                     onChange={(e) => setEirCode(e.target.value)}
-                    className="w-full border border-brand-dark/10 p-3 text-sm font-mono focus:border-brand-dark outline-none bg-brand-beige/10 uppercase"
+                    className="w-full border border-brand-dark/10 p-2.5 text-sm font-mono focus:border-brand-dark outline-none bg-brand-beige/10 uppercase rounded-none"
                   />
                 </div>
               </div>
@@ -473,7 +540,7 @@ export const OrderView: React.FC<OrderViewProps> = ({
                 id="chk-custtime"
                 value={preferredTime}
                 onChange={(e) => setPreferredTime(e.target.value)}
-                className="w-full border border-brand-dark/10 p-3 text-sm font-mono focus:border-brand-dark outline-none bg-brand-beige/10 bg-white"
+                className="w-full border border-brand-dark/10 p-2.5 text-sm font-mono focus:border-brand-dark outline-none bg-brand-beige/10 bg-white rounded-none"
               >
                 <option value="As soon as possible (approx. 30-45 mins)">As soon as possible (approx. 30-45 mins)</option>
                 <option value="In 1 Hour">In 1 Hour</option>
@@ -494,14 +561,14 @@ export const OrderView: React.FC<OrderViewProps> = ({
                 placeholder="Spiciness requests, gate codes, etc."
                 value={checkoutNotes}
                 onChange={(e) => setCheckoutNotes(e.target.value)}
-                className="w-full border border-brand-dark/10 p-3 text-sm font-mono focus:border-brand-dark outline-none bg-brand-beige/10"
+                className="w-full border border-brand-dark/10 p-2.5 text-sm font-mono focus:border-brand-dark outline-none bg-brand-beige/10 rounded-none resize-none"
               ></textarea>
             </div>
 
             <button
               type="submit"
               id="confirm-checkout-btn"
-              className="w-full bg-brand-accent text-white hover:bg-brand-dark py-4 text-sm font-mono uppercase tracking-widest font-bold transition-colors"
+              className="w-full bg-brand-accent text-white hover:bg-brand-dark py-3.5 text-sm font-mono uppercase tracking-widest font-bold transition-colors rounded-none"
             >
               CONFIRM ORDER &amp; COMMENCE PREPARATION
             </button>

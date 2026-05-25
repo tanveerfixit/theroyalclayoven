@@ -5,8 +5,7 @@
 
 import React, { useEffect } from 'react';
 import { Menu, X, ShoppingBag, Calendar, Home, BookOpen, Clock, LogOut, User } from 'lucide-react';
-import { GoogleLogin, googleLogout } from '@react-oauth/google';
-import { jwtDecode } from 'jwt-decode';
+import { googleLogout } from '@react-oauth/google';
 import { UserProfile } from '../types';
 
 interface NavbarProps {
@@ -14,13 +13,15 @@ interface NavbarProps {
   setCurrentTab: (tab: string) => void;
   cartCount: number;
   openCartDrawer: () => void;
+  onOpenAuthModal: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
   currentTab,
   setCurrentTab,
   cartCount,
-  openCartDrawer
+  openCartDrawer,
+  onOpenAuthModal
 }) => {
   const [isOpen, setIsOpen] = React.useState(false);
   const [user, setUser] = React.useState<UserProfile | null>(null);
@@ -63,24 +64,13 @@ export const Navbar: React.FC<NavbarProps> = ({
     };
   }, []);
 
-  const handleLoginSuccess = (credentialResponse: any) => {
-    if (credentialResponse.credential) {
-      const decoded = jwtDecode<any>(credentialResponse.credential);
-      const userProfile: UserProfile = {
-        name: decoded.name,
-        picture: decoded.picture,
-        email: decoded.email
-      };
-      setUser(userProfile);
-      localStorage.setItem('clay_oven_google_user', JSON.stringify(userProfile));
-      // User noted they will send token to backend from here
-    }
-  };
+  // Listening to profile_updated handles standard session changes.
 
   const handleLogout = () => {
     googleLogout();
     setUser(null);
     localStorage.removeItem('clay_oven_google_user');
+    window.dispatchEvent(new Event('profile_updated'));
   };
 
   const navItems = [
@@ -163,35 +153,46 @@ export const Navbar: React.FC<NavbarProps> = ({
             <div className="hidden lg:flex items-center">
               {user ? (
                 <div className="flex items-center space-x-3">
-                  <img src={user.picture} alt={user.name} className="w-6 h-6 rounded-full" referrerPolicy="no-referrer" />
+                  <button
+                    onClick={() => setCurrentTab('profile')}
+                    className="relative hover:opacity-75 transition-opacity"
+                    title="View Profile"
+                  >
+                    <img src={user.picture} alt={user.name} className="w-7 h-7 rounded-full border border-brand-dark/15" referrerPolicy="no-referrer" />
+                  </button>
                   <span className="font-mono text-xs font-bold text-brand-dark truncate max-w-[120px]">{user.name}</span>
                   <button onClick={handleLogout} className="p-1.5 text-brand-dark hover:text-brand-accent transition-colors" title="Logout">
                     <LogOut className="w-3.5 h-3.5" />
                   </button>
                 </div>
               ) : (
-                <div className="h-[38px] flex items-center">
-                  <GoogleLogin
-                    onSuccess={handleLoginSuccess}
-                    onError={() => console.log('Login Failed')}
-                    type="standard"
-                    theme="outline"
-                    size="medium"
-                    text="signin_with"
-                    shape="rectangular"
-                  />
-                </div>
+                <button
+                  type="button"
+                  onClick={onOpenAuthModal}
+                  className="p-2 text-brand-dark hover:text-brand-accent transition-colors flex items-center justify-center"
+                  title="Login / Signup"
+                >
+                  <User className="w-5 h-5 stroke-[1.5]" />
+                </button>
               )}
             </div>
 
             {/* Mobile Auth Quick-Access Icon */}
             <div className="flex lg:hidden items-center">
               {user ? (
-                <button onClick={() => setIsOpen(!isOpen)} className="relative p-1 hover:opacity-70 transition-opacity">
-                  <img src={user.picture} alt={user.name} className="w-7 h-7 rounded-full" referrerPolicy="no-referrer" />
+                <button 
+                  onClick={() => setCurrentTab('profile')} 
+                  className="relative p-1 hover:opacity-75 transition-opacity"
+                  title="View Profile"
+                >
+                  <img src={user.picture} alt={user.name} className="w-7 h-7 rounded-full border border-brand-dark/15" referrerPolicy="no-referrer" />
                 </button>
               ) : (
-                <button onClick={() => setIsOpen(!isOpen)} className="p-2 text-brand-dark hover:text-brand-accent transition-colors">
+                <button 
+                  onClick={onOpenAuthModal} 
+                  className="p-2 text-brand-dark hover:text-brand-accent transition-colors flex items-center justify-center"
+                  title="Login / Signup"
+                >
                   <User className="w-4 h-4 stroke-[2]" />
                 </button>
               )}
@@ -261,11 +262,16 @@ export const Navbar: React.FC<NavbarProps> = ({
                 </div>
               ) : (
                 <div className="flex justify-center">
-                  <GoogleLogin
-                    onSuccess={handleLoginSuccess}
-                    onError={() => console.log('Login Failed')}
-                    width="100%"
-                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsOpen(false);
+                      onOpenAuthModal();
+                    }}
+                    className="w-full bg-brand-dark text-white hover:bg-brand-accent py-3 text-xs font-mono uppercase tracking-widest font-bold text-center transition-colors"
+                  >
+                    Login / Signup
+                  </button>
                 </div>
               )}
             </div>

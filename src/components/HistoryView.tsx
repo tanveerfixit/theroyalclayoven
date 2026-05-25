@@ -7,15 +7,40 @@ import React from 'react';
 import { ShoppingBag, Calendar, Trash2, Clock, MapPin, Coffee, HelpCircle, CheckCircle2 } from 'lucide-react';
 import { Order, Reservation } from '../types';
 
-export const HistoryView: React.FC<{ hideHeader?: boolean }> = ({ hideHeader = false }) => {
+export const HistoryView: React.FC<{ hideHeader?: boolean; showArchivedOnly?: boolean }> = ({ 
+  hideHeader = false,
+  showArchivedOnly = false
+}) => {
   const [orders, setOrders] = React.useState<Order[]>([]);
   const [bookings, setBookings] = React.useState<Reservation[]>([]);
+
+  const displayedOrders = orders.filter((o) => showArchivedOnly ? o.isArchived : !o.isArchived);
 
   React.useEffect(() => {
     fetchLogs();
   }, []);
 
-  const fetchLogs = () => {
+  const fetchLogs = async () => {
+    const storedUser = localStorage.getItem('clay_oven_google_user');
+    if (storedUser) {
+      try {
+        const user = JSON.parse(storedUser);
+        const [ordersRes, bookingsRes] = await Promise.all([
+          fetch(`/api/orders?email=${encodeURIComponent(user.email)}`),
+          fetch(`/api/bookings?email=${encodeURIComponent(user.email)}`)
+        ]);
+        if (ordersRes.ok && bookingsRes.ok) {
+          const ordersData = await ordersRes.json();
+          const bookingsData = await bookingsRes.json();
+          setOrders(ordersData);
+          setBookings(bookingsData);
+          return;
+        }
+      } catch (err) {
+        console.error('Failed to fetch transactions from server', err);
+      }
+    }
+
     const storedOrders = localStorage.getItem('clay_oven_orders');
     const storedBookings = localStorage.getItem('clay_oven_bookings');
     
@@ -23,10 +48,26 @@ export const HistoryView: React.FC<{ hideHeader?: boolean }> = ({ hideHeader = f
     if (storedBookings) setBookings(JSON.parse(storedBookings));
   };
 
-  const handleCancelReservation = (bookingId: string) => {
+  const handleCancelReservation = async (bookingId: string) => {
     if (!window.confirm('Do you genuinely wish to dismiss this dining reservation?')) {
       return;
     }
+
+    try {
+      const response = await fetch(`/api/bookings/${bookingId}/status`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ status: 'Cancelled' })
+      });
+      if (!response.ok) {
+        throw new Error('Server update failed');
+      }
+    } catch (err) {
+      console.error('Failed to cancel reservation on server', err);
+    }
+
     const updated = bookings.map((bk) => 
       bk.id === bookingId ? { ...bk, status: 'Cancelled' as const } : bk
     );
@@ -34,7 +75,22 @@ export const HistoryView: React.FC<{ hideHeader?: boolean }> = ({ hideHeader = f
     setBookings(updated);
   };
 
-  const handleDeleteOrderLog = (orderId: string) => {
+  const handleDeleteOrderLog = async (orderId: string) => {
+    if (!window.confirm('Are you sure you want to delete this order receipt from your history?')) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/orders/${orderId}`, {
+        method: 'DELETE'
+      });
+      if (!response.ok) {
+        throw new Error('Server delete failed');
+      }
+    } catch (err) {
+      console.error('Failed to delete order from server', err);
+    }
+
     const updated = orders.filter((o) => o.id !== orderId);
     localStorage.setItem('clay_oven_orders', JSON.stringify(updated));
     setOrders(updated);
@@ -56,7 +112,7 @@ export const HistoryView: React.FC<{ hideHeader?: boolean }> = ({ hideHeader = f
         </div>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+      <div className={showArchivedOnly ? "max-w-4xl mx-auto space-y-6" : "grid grid-cols-1 lg:grid-cols-2 gap-12"}>
         
         {/* COLUMN 1: TAKEAWAY ORDERS */}
         <section className="space-y-6">
@@ -65,15 +121,19 @@ export const HistoryView: React.FC<{ hideHeader?: boolean }> = ({ hideHeader = f
             <h2 className="font-serif text-xl font-bold text-brand-dark">Order Takeaway History</h2>
           </div>
 
-          {orders.length === 0 ? (
+          {displayedOrders.length === 0 ? (
             <div className="text-center py-16 bg-white border border-brand-dark/10 text-brand-muted space-y-2">
               <HelpCircle className="w-6 h-6 mx-auto text-brand-muted/50" />
-              <p className="font-serif text-sm">No local takeaway orders placed yet.</p>
-              <p className="font-mono text-xs uppercase text-brand-accent font-semibold">Start choosing food from the Takeaway tab.</p>
+              <p className="font-serif text-sm">
+                {showArchivedOnly ? 'No archived order receipts in your history.' : 'No local takeaway orders placed yet.'}
+              </p>
+              <p className="font-mono text-xs uppercase text-brand-accent font-semibold">
+                {showArchivedOnly ? 'Transactions you delete will be archived here.' : 'Start choosing food from the Takeaway tab.'}
+              </p>
             </div>
           ) : (
             <div className="space-y-4" id="orders-log-list">
-              {orders.map((order) => (
+              {displayedOrders.map((order) => (
                 <div key={order.id} className="bg-white border border-brand-dark/10 p-6 space-y-4 relative">
                   
                   {/* Understated actions */}
@@ -134,81 +194,83 @@ export const HistoryView: React.FC<{ hideHeader?: boolean }> = ({ hideHeader = f
         </section>
 
         {/* COLUMN 2: TABLE BOOKINGS */}
-        <section className="space-y-6">
-          <div className="flex items-center space-x-2.5 border-b border-brand-dark/10 pb-4">
-            <Calendar className="w-5 h-5 text-brand-accent" />
-            <h2 className="font-serif text-xl font-bold text-brand-dark">Dining Bookings Summary</h2>
-          </div>
-
-          {bookings.length === 0 ? (
-            <div className="text-center py-16 bg-white border border-brand-dark/10 text-brand-muted space-y-2">
-              <HelpCircle className="w-6 h-6 mx-auto text-brand-muted/50" />
-              <p className="font-serif text-sm">No active table reservations mapped.</p>
-              <p className="font-mono text-xs uppercase text-brand-accent font-semibold">Reserve a sharp table slot directly.</p>
+        {!showArchivedOnly && (
+          <section className="space-y-6">
+            <div className="flex items-center space-x-2.5 border-b border-brand-dark/10 pb-4">
+              <Calendar className="w-5 h-5 text-brand-accent" />
+              <h2 className="font-serif text-xl font-bold text-brand-dark">Dining Bookings Summary</h2>
             </div>
-          ) : (
-            <div className="space-y-4" id="bookings-log-list">
-              {bookings.map((booking) => {
-                const isCancelled = booking.status === 'Cancelled';
-                return (
-                  <div key={booking.id} className={`bg-white border p-6 space-y-4 relative ${isCancelled ? 'border-brand-dark/5 opacity-60' : 'border-brand-dark/10'}`}>
-                    
-                    {/* Only show cancel logic if active */}
-                    {!isCancelled && (
-                      <button
-                        type="button"
-                        onClick={() => handleCancelReservation(booking.id)}
-                        className="absolute top-4 right-4 text-sm font-mono text-red-600 hover:text-red-800 uppercase flex items-center space-x-1 border border-red-200 hover:border-red-600 px-2 py-1"
-                        title="Dismiss Table"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                        <span>Cancel</span>
-                      </button>
-                    )}
 
-                    <div className="flex items-baseline justify-between pr-20">
-                      <span className="font-mono text-sm font-bold text-brand-dark">
-                        REF ID: {booking.id}
-                      </span>
-                      <span className={`font-mono text-sm border px-2 py-0.5 uppercase font-bold ${
-                        isCancelled
-                          ? 'bg-red-50 text-red-800 border-red-200'
-                          : 'bg-emerald-50 text-emerald-800 border-emerald-200'
-                      }`}>
-                        {booking.status}
-                      </span>
+            {bookings.length === 0 ? (
+              <div className="text-center py-16 bg-white border border-brand-dark/10 text-brand-muted space-y-2">
+                <HelpCircle className="w-6 h-6 mx-auto text-brand-muted/50" />
+                <p className="font-serif text-sm">No active table reservations mapped.</p>
+                <p className="font-mono text-xs uppercase text-brand-accent font-semibold">Reserve a sharp table slot directly.</p>
+              </div>
+            ) : (
+              <div className="space-y-4" id="bookings-log-list">
+                {bookings.map((booking) => {
+                  const isCancelled = booking.status === 'Cancelled';
+                  return (
+                    <div key={booking.id} className={`bg-white border p-6 space-y-4 relative ${isCancelled ? 'border-brand-dark/5 opacity-60' : 'border-brand-dark/10'}`}>
+                      
+                      {/* Only show cancel logic if active */}
+                      {!isCancelled && (
+                        <button
+                          type="button"
+                          onClick={() => handleCancelReservation(booking.id)}
+                          className="absolute top-4 right-4 text-sm font-mono text-red-600 hover:text-red-800 uppercase flex items-center space-x-1 border border-red-200 hover:border-red-600 px-2 py-1"
+                          title="Dismiss Table"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                          <span>Cancel</span>
+                        </button>
+                      )}
+
+                      <div className="flex items-baseline justify-between pr-20">
+                        <span className="font-mono text-sm font-bold text-brand-dark">
+                          REF ID: {booking.id}
+                        </span>
+                        <span className={`font-mono text-sm border px-2 py-0.5 uppercase font-bold ${
+                          isCancelled
+                            ? 'bg-red-50 text-red-800 border-red-200'
+                            : 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                        }`}>
+                          {booking.status}
+                        </span>
+                      </div>
+
+                      <div className="text-sm font-mono text-brand-muted space-y-2 py-1 border-t border-b border-brand-dark/5">
+                        <div className="flex justify-between">
+                          <span>Dining Date</span>
+                          <span className="text-brand-dark font-bold">{booking.date}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>Arrival Hour</span>
+                          <span className="text-brand-dark font-bold">{booking.time}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>Party Size</span>
+                          <span className="text-brand-dark font-bold">{booking.partySize} Guests</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>Lounge Section</span>
+                          <span className="text-brand-dark">{booking.diningArea}</span>
+                        </div>
+                      </div>
+
+                      <div className="text-sm">
+                        <span className="font-bold text-brand-dark block mb-1">Contact Registered:</span>
+                        <p className="font-mono text-brand-muted underline text-sm">{booking.email} &bull; {booking.phone}</p>
+                      </div>
+
                     </div>
-
-                    <div className="text-sm font-mono text-brand-muted space-y-2 py-1 border-t border-b border-brand-dark/5">
-                      <div className="flex justify-between">
-                        <span>Dining Date</span>
-                        <span className="text-brand-dark font-bold">{booking.date}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span>Arrival Hour</span>
-                        <span className="text-brand-dark font-bold">{booking.time}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span>Party Size</span>
-                        <span className="text-brand-dark font-bold">{booking.partySize} Guests</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span>Lounge Section</span>
-                        <span className="text-brand-dark">{booking.diningArea}</span>
-                      </div>
-                    </div>
-
-                    <div className="text-sm">
-                      <span className="font-bold text-brand-dark block mb-1">Contact Registered:</span>
-                      <p className="font-mono text-brand-muted underline text-sm">{booking.email} &bull; {booking.phone}</p>
-                    </div>
-
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </section>
+                  );
+                })}
+              </div>
+            )}
+          </section>
+        )}
 
       </div>
 

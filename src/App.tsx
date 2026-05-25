@@ -12,6 +12,8 @@ import { OrderView } from './components/OrderView';
 import { BookingView } from './components/BookingView';
 import { HistoryView } from './components/HistoryView';
 import { ProfileView } from './components/ProfileView';
+import { AdminDashboard } from './components/AdminDashboard';
+import { AuthModal } from './components/AuthModal';
 import { CartItem, MenuItem } from './types';
 import { Plus, Minus, Trash2, X, ShoppingBag, Send, PhoneCall } from 'lucide-react';
 
@@ -19,6 +21,7 @@ export default function App() {
   const [currentTab, setCurrentTab] = React.useState<string>('home');
   const [cart, setCart] = React.useState<CartItem[]>([]);
   const [isCartOpen, setIsCartOpen] = React.useState<boolean>(false);
+  const [isAuthModalOpen, setIsAuthModalOpen] = React.useState<boolean>(false);
 
   // Synchronize cart with localStorage for continuity
   React.useEffect(() => {
@@ -113,6 +116,7 @@ export default function App() {
         }}
         cartCount={totalCartCount}
         openCartDrawer={() => setIsCartOpen(true)}
+        onOpenAuthModal={() => setIsAuthModalOpen(true)}
       />
 
       {/* Main Responsive Canvas */}
@@ -140,6 +144,7 @@ export default function App() {
             {currentTab === 'booking' && <BookingView />}
             {currentTab === 'history' && <HistoryView />}
             {currentTab === 'profile' && <ProfileView />}
+            {currentTab === 'admin' && <AdminDashboard />}
           </motion.div>
         </AnimatePresence>
       </main>
@@ -360,6 +365,11 @@ export default function App() {
                   Book Event Layout
                 </button>
               </li>
+              <li>
+                <button type="button" onClick={() => setCurrentTab('admin')} className="text-brand-accent hover:text-brand-dark transition-colors font-bold">
+                  Admin Console
+                </button>
+              </li>
             </ul>
           </div>
 
@@ -381,6 +391,16 @@ export default function App() {
 
         </div>
       </footer>
+
+      <AuthModal
+        isOpen={isAuthModalOpen}
+        onClose={() => setIsAuthModalOpen(false)}
+        onLoginSuccess={(user) => {
+          localStorage.setItem('clay_oven_google_user', JSON.stringify(user));
+          window.dispatchEvent(new Event('profile_updated'));
+          setCurrentTab('profile');
+        }}
+      />
 
     </div>
   );

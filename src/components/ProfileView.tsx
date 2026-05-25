@@ -6,7 +6,7 @@ export const ProfileView: React.FC = () => {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
-  const [activeSubTab, setActiveSubTab] = useState<'details' | 'transactions'>('details');
+  const [activeSubTab, setActiveSubTab] = useState<'details' | 'transactions' | 'previous'>('details');
 
   // Form states
   const [name, setName] = useState('');
@@ -26,13 +26,39 @@ export const ProfileView: React.FC = () => {
         setEircode(parsed.eircode || '');
         setAddress(parsed.address || '');
         setDietary(parsed.dietaryPreferences || '');
+
+        // Fetch fresh copy from database
+        fetch(`/api/users/${encodeURIComponent(parsed.email)}`)
+          .then(res => {
+            if (!res.ok) throw new Error('User not found in DB');
+            return res.json();
+          })
+          .then(dbUser => {
+            const merged = {
+              ...parsed,
+              phone: dbUser.phone || parsed.phone || '',
+              eircode: dbUser.eircode || parsed.eircode || '',
+              address: dbUser.address || parsed.address || '',
+              dietaryPreferences: dbUser.dietaryPreferences || parsed.dietaryPreferences || ''
+            };
+            setProfile(merged);
+            setName(merged.name || '');
+            setPhone(merged.phone || '');
+            setEircode(merged.eircode || '');
+            setAddress(merged.address || '');
+            setDietary(merged.dietaryPreferences || '');
+            localStorage.setItem('clay_oven_google_user', JSON.stringify(merged));
+          })
+          .catch(err => {
+            console.warn('Could not load fresh profile from database, using cached local copy.', err);
+          });
       } catch (err) {
         console.error('Failed to parse user profile', err);
       }
     }
   }, []);
 
-  const handleSave = (e: React.FormEvent) => {
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!profile) return;
 
@@ -45,8 +71,34 @@ export const ProfileView: React.FC = () => {
       dietaryPreferences: dietary
     };
 
-    localStorage.setItem('clay_oven_google_user', JSON.stringify(updatedProfile));
-    setProfile(updatedProfile);
+    try {
+      const response = await fetch('/api/users', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(updatedProfile)
+      });
+      if (response.ok) {
+        const dbUser = await response.json();
+        const finalProfile = {
+          ...updatedProfile,
+          phone: dbUser.phone || undefined,
+          eircode: dbUser.eircode || undefined,
+          address: dbUser.address || undefined,
+          dietaryPreferences: dbUser.dietaryPreferences || undefined
+        };
+        localStorage.setItem('clay_oven_google_user', JSON.stringify(finalProfile));
+        setProfile(finalProfile);
+      } else {
+        throw new Error('Database save failed');
+      }
+    } catch (err) {
+      console.error('Error saving user profile to database, caching locally', err);
+      localStorage.setItem('clay_oven_google_user', JSON.stringify(updatedProfile));
+      setProfile(updatedProfile);
+    }
+
     setIsEditing(false);
     setSaveSuccess(true);
     
@@ -110,10 +162,20 @@ export const ProfileView: React.FC = () => {
         >
           My Transactions
         </button>
+        <button
+          onClick={() => setActiveSubTab('previous')}
+          className={`pb-4 font-mono text-xs font-bold uppercase tracking-widest border-b-2 transition-all duration-200 ${
+            activeSubTab === 'previous'
+              ? 'border-brand-dark text-brand-dark'
+              : 'border-transparent text-brand-muted hover:text-brand-dark'
+          }`}
+        >
+          Previous Transactions
+        </button>
       </div>
 
       {/* Main Content Area */}
-      {activeSubTab === 'details' ? (
+      {activeSubTab === 'details' && (
         <div className="space-y-12 animate-fade-in">
           
           {/* Header Card - Clean & Flat */}
@@ -277,9 +339,17 @@ export const ProfileView: React.FC = () => {
             </div>
           )}
         </div>
-      ) : (
+      )}
+
+      {activeSubTab === 'transactions' && (
         <div className="animate-fade-in">
-          <HistoryView hideHeader={true} />
+          <HistoryView hideHeader={true} showArchivedOnly={false} />
+        </div>
+      )}
+
+      {activeSubTab === 'previous' && (
+        <div className="animate-fade-in">
+          <HistoryView hideHeader={true} showArchivedOnly={true} />
         </div>
       )}
       

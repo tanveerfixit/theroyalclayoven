@@ -25,6 +25,25 @@ export const BookingView: React.FC = () => {
   const [localBookings, setLocalBookings] = React.useState<Reservation[]>([]);
   const [validationError, setValidationError] = React.useState('');
 
+  const loadUserProfile = () => {
+    const storedUser = localStorage.getItem('clay_oven_google_user');
+    if (storedUser) {
+      try {
+        const user = JSON.parse(storedUser);
+        if (user.name) setCustomerName(user.name);
+        if (user.phone) setCustomerPhone(user.phone);
+        if (user.email) setCustomerEmail(user.email);
+      } catch (err) {
+        console.error('Failed to parse Google user data for booking', err);
+      }
+    }
+  };
+
+  const handleProfileUpdated = () => {
+    loadUserProfile();
+    fetchBookings();
+  };
+
   // Default date setup
   React.useEffect(() => {
     const today = new Date();
@@ -34,9 +53,31 @@ export const BookingView: React.FC = () => {
     
     // Retrieve historical logs
     fetchBookings();
+    loadUserProfile();
+
+    window.addEventListener('profile_updated', handleProfileUpdated);
+
+    return () => {
+      window.removeEventListener('profile_updated', handleProfileUpdated);
+    };
   }, []);
 
-  const fetchBookings = () => {
+  const fetchBookings = async () => {
+    const storedUser = localStorage.getItem('clay_oven_google_user');
+    if (storedUser) {
+      try {
+        const user = JSON.parse(storedUser);
+        const res = await fetch(`/api/bookings?email=${encodeURIComponent(user.email)}`);
+        if (res.ok) {
+          const data = await res.json();
+          setLocalBookings(data);
+          return;
+        }
+      } catch (err) {
+        console.error('Failed to fetch bookings from server', err);
+      }
+    }
+
     const stored = localStorage.getItem('clay_oven_bookings');
     if (stored) {
       setLocalBookings(JSON.parse(stored));
@@ -48,7 +89,7 @@ export const BookingView: React.FC = () => {
     setSelectedTableId(tableNum);
   };
 
-  const handleBookingSubmit = (e: React.FormEvent) => {
+  const handleBookingSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setValidationError('');
 
@@ -83,20 +124,69 @@ export const BookingView: React.FC = () => {
       createdAt: new Date().toISOString()
     };
 
-    // Save
+    try {
+      const response = await fetch('/api/bookings', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(newReservation)
+      });
+      if (!response.ok) {
+        throw new Error('Database save failed');
+      }
+    } catch (err) {
+      console.error('Failed to save booking to server, saving locally', err);
+    }
+
+    // Save to local storage as secondary backup / cache
     const stored = localStorage.getItem('clay_oven_bookings');
     const existing: Reservation[] = stored ? JSON.parse(stored) : [];
     existing.unshift(newReservation);
     localStorage.setItem('clay_oven_bookings', JSON.stringify(existing));
 
-    // Reset Form Input
-    setCustomerName('');
-    setCustomerPhone('');
-    setCustomerEmail('');
+    // Sync customer details to local storage and database
+    const storedUser = localStorage.getItem('clay_oven_google_user');
+    let existingUser = {};
+    if (storedUser) {
+      try {
+        existingUser = JSON.parse(storedUser);
+      } catch (err) {
+        console.error('Failed to parse existing user', err);
+      }
+    }
+
+    const updatedUser = {
+      ...existingUser,
+      name: customerName,
+      email: customerEmail,
+      phone: customerPhone,
+      picture: (existingUser as any).picture || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=120'
+    };
+
+    // Save to local storage
+    localStorage.setItem('clay_oven_google_user', JSON.stringify(updatedUser));
+
+    // Save to database
+    try {
+      await fetch('/api/users', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(updatedUser)
+      });
+    } catch (err) {
+      console.error('Failed to upsert user profile to server', err);
+    }
+
+    // Reset Form Input (special requests and table selection only)
     setSpecialRequests('');
     setSelectedTableId(null);
     setConfirmationMessage(newReservation);
-    fetchBookings();
+    
+    // Notify other views and sync the navbar and booking list
+    window.dispatchEvent(new Event('profile_updated'));
   };
 
   // Occupancy map layout (determines which tables are pre-blocked or available based on date/time)

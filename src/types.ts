@@ -59,6 +59,7 @@ export interface Order {
     notes?: string;
   };
   status: 'Received' | 'Preparing' | 'Ready for Collection' | 'Out for Delivery' | 'Completed';
+  isArchived?: boolean;
   createdAt: string;
 }
 
