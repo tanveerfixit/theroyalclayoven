@@ -54,7 +54,7 @@ const pool = mysql.createPool({
     connection.release();
   } catch (error) {
     console.error('Database connection pool initialization failed:', error);
-    process.exit(1);
+    // Don't crash the server on startup so that /api/health can run and report the exact connection error to the developer/user!
   }
 })();
 
