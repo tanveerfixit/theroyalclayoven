@@ -59,6 +59,42 @@ const pool = mysql.createPool({
 
 /* --- API ENDPOINTS --- */
 
+// 0. Health Check & Database Diagnostic Endpoint
+app.get('/api/health', async (req, res) => {
+  const dbHost = process.env.DB_HOST || 'NOT SET';
+  const isLocalhost = ['localhost', '127.0.0.1', '::1'].includes(dbHost);
+  const connectionType = isLocalhost ? 'LOCAL (same server)' : `REMOTE (${dbHost})`;
+
+  try {
+    const connection = await pool.getConnection();
+    const [rows] = await connection.query('SELECT 1 AS alive');
+    connection.release();
+
+    res.json({
+      status: 'CONNECTED',
+      database: process.env.DB_DATABASE || 'NOT SET',
+      host: dbHost,
+      connectionType,
+      nodeEnv: process.env.NODE_ENV || 'NOT SET',
+      port: process.env.PORT || 'NOT SET',
+      serverTime: new Date().toISOString(),
+      message: `Database is connected via ${connectionType}`
+    });
+  } catch (error) {
+    res.status(500).json({
+      status: 'DISCONNECTED',
+      database: process.env.DB_DATABASE || 'NOT SET',
+      host: dbHost,
+      connectionType,
+      nodeEnv: process.env.NODE_ENV || 'NOT SET',
+      port: process.env.PORT || 'NOT SET',
+      serverTime: new Date().toISOString(),
+      error: error.message,
+      message: `Database connection FAILED via ${connectionType}`
+    });
+  }
+});
+
 // 1. User Profiles API
 app.get('/api/users/:email', async (req, res) => {
   const { email } = req.params;
