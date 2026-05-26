@@ -101,8 +101,8 @@ export const Navbar: React.FC<NavbarProps> = ({
             </button>
           </div>
 
-          {/* Logo Brand Area (Left-aligned on all viewports) */}
-          <div className="flex-1 flex justify-start lg:flex-none ml-2 lg:ml-0">
+          {/* Logo Brand Area (Centered on Mobile, Left on Desktop) */}
+          <div className="flex-1 flex justify-center lg:justify-start lg:flex-none">
             <button 
               type="button"
               id="nav-logo"
@@ -110,13 +110,13 @@ export const Navbar: React.FC<NavbarProps> = ({
                 setCurrentTab('home');
                 setIsOpen(false);
               }}
-              className="flex flex-col text-left focus:outline-none group"
+              className="flex flex-col text-center lg:text-left focus:outline-none group"
             >
               <span className="font-serif text-lg sm:text-xl lg:text-2xl font-bold tracking-widest text-brand-dark group-hover:text-brand-accent transition-colors duration-200">
                 THE ROYAL CLAY OVEN
               </span>
-              <span className="block font-mono text-[8px] sm:text-[10px] lg:text-xs tracking-[0.18em] sm:tracking-[0.25em] text-brand-muted uppercase mt-0.5">
-                Pakistani Cuisine &amp; Outdoor Catering
+              <span className="hidden sm:block font-mono text-[10px] lg:text-xs tracking-[0.25em] text-brand-muted uppercase mt-0.5">
+                Pakistani Cuisine & Outdoor Catering
               </span>
             </button>
           </div>
