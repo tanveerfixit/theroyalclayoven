@@ -34,6 +34,32 @@ const transporter = nodemailer.createTransport({
 app.use(cors());
 app.use(express.json());
 
+// Maintenance Outage Mode Middleware
+app.use((req, res, next) => {
+  if (process.env.MAINTENANCE_MODE === 'true') {
+    // Exempt health check API so system monitoring/health checks still function
+    if (req.path === '/api/health') {
+      return next();
+    }
+    
+    // Serve premium maintenance HTML content to browser requests
+    const acceptHeader = req.headers.accept || '';
+    if (acceptHeader.includes('text/html') || !req.path.startsWith('/api')) {
+      res.setHeader('Retry-After', '3600'); // Suggest retry in 1 hour (3600 seconds)
+      res.status(503);
+      return res.sendFile(path.join(__dirname, 'maintenance.html'));
+    }
+    
+    // Return clean JSON 503 error for background API endpoints
+    res.setHeader('Retry-After', '3600');
+    return res.status(503).json({
+      error: 'Service Temporarily Unavailable',
+      message: 'The Royal Clay Oven is currently undergoing scheduled system upgrades. Please try again shortly.'
+    });
+  }
+  next();
+});
+
 // Database Connection Pool
 const pool = mysql.createPool({
   host: process.env.DB_HOST,
