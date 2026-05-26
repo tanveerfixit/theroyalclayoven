@@ -31,6 +31,9 @@ export const OrderView: React.FC<OrderViewProps> = ({
   const [isCheckoutMode, setIsCheckoutMode] = React.useState(false);
   const [showWarningModal, setShowWarningModal] = React.useState(false);
   const [serviceType, setServiceType] = React.useState<'takeaway' | 'delivery'>('takeaway');
+
+  const noticeText = localStorage.getItem('clay_oven_notice_text') || 'We are Still Working on Website, for online order please contact.';
+  const noticePhone = localStorage.getItem('clay_oven_notice_phone') || '089 489 9950';
   
   // Checkout inputs
   const [customerName, setCustomerName] = React.useState('');
@@ -1006,17 +1009,17 @@ export const OrderView: React.FC<OrderViewProps> = ({
                 Online Ordering Notice
               </h3>
               <p className="font-sans text-base text-brand-muted leading-relaxed font-medium">
-                We are Still Working on Website, for online order please contact.
+                {noticeText}
               </p>
               <p className="font-sans text-3xl font-extrabold text-brand-dark tracking-tight">
-                089 489 9950
+                {noticePhone}
               </p>
             </div>
 
             {/* Action Buttons */}
             <div className="flex flex-col sm:flex-row gap-3 pt-2">
               <a
-                href="tel:0894899950"
+                href={`tel:${noticePhone.replace(/\s+/g, '')}`}
                 className="flex-1 bg-brand-accent hover:bg-brand-dark text-white py-3.5 text-sm font-sans font-bold uppercase tracking-wider text-center transition-colors flex items-center justify-center space-x-2"
               >
                 <Phone className="w-4 h-4" />

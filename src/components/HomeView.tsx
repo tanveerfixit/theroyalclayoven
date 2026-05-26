@@ -4,7 +4,7 @@
  */
 
 import React from 'react';
-import { ChefHat, ShoppingBag, Calendar, Phone, Clock, MapPin, ArrowRight, ShieldCheck, Heart } from 'lucide-react';
+import { ChefHat, ShoppingBag, Calendar, Phone, Clock, MapPin, ArrowRight, ShieldCheck, Heart, Sparkles, X } from 'lucide-react';
 import { MENU_ITEMS } from '../data/menu';
 
 interface HomeViewProps {
@@ -12,6 +12,23 @@ interface HomeViewProps {
 }
 
 export const HomeView: React.FC<HomeViewProps> = ({ setCurrentTab }) => {
+  const weeklyTimings = {
+    monday: localStorage.getItem('clay_oven_timing_monday') || '4:00 PM - 9:00 PM',
+    tuesday: localStorage.getItem('clay_oven_timing_tuesday') || '4:00 PM - 9:00 PM',
+    wednesday: localStorage.getItem('clay_oven_timing_wednesday') || '4:00 PM - 9:00 PM',
+    thursday: localStorage.getItem('clay_oven_timing_thursday') || '4:00 PM - 9:00 PM',
+    friday: localStorage.getItem('clay_oven_timing_friday') || '4:00 PM - 9:00 PM',
+    saturday: localStorage.getItem('clay_oven_timing_saturday') || '12:00 PM - 9:00 PM',
+    sunday: localStorage.getItem('clay_oven_timing_sunday') || '10:00 AM - 6:00 PM',
+    offset: localStorage.getItem('clay_oven_timing_offset') || 'KITCHEN CLOSES 15 MINS PRIOR'
+  };
+
+  const noticeText = localStorage.getItem('clay_oven_notice_text') || 'We are Still Working on Website, for online order please contact.';
+  const noticePhone = localStorage.getItem('clay_oven_notice_phone') || '089 489 9950';
+  const noticeEnabled = localStorage.getItem('clay_oven_notice_enabled') !== 'false';
+
+  const [showWarningModal, setShowWarningModal] = React.useState(noticeEnabled);
+
   // Highlight some premium items
   const featuredIds = ['pk-butter-chicken', 'pk-bbq-platter', 'co-lamb-chops', 'bg-smash'];
   const featuredItems = MENU_ITEMS.filter((item) => featuredIds.includes(item.id));
@@ -289,38 +306,38 @@ export const HomeView: React.FC<HomeViewProps> = ({ setCurrentTab }) => {
               <div className="space-y-3 pt-2 text-sm">
                 <div className="flex justify-between pb-1 border-b border-brand-dark/5 font-mono text-brand-muted">
                   <span>MONDAY</span>
-                  <span className="text-brand-dark">4:00 PM - 9:00 PM</span>
+                  <span className="text-brand-dark">{weeklyTimings.monday}</span>
                 </div>
                 <div className="flex justify-between pb-1 border-b border-brand-dark/5 font-mono text-brand-muted">
                   <span>TUESDAY</span>
-                  <span className="text-brand-dark">4:00 PM - 9:00 PM</span>
+                  <span className="text-brand-dark">{weeklyTimings.tuesday}</span>
                 </div>
                 <div className="flex justify-between pb-1 border-b border-brand-dark/5 font-mono text-brand-muted">
                   <span>WEDNESDAY</span>
-                  <span className="text-brand-dark">4:00 PM - 9:00 PM</span>
+                  <span className="text-brand-dark">{weeklyTimings.wednesday}</span>
                 </div>
                 <div className="flex justify-between pb-1 border-b border-brand-dark/5 font-mono text-brand-muted">
                   <span>THURSDAY</span>
-                  <span className="text-brand-dark">4:00 PM - 9:00 PM</span>
+                  <span className="text-brand-dark">{weeklyTimings.thursday}</span>
                 </div>
                 <div className="flex justify-between pb-1 border-b border-brand-dark/5 font-mono text-brand-muted">
                   <span>FRIDAY</span>
-                  <span className="text-brand-dark">4:00 PM - 9:00 PM</span>
+                  <span className="text-brand-dark">{weeklyTimings.friday}</span>
                 </div>
                 <div className="flex justify-between pb-1 border-b border-brand-dark/5 font-mono text-brand-muted">
                   <span>SATURDAY</span>
-                  <span className="text-brand-dark">12:00 PM - 9:00 PM</span>
+                  <span className="text-brand-dark">{weeklyTimings.saturday}</span>
                 </div>
                 <div className="flex justify-between pb-1 border-b border-brand-dark/5 font-mono text-brand-muted">
                   <span>SUNDAY</span>
-                  <span className="text-brand-dark">10:00 AM - 6:00 PM</span>
+                  <span className="text-brand-dark">{weeklyTimings.sunday}</span>
                 </div>
               </div>
             </div>
 
             <div className="flex items-center space-x-2 text-sm text-brand-accent font-semibold font-mono">
               <Clock className="w-4 h-4" />
-              <span>KITCHEN CLOSES 15 MINS PRIOR</span>
+              <span>{weeklyTimings.offset}</span>
             </div>
           </div>
 
@@ -348,6 +365,59 @@ export const HomeView: React.FC<HomeViewProps> = ({ setCurrentTab }) => {
 
         </div>
       </section>
+
+      {/* Custom Warning Modal Dialog */}
+      {showWarningModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-brand-dark/70 backdrop-blur-sm animate-fade-in">
+          <div className="relative w-full max-w-md bg-white border border-brand-dark p-6 sm:p-8 space-y-6 shadow-[0_20px_50px_rgba(0,0,0,0.3)] animate-slide-up">
+            
+            {/* Close Button X */}
+            <button
+              type="button"
+              onClick={() => setShowWarningModal(false)}
+              className="absolute top-4 right-4 p-1.5 text-brand-muted hover:text-brand-dark hover:bg-brand-dark/5 transition-colors border border-transparent hover:border-brand-dark/10"
+              aria-label="Close warning"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            {/* Warning Content */}
+            <div className="text-center space-y-4 pt-2">
+              <div className="w-12 h-12 bg-brand-accent/10 text-brand-accent flex items-center justify-center mx-auto">
+                <Sparkles className="w-6 h-6 animate-pulse" />
+              </div>
+              <h3 className="font-sans text-xl sm:text-2xl font-bold tracking-tight text-brand-dark">
+                Online Ordering Notice
+              </h3>
+              <p className="font-sans text-base text-brand-muted leading-relaxed font-medium">
+                {noticeText}
+              </p>
+              <p className="font-sans text-3xl font-extrabold text-brand-dark tracking-tight">
+                {noticePhone}
+              </p>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex flex-col sm:flex-row gap-3 pt-2">
+              <a
+                href={`tel:${noticePhone.replace(/\s+/g, '')}`}
+                className="flex-1 bg-brand-accent hover:bg-brand-dark text-white py-3.5 text-sm font-sans font-bold uppercase tracking-wider text-center transition-colors flex items-center justify-center space-x-2"
+              >
+                <Phone className="w-4 h-4" />
+                <span>Call Now</span>
+              </a>
+              <button
+                type="button"
+                onClick={() => setShowWarningModal(false)}
+                className="flex-1 border border-brand-dark/15 hover:border-brand-dark text-brand-dark py-3.5 text-sm font-sans font-bold uppercase tracking-wider text-center transition-colors"
+              >
+                Dismiss
+              </button>
+            </div>
+
+          </div>
+        </div>
+      )}
 
     </div>
   );

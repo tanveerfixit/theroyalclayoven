@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Play, Check, X, ShieldAlert, ShoppingBag, Calendar, ListFilter, Search, RefreshCw, Volume2, ShieldCheck } from 'lucide-react';
+import { Play, Check, X, ShieldAlert, ShoppingBag, Calendar, ListFilter, Search, RefreshCw, Volume2, ShieldCheck, Clock, Settings } from 'lucide-react';
 import { Order, Reservation } from '../types';
 import { MENU_ITEMS, CATEGORIES } from '../data/menu';
 
@@ -10,7 +10,42 @@ export const AdminDashboard: React.FC = () => {
   const [authError, setAuthError] = useState(false);
 
   // Console active sub-tabs
-  const [adminTab, setAdminTab] = useState<'orders' | 'bookings' | 'catalog'>('orders');
+  const [adminTab, setAdminTab] = useState<'orders' | 'bookings' | 'catalog' | 'settings'>('orders');
+
+  // Custom Timings & Notice Settings states
+  const [timingMonday, setTimingMonday] = useState(localStorage.getItem('clay_oven_timing_monday') || '4:00 PM - 9:00 PM');
+  const [timingTuesday, setTimingTuesday] = useState(localStorage.getItem('clay_oven_timing_tuesday') || '4:00 PM - 9:00 PM');
+  const [timingWednesday, setTimingWednesday] = useState(localStorage.getItem('clay_oven_timing_wednesday') || '4:00 PM - 9:00 PM');
+  const [timingThursday, setTimingThursday] = useState(localStorage.getItem('clay_oven_timing_thursday') || '4:00 PM - 9:00 PM');
+  const [timingFriday, setTimingFriday] = useState(localStorage.getItem('clay_oven_timing_friday') || '4:00 PM - 9:00 PM');
+  const [timingSaturday, setTimingSaturday] = useState(localStorage.getItem('clay_oven_timing_saturday') || '12:00 PM - 9:00 PM');
+  const [timingSunday, setTimingSunday] = useState(localStorage.getItem('clay_oven_timing_sunday') || '10:00 AM - 6:00 PM');
+  const [timingOffset, setTimingOffset] = useState(localStorage.getItem('clay_oven_timing_offset') || 'KITCHEN CLOSES 15 MINS PRIOR');
+
+  const [noticeText, setNoticeText] = useState(localStorage.getItem('clay_oven_notice_text') || 'We are Still Working on Website, for online order please contact.');
+  const [noticePhone, setNoticePhone] = useState(localStorage.getItem('clay_oven_notice_phone') || '089 489 9950');
+  const [noticeEnabled, setNoticeEnabled] = useState(localStorage.getItem('clay_oven_notice_enabled') !== 'false');
+
+  const [saveSuccess, setSaveSuccess] = useState(false);
+
+  const handleSaveSettings = (e: React.FormEvent) => {
+    e.preventDefault();
+    localStorage.setItem('clay_oven_timing_monday', timingMonday);
+    localStorage.setItem('clay_oven_timing_tuesday', timingTuesday);
+    localStorage.setItem('clay_oven_timing_wednesday', timingWednesday);
+    localStorage.setItem('clay_oven_timing_thursday', timingThursday);
+    localStorage.setItem('clay_oven_timing_friday', timingFriday);
+    localStorage.setItem('clay_oven_timing_saturday', timingSaturday);
+    localStorage.setItem('clay_oven_timing_sunday', timingSunday);
+    localStorage.setItem('clay_oven_timing_offset', timingOffset);
+
+    localStorage.setItem('clay_oven_notice_text', noticeText);
+    localStorage.setItem('clay_oven_notice_phone', noticePhone);
+    localStorage.setItem('clay_oven_notice_enabled', String(noticeEnabled));
+
+    setSaveSuccess(true);
+    setTimeout(() => setSaveSuccess(false), 3000);
+  };
 
   // Database states
   const [orders, setOrders] = useState<Order[]>([]);
@@ -332,6 +367,17 @@ export const AdminDashboard: React.FC = () => {
         >
           <ListFilter className="w-4 h-4" />
           <span>Catalog Directory</span>
+        </button>
+        <button
+          onClick={() => setAdminTab('settings')}
+          className={`pb-4 font-mono text-xs font-bold uppercase tracking-widest border-b-2 flex items-center gap-1.5 transition-all ${
+            adminTab === 'settings'
+              ? 'border-brand-dark text-brand-dark'
+              : 'border-transparent text-brand-muted hover:text-brand-dark'
+          }`}
+        >
+          <Clock className="w-4 h-4" />
+          <span>Notice &amp; Timings</span>
         </button>
       </div>
 
@@ -727,6 +773,210 @@ export const AdminDashboard: React.FC = () => {
           </div>
 
         </div>
+      )}
+
+      {/* 4. TAB: TIMING & NOTICE SETTINGS */}
+      {adminTab === 'settings' && (
+        <form onSubmit={handleSaveSettings} className="bg-white border border-brand-dark/10 p-6 sm:p-8 space-y-8 animate-fade-in text-left" id="admin-settings-tab">
+          
+          <div className="border-b border-brand-dark/5 pb-4 flex justify-between items-center">
+            <h2 className="font-serif text-xl font-bold text-brand-dark flex items-center">
+              <Clock className="w-5 h-5 mr-2 text-brand-accent animate-pulse" />
+              Landing Notice &amp; Timings Control
+            </h2>
+            {saveSuccess && (
+              <span className="font-mono text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-300/40 px-3 py-1 animate-fade-in">
+                ✓ SETTINGS SAVED SUCCESSFULLY
+              </span>
+            )}
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+            
+            {/* COLUMN 1: POPUP NOTICE MESSAGE */}
+            <div className="lg:col-span-5 space-y-6">
+              <div className="space-y-2">
+                <h3 className="font-serif text-lg font-bold text-brand-dark border-b border-brand-dark/5 pb-2">
+                  Popup Timing Notice
+                </h3>
+                <p className="text-xs text-brand-muted leading-relaxed font-sans font-normal">
+                  Customize the temporary under-construction notice that pops up on both the homepage and takeaway ordering page.
+                </p>
+              </div>
+
+              <div className="space-y-4">
+                {/* Enabled Toggle */}
+                <div className="flex items-center justify-between border border-brand-dark/10 p-4 bg-brand-beige/5">
+                  <div className="space-y-0.5">
+                    <span className="block font-mono text-xs text-brand-dark font-bold uppercase tracking-wider">
+                      SHOW POPUP ON LANDING PAGE
+                    </span>
+                    <span className="block text-[11px] text-brand-muted font-sans font-normal">
+                      When enabled, the under-construction dialog pops up automatically.
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setNoticeEnabled(!noticeEnabled)}
+                    className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-none border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                      noticeEnabled ? 'bg-brand-accent' : 'bg-brand-dark/15'
+                    }`}
+                  >
+                    <span
+                      className={`pointer-events-none inline-block h-5 w-5 transform bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                        noticeEnabled ? 'translate-x-5' : 'translate-x-0'
+                      }`}
+                    />
+                  </button>
+                </div>
+
+                {/* Text Description */}
+                <div className="space-y-1">
+                  <label htmlFor="settings-notice-text" className="block font-mono text-xs text-brand-accent uppercase tracking-widest font-bold">
+                    NOTICE DESCRIPTION TEXT
+                  </label>
+                  <textarea
+                    id="settings-notice-text"
+                    rows={3}
+                    required
+                    value={noticeText}
+                    onChange={(e) => setNoticeText(e.target.value)}
+                    className="w-full border border-brand-dark/10 p-3 text-sm font-mono focus:border-brand-dark outline-none bg-brand-beige/10 rounded-none resize-none"
+                  />
+                </div>
+
+                {/* Contact Phone */}
+                <div className="space-y-1">
+                  <label htmlFor="settings-notice-phone" className="block font-mono text-xs text-brand-accent uppercase tracking-widest font-bold">
+                    DIRECT CALL NUMBER
+                  </label>
+                  <input
+                    id="settings-notice-phone"
+                    type="text"
+                    required
+                    value={noticePhone}
+                    onChange={(e) => setNoticePhone(e.target.value)}
+                    className="w-full border border-brand-dark/10 p-2.5 text-sm font-mono focus:border-brand-dark outline-none bg-brand-beige/10 rounded-none"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* COLUMN 2: WEEKLY OPENING TIMINGS */}
+            <div className="lg:col-span-7 space-y-6">
+              <div className="space-y-2">
+                <h3 className="font-serif text-lg font-bold text-brand-dark border-b border-brand-dark/5 pb-2">
+                  Weekly Opening Timings
+                </h3>
+                <p className="text-xs text-brand-muted leading-relaxed font-sans font-normal">
+                  Modify the hours schedule presented inside the Opening Hours widget on the landing page.
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <label htmlFor="time-mon" className="block font-mono text-[10px] text-brand-muted uppercase font-bold">MONDAY HOURS</label>
+                  <input
+                    id="time-mon"
+                    type="text"
+                    required
+                    value={timingMonday}
+                    onChange={(e) => setTimingMonday(e.target.value)}
+                    className="w-full border border-brand-dark/10 p-2 text-xs font-mono focus:border-brand-dark outline-none bg-brand-beige/10 rounded-none"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label htmlFor="time-tue" className="block font-mono text-[10px] text-brand-muted uppercase font-bold">TUESDAY HOURS</label>
+                  <input
+                    id="time-tue"
+                    type="text"
+                    required
+                    value={timingTuesday}
+                    onChange={(e) => setTimingTuesday(e.target.value)}
+                    className="w-full border border-brand-dark/10 p-2 text-xs font-mono focus:border-brand-dark outline-none bg-brand-beige/10 rounded-none"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label htmlFor="time-wed" className="block font-mono text-[10px] text-brand-muted uppercase font-bold">WEDNESDAY HOURS</label>
+                  <input
+                    id="time-wed"
+                    type="text"
+                    required
+                    value={timingWednesday}
+                    onChange={(e) => setTimingWednesday(e.target.value)}
+                    className="w-full border border-brand-dark/10 p-2 text-xs font-mono focus:border-brand-dark outline-none bg-brand-beige/10 rounded-none"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label htmlFor="time-thu" className="block font-mono text-[10px] text-brand-muted uppercase font-bold">THURSDAY HOURS</label>
+                  <input
+                    id="time-thu"
+                    type="text"
+                    required
+                    value={timingThursday}
+                    onChange={(e) => setTimingThursday(e.target.value)}
+                    className="w-full border border-brand-dark/10 p-2 text-xs font-mono focus:border-brand-dark outline-none bg-brand-beige/10 rounded-none"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label htmlFor="time-fri" className="block font-mono text-[10px] text-brand-muted uppercase font-bold">FRIDAY HOURS</label>
+                  <input
+                    id="time-fri"
+                    type="text"
+                    required
+                    value={timingFriday}
+                    onChange={(e) => setTimingFriday(e.target.value)}
+                    className="w-full border border-brand-dark/10 p-2 text-xs font-mono focus:border-brand-dark outline-none bg-brand-beige/10 rounded-none"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label htmlFor="time-sat" className="block font-mono text-[10px] text-brand-muted uppercase font-bold">SATURDAY HOURS</label>
+                  <input
+                    id="time-sat"
+                    type="text"
+                    required
+                    value={timingSaturday}
+                    onChange={(e) => setTimingSaturday(e.target.value)}
+                    className="w-full border border-brand-dark/10 p-2 text-xs font-mono focus:border-brand-dark outline-none bg-brand-beige/10 rounded-none"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label htmlFor="time-sun" className="block font-mono text-[10px] text-brand-muted uppercase font-bold">SUNDAY HOURS</label>
+                  <input
+                    id="time-sun"
+                    type="text"
+                    required
+                    value={timingSunday}
+                    onChange={(e) => setTimingSunday(e.target.value)}
+                    className="w-full border border-brand-dark/10 p-2 text-xs font-mono focus:border-brand-dark outline-none bg-brand-beige/10 rounded-none"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label htmlFor="time-offset" className="block font-mono text-[10px] text-brand-muted uppercase font-bold">WARNING OFFSET LABEL</label>
+                  <input
+                    id="time-offset"
+                    type="text"
+                    required
+                    value={timingOffset}
+                    onChange={(e) => setTimingOffset(e.target.value)}
+                    className="w-full border border-brand-dark/10 p-2 text-xs font-mono focus:border-brand-dark outline-none bg-brand-beige/10 rounded-none"
+                  />
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+          <div className="pt-6 border-t border-brand-dark/10 flex justify-end">
+            <button
+              type="submit"
+              className="bg-brand-accent text-white hover:bg-brand-dark px-8 py-3.5 text-sm font-mono font-bold uppercase tracking-wider transition-colors rounded-none"
+            >
+              SAVE CONFIGURATIONS &amp; UPDATE LANDING
+            </button>
+          </div>
+
+        </form>
       )}
 
     </div>
