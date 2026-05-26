@@ -36,11 +36,12 @@ app.use(express.json());
 
 // Enforce HTTPS and WWW subdomain redirection in production for SEO and continuity
 app.use((req, res, next) => {
-  const host = req.headers.host;
+  const host = req.headers.host || '';
   const isHttp = req.headers['x-forwarded-proto'] === 'http';
+  const isLocalhost = host.includes('localhost') || host.includes('127.0.0.1');
   
-  // If requesting the naked domain or via insecure HTTP, redirect to secure WWW
-  if (host === 'clayoven.ie' || isHttp) {
+  // Only redirect if we are NOT on a local development server
+  if (!isLocalhost && (host === 'clayoven.ie' || isHttp)) {
     const targetHost = host === 'clayoven.ie' ? 'www.clayoven.ie' : host;
     return res.redirect(301, `https://${targetHost}${req.originalUrl}`);
   }
