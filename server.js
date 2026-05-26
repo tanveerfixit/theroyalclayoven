@@ -34,16 +34,13 @@ const transporter = nodemailer.createTransport({
 app.use(cors());
 app.use(express.json());
 
-// Enforce HTTPS and WWW subdomain redirection in production for SEO and continuity
+// Enforce WWW subdomain redirection in production for SEO and continuity
 app.use((req, res, next) => {
   const host = req.headers.host || '';
-  const isHttp = req.headers['x-forwarded-proto'] === 'http';
-  const isLocalhost = host.includes('localhost') || host.includes('127.0.0.1');
   
-  // Only redirect if we are NOT on a local development server
-  if (!isLocalhost && (host === 'clayoven.ie' || isHttp)) {
-    const targetHost = host === 'clayoven.ie' ? 'www.clayoven.ie' : host;
-    return res.redirect(301, `https://${targetHost}${req.originalUrl}`);
+  // Only redirect naked domain to secure WWW subdomain to prevent SSL proxy loops
+  if (host === 'clayoven.ie') {
+    return res.redirect(301, `https://www.clayoven.ie${req.originalUrl}`);
   }
   next();
 });
