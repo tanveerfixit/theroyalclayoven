@@ -4,7 +4,7 @@
  */
 
 import React from 'react';
-import { ShoppingCart, Plus, Minus, Trash2, Check, ArrowRight, ArrowLeft, Clock, MapPin, Sparkles, ShoppingBag, ChevronLeft, ChevronRight } from 'lucide-react';
+import { ShoppingCart, Plus, Minus, Trash2, Check, ArrowRight, ArrowLeft, Clock, MapPin, Sparkles, ShoppingBag, ChevronLeft, ChevronRight, Phone, X } from 'lucide-react';
 import { MenuItem, CartItem, Order } from '../types';
 import { MENU_ITEMS, CATEGORIES } from '../data/menu';
 
@@ -29,6 +29,7 @@ export const OrderView: React.FC<OrderViewProps> = ({
   
   // Checkout journey steps
   const [isCheckoutMode, setIsCheckoutMode] = React.useState(false);
+  const [showWarningModal, setShowWarningModal] = React.useState(false);
   const [serviceType, setServiceType] = React.useState<'takeaway' | 'delivery'>('takeaway');
   
   // Checkout inputs
@@ -65,6 +66,13 @@ export const OrderView: React.FC<OrderViewProps> = ({
       window.removeEventListener('profile_updated', loadUserProfile);
     };
   }, []);
+
+  // Alert customer that the site is under construction when entering checkout mode
+  React.useEffect(() => {
+    if (isCheckoutMode) {
+      setShowWarningModal(true);
+    }
+  }, [isCheckoutMode]);
   
   // Successful order indicator
   const [placedOrder, setPlacedOrder] = React.useState<Order | null>(null);
@@ -637,14 +645,14 @@ export const OrderView: React.FC<OrderViewProps> = ({
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
           
           {/* Categories Sidebar navigation - Desktop & Mobile with horizontal scroll arrows */}
-          <div className="lg:col-span-3 space-y-1">
-            <span className="block font-mono text-[11px] text-brand-accent tracking-widest font-bold uppercase mb-4 pl-3 lg:pl-0">
-              MENU SECTIONS
+          <div className="lg:col-span-3 space-y-2">
+            <span className="block font-sans text-xs text-brand-accent tracking-wider font-extrabold uppercase mb-4 pl-3 lg:pl-0">
+              Menu Sections
             </span>
             <div className="relative flex items-center lg:block">
               {/* Left Gradient Fade Mask - Mobile only */}
               {showLeftArrow && (
-                <div className="pointer-events-none absolute left-0 top-0 bottom-0 w-12 bg-gradient-to-r from-brand-beige to-transparent z-10 lg:hidden animate-fade-in" />
+                <div className="pointer-events-none absolute left-0 top-0 bottom-0 w-16 bg-gradient-to-r from-brand-beige to-transparent z-10 lg:hidden animate-fade-in" />
               )}
               
               {/* Left Arrow Button */}
@@ -652,11 +660,10 @@ export const OrderView: React.FC<OrderViewProps> = ({
                 <button
                   type="button"
                   onClick={() => scrollCategories('left')}
-                  className="absolute left-1 z-20 bg-white text-brand-dark w-8 h-8 flex items-center justify-center border border-brand-dark/5 shadow-md lg:hidden hover:scale-105 active:scale-95 transition-all duration-200"
-                  style={{ borderRadius: '50%' }}
+                  className="absolute left-1 z-20 bg-transparent text-brand-dark hover:text-brand-accent w-9 h-9 flex items-center justify-center lg:hidden hover:scale-125 active:scale-90 transition-all duration-300"
                   aria-label="Scroll categories left"
                 >
-                  <ChevronLeft className="w-4 h-4 stroke-[2]" />
+                  <ChevronLeft className="w-6 h-6 stroke-[3]" />
                 </button>
               )}
 
@@ -664,7 +671,7 @@ export const OrderView: React.FC<OrderViewProps> = ({
               <div 
                 ref={categoriesRef}
                 onScroll={updateArrows}
-                className="flex lg:flex-col overflow-x-auto lg:overflow-visible gap-2 pb-3 lg:pb-0 scrollbar-none w-full scroll-smooth"
+                className="flex lg:flex-col overflow-x-auto lg:overflow-visible gap-2 pb-3 lg:pb-0 scrollbar-none w-full scroll-smooth px-3 lg:px-0"
               >
                 {CATEGORIES.map((cat) => {
                   const isActive = selectedCategory === cat;
@@ -673,14 +680,24 @@ export const OrderView: React.FC<OrderViewProps> = ({
                       type="button"
                       id={`order-category-btn-${cat.replace(/\s+/g, '-').toLowerCase()}`}
                       key={cat}
-                      onClick={() => setSelectedCategory(cat)}
-                      className={`text-left px-5 py-2.5 text-xs font-mono tracking-widest uppercase transition-all duration-300 border lg:w-full whitespace-nowrap lg:whitespace-normal ${
+                      onClick={(e) => {
+                        setSelectedCategory(cat);
+                        e.currentTarget.scrollIntoView({
+                          behavior: 'smooth',
+                          block: 'nearest',
+                          inline: 'center'
+                        });
+                      }}
+                      className={`text-left px-5 py-3 text-xs font-sans tracking-wider uppercase transition-all duration-500 ease-out lg:w-full whitespace-nowrap lg:whitespace-normal border-l-4 font-bold group relative flex items-center justify-between ${
                         isActive
-                          ? 'bg-brand-dark text-white font-bold border-brand-dark shadow-sm'
-                          : 'bg-transparent border-transparent text-brand-muted hover:text-brand-dark hover:bg-brand-dark/5'
+                          ? 'bg-brand-dark text-white border-brand-accent shadow-md'
+                          : 'bg-white border-transparent text-brand-muted hover:text-brand-dark hover:bg-brand-dark/5 hover:translate-x-1 hover:border-brand-dark/20'
                       }`}
                     >
-                      {cat.toUpperCase()}
+                      <span>{cat}</span>
+                      {isActive && (
+                        <span className="w-1.5 h-1.5 bg-brand-accent shrink-0 ml-2 hidden lg:inline-block animate-pulse"></span>
+                      )}
                     </button>
                   );
                 })}
@@ -688,7 +705,7 @@ export const OrderView: React.FC<OrderViewProps> = ({
 
               {/* Right Gradient Fade Mask - Mobile only */}
               {showRightArrow && (
-                <div className="pointer-events-none absolute right-0 top-0 bottom-0 w-12 bg-gradient-to-l from-brand-beige to-transparent z-10 lg:hidden animate-fade-in" />
+                <div className="pointer-events-none absolute right-0 top-0 bottom-0 w-16 bg-gradient-to-l from-brand-beige to-transparent z-10 lg:hidden animate-fade-in" />
               )}
 
               {/* Right Arrow Button */}
@@ -696,11 +713,10 @@ export const OrderView: React.FC<OrderViewProps> = ({
                 <button
                   type="button"
                   onClick={() => scrollCategories('right')}
-                  className="absolute right-1 z-20 bg-white text-brand-dark w-8 h-8 flex items-center justify-center border border-brand-dark/5 shadow-md lg:hidden hover:scale-105 active:scale-95 transition-all duration-200"
-                  style={{ borderRadius: '50%' }}
+                  className="absolute right-1 z-20 bg-transparent text-brand-dark hover:text-brand-accent w-9 h-9 flex items-center justify-center lg:hidden hover:scale-125 active:scale-90 transition-all duration-300"
                   aria-label="Scroll categories right"
                 >
-                  <ChevronRight className="w-4 h-4 stroke-[2]" />
+                  <ChevronRight className="w-6 h-6 stroke-[3]" />
                 </button>
               )}
             </div>
@@ -717,7 +733,7 @@ export const OrderView: React.FC<OrderViewProps> = ({
               </span>
             </div>
 
-            <div className="space-y-6" id="order-items-scrollable">
+            <div className="space-y-6 animate-slide-up" key={selectedCategory} id="order-items-scrollable">
               {filteredItems.map((item) => {
                 const activeSize = selectedSizes[item.id];
                 const activePrice = activeSize ? activeSize.price : item.price;
@@ -963,6 +979,59 @@ export const OrderView: React.FC<OrderViewProps> = ({
               <span className="font-mono text-xs uppercase font-bold tracking-widest border-l border-brand-dark/20 pl-3 text-brand-dark">PROCEED TO CHECKOUT →</span>
             </div>
           </button>
+        </div>
+      )}
+
+      {/* Custom Warning Modal Dialog */}
+      {showWarningModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-brand-dark/70 backdrop-blur-sm animate-fade-in">
+          <div className="relative w-full max-w-md bg-white border border-brand-dark p-6 sm:p-8 space-y-6 shadow-[0_20px_50px_rgba(0,0,0,0.3)] animate-slide-up">
+            
+            {/* Close Button X */}
+            <button
+              type="button"
+              onClick={() => setShowWarningModal(false)}
+              className="absolute top-4 right-4 p-1.5 text-brand-muted hover:text-brand-dark hover:bg-brand-dark/5 transition-colors border border-transparent hover:border-brand-dark/10"
+              aria-label="Close warning"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            {/* Warning Content */}
+            <div className="text-center space-y-4 pt-2">
+              <div className="w-12 h-12 bg-brand-accent/10 text-brand-accent flex items-center justify-center mx-auto">
+                <Sparkles className="w-6 h-6 animate-pulse" />
+              </div>
+              <h3 className="font-sans text-xl sm:text-2xl font-bold tracking-tight text-brand-dark">
+                Online Ordering Notice
+              </h3>
+              <p className="font-sans text-base text-brand-muted leading-relaxed font-medium">
+                We are Still Working on Website, for online order please contact.
+              </p>
+              <p className="font-sans text-3xl font-extrabold text-brand-dark tracking-tight">
+                089 489 9950
+              </p>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex flex-col sm:flex-row gap-3 pt-2">
+              <a
+                href="tel:0894899950"
+                className="flex-1 bg-brand-accent hover:bg-brand-dark text-white py-3.5 text-sm font-sans font-bold uppercase tracking-wider text-center transition-colors flex items-center justify-center space-x-2"
+              >
+                <Phone className="w-4 h-4" />
+                <span>Call Now</span>
+              </a>
+              <button
+                type="button"
+                onClick={() => setShowWarningModal(false)}
+                className="flex-1 border border-brand-dark/15 hover:border-brand-dark text-brand-dark py-3.5 text-sm font-sans font-bold uppercase tracking-wider text-center transition-colors"
+              >
+                Dismiss
+              </button>
+            </div>
+
+          </div>
         </div>
       )}
 

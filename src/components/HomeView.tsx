@@ -17,7 +17,7 @@ export const HomeView: React.FC<HomeViewProps> = ({ setCurrentTab }) => {
   const featuredItems = MENU_ITEMS.filter((item) => featuredIds.includes(item.id));
 
   return (
-    <div className="space-y-20 pb-20 animate-fade-in" id="home-view">
+    <div className="pb-20 animate-fade-in" id="home-view">
       
       {/* Editorial Hero Section */}
       <section className="relative bg-brand-dark text-brand-beige border-b border-brand-dark px-4 py-16 sm:px-6 lg:px-8 lg:py-28 rounded-none">
@@ -69,7 +69,7 @@ export const HomeView: React.FC<HomeViewProps> = ({ setCurrentTab }) => {
       </section>
 
       {/* Triple Advantage Row */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-6 sm:mt-8">
         <div className="grid grid-cols-1 md:grid-cols-3 border border-brand-dark/10 divide-y md:divide-y-0 md:divide-x divide-brand-dark/10 bg-white">
           <div className="p-8 space-y-3">
             <div className="p-3 bg-brand-beige inline-block border border-brand-dark/5">
@@ -104,7 +104,7 @@ export const HomeView: React.FC<HomeViewProps> = ({ setCurrentTab }) => {
       </section>
 
       {/* Two-Column Heritage Section */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-1 lg:grid-cols-12 gap-12 items-center mt-16 sm:mt-20">
         <div className="lg:col-span-5 space-y-6">
           <span className="font-mono text-sm tracking-widest text-brand-accent uppercase font-bold block">
             OUR STORY
@@ -168,7 +168,7 @@ export const HomeView: React.FC<HomeViewProps> = ({ setCurrentTab }) => {
       </section>
 
       {/* Featured Specialties (Minimalist Bento Row) */}
-      <section className="bg-white border-y border-brand-dark/10 py-16">
+      <section className="bg-white border-y border-brand-dark/10 py-16 mt-16 sm:mt-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col sm:flex-row items-baseline justify-between mb-12">
             <div>
@@ -236,7 +236,7 @@ export const HomeView: React.FC<HomeViewProps> = ({ setCurrentTab }) => {
       </section>
 
       {/* Info, Hours, Map Column */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-16 sm:mt-20">
         <div className="grid grid-cols-1 lg:grid-cols-3 border border-brand-dark/10 bg-white divide-y lg:divide-y-0 lg:divide-x divide-brand-dark/10">
           
           {/* Box 1: Address and Contact */}
@@ -248,21 +248,26 @@ export const HomeView: React.FC<HomeViewProps> = ({ setCurrentTab }) => {
               <h3 className="font-serif text-2xl font-bold tracking-tight">Location & Contact</h3>
               
               <div className="space-y-4 pt-2">
-                <div className="flex items-start">
-                  <MapPin className="w-4 h-4 text-brand-accent mr-3 mt-1 shrink-0" />
-                  <span className="text-sm text-brand-muted leading-relaxed font-normal">
-                    The Royal Clay Oven<br />
+                <a
+                  href="https://maps.google.com/?q=The+Royal+Clay+Oven+Ballycasey+Craft+And+Design+Center+Shannon+County+Clare+V14+AW71"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-start group hover:text-brand-accent transition-colors"
+                >
+                  <MapPin className="w-4 h-4 text-brand-accent mr-3 mt-1 shrink-0 group-hover:scale-110 transition-transform" />
+                  <span className="text-sm text-brand-muted leading-relaxed font-normal group-hover:text-brand-dark transition-colors">
+                    <strong className="text-brand-dark block font-semibold group-hover:text-brand-accent transition-colors">The Royal Clay Oven</strong>
                     Ballycasey Craft And Design Center,<br />
                     Shannon, County Clare V14 AW71
                   </span>
-                </div>
+                </a>
 
                 <div className="flex items-start">
                   <Phone className="w-4 h-4 text-brand-accent mr-3 mt-1 shrink-0" />
-                  <div className="flex flex-col text-sm text-brand-muted font-mono space-y-1">
-                    <span>Phone: <a href="tel:061703636" className="hover:text-brand-dark">061 703 636</a></span>
-                    <span>Mobile: <a href="tel:0894899950" className="hover:text-brand-dark">089 489 9950</a></span>
-                    <span>Whatsapp: <a href="https://wa.me/353894899950" target="_blank" rel="noopener noreferrer" className="hover:text-brand-dark">wa.me/353894899950</a></span>
+                  <div className="flex flex-col text-sm text-brand-muted font-mono space-y-1.5">
+                    <span>Phone: <a href="tel:061703636" className="hover:text-brand-accent transition-colors">061 703 636</a></span>
+                    <span>Mobile: <a href="tel:0894899950" className="hover:text-brand-accent transition-colors">089 489 9950</a></span>
+                    <span>Whatsapp: <a href="https://wa.me/353894899950" target="_blank" rel="noopener noreferrer" className="hover:text-brand-accent transition-colors font-bold underline decoration-brand-accent/30 decoration-2 underline-offset-4">089 489 9950 (Click to Chat)</a></span>
                   </div>
                 </div>
               </div>
@@ -284,31 +289,31 @@ export const HomeView: React.FC<HomeViewProps> = ({ setCurrentTab }) => {
               <div className="space-y-3 pt-2 text-sm">
                 <div className="flex justify-between pb-1 border-b border-brand-dark/5 font-mono text-brand-muted">
                   <span>MONDAY</span>
-                  <span className="text-brand-dark">12:00 PM - 11:00 PM</span>
+                  <span className="text-brand-dark">4:00 PM - 9:00 PM</span>
                 </div>
                 <div className="flex justify-between pb-1 border-b border-brand-dark/5 font-mono text-brand-muted">
                   <span>TUESDAY</span>
-                  <span className="text-brand-dark">12:00 PM - 11:00 PM</span>
+                  <span className="text-brand-dark">4:00 PM - 9:00 PM</span>
                 </div>
                 <div className="flex justify-between pb-1 border-b border-brand-dark/5 font-mono text-brand-muted">
                   <span>WEDNESDAY</span>
-                  <span className="text-brand-dark">12:00 PM - 11:00 PM</span>
+                  <span className="text-brand-dark">4:00 PM - 9:00 PM</span>
                 </div>
                 <div className="flex justify-between pb-1 border-b border-brand-dark/5 font-mono text-brand-muted">
                   <span>THURSDAY</span>
-                  <span className="text-brand-dark">12:00 PM - 11:00 PM</span>
+                  <span className="text-brand-dark">4:00 PM - 9:00 PM</span>
                 </div>
                 <div className="flex justify-between pb-1 border-b border-brand-dark/5 font-mono text-brand-muted">
                   <span>FRIDAY</span>
-                  <span className="text-brand-dark">12:00 PM - 11:30 PM</span>
+                  <span className="text-brand-dark">4:00 PM - 9:00 PM</span>
                 </div>
                 <div className="flex justify-between pb-1 border-b border-brand-dark/5 font-mono text-brand-muted">
                   <span>SATURDAY</span>
-                  <span className="text-brand-dark">12:00 PM - 11:30 PM</span>
+                  <span className="text-brand-dark">12:00 PM - 9:00 PM</span>
                 </div>
                 <div className="flex justify-between pb-1 border-b border-brand-dark/5 font-mono text-brand-muted">
                   <span>SUNDAY</span>
-                  <span className="text-brand-dark">1:00 PM - 11:00 PM</span>
+                  <span className="text-brand-dark">10:00 AM - 6:00 PM</span>
                 </div>
               </div>
             </div>
