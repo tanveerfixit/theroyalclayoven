@@ -115,8 +115,8 @@ export const Navbar: React.FC<NavbarProps> = ({
               <span className="font-serif text-lg sm:text-xl lg:text-2xl font-bold tracking-widest text-brand-dark group-hover:text-brand-accent transition-colors duration-200">
                 THE ROYAL CLAY OVEN
               </span>
-              <span className="hidden sm:block font-mono text-[10px] lg:text-xs tracking-[0.25em] text-brand-muted uppercase mt-0.5">
-                Pakistani Cuisine & Outdoor Catering
+              <span className="block font-mono text-[8px] sm:text-[10px] lg:text-xs tracking-[0.18em] sm:tracking-[0.25em] text-brand-muted uppercase mt-0.5">
+                Pakistani Cuisine &amp; Outdoor Catering
               </span>
             </button>
           </div>
