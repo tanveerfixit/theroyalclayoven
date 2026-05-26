@@ -34,6 +34,19 @@ const transporter = nodemailer.createTransport({
 app.use(cors());
 app.use(express.json());
 
+// Enforce HTTPS and WWW subdomain redirection in production for SEO and continuity
+app.use((req, res, next) => {
+  const host = req.headers.host;
+  const isHttp = req.headers['x-forwarded-proto'] === 'http';
+  
+  // If requesting the naked domain or via insecure HTTP, redirect to secure WWW
+  if (host === 'clayoven.ie' || isHttp) {
+    const targetHost = host === 'clayoven.ie' ? 'www.clayoven.ie' : host;
+    return res.redirect(301, `https://${targetHost}${req.originalUrl}`);
+  }
+  next();
+});
+
 // Database Connection Pool
 const pool = mysql.createPool({
   host: process.env.DB_HOST,
