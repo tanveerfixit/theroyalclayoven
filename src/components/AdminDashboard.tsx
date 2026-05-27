@@ -785,20 +785,22 @@ The Royal Clay Oven`);
                           <span className={`px-2 py-0.5 border text-[10px] font-bold uppercase ${
                             isCancelled
                               ? 'bg-red-50 text-red-700 border-red-200'
+                              : b.status === 'Pending'
+                              ? 'bg-amber-50 text-amber-800 border-amber-200'
                               : 'bg-emerald-50 text-emerald-800 border-emerald-200'
                           }`}>
                             {b.status}
                           </span>
                         </td>
                         <td className="py-4 px-4 text-right">
-                          <div className="flex gap-2 justify-end">
-                            {!isCancelled ? (
+                          <div className="flex gap-2 justify-end items-center">
+                            {b.status === 'Pending' && (
                               <>
                                 <button
                                   type="button"
                                   onClick={() => handleUpdateBookingStatus(b.id, 'Confirmed', true)}
                                   className="bg-emerald-700 hover:bg-emerald-800 text-white px-2 py-1 font-bold uppercase rounded-none transition-all active:scale-95 border border-emerald-800"
-                                  title="Confirm booking and email receipt"
+                                  title="Confirm booking and send receipt"
                                 >
                                   CONFIRM &amp; EMAIL
                                 </button>
@@ -810,7 +812,30 @@ The Royal Clay Oven`);
                                   CANCEL
                                 </button>
                               </>
-                            ) : (
+                            )}
+                            {b.status === 'Confirmed' && (
+                              <>
+                                <span className="text-[10px] font-bold text-emerald-800 bg-emerald-50 px-2 py-1 border border-emerald-300 uppercase tracking-wider">
+                                  ✓ CONFIRMED (DONE)
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={() => handleUpdateBookingStatus(b.id, 'Confirmed', true)}
+                                  className="border border-brand-dark/15 hover:border-brand-dark text-brand-dark px-2 py-1 font-bold uppercase rounded-none transition-all active:scale-95 text-[10px]"
+                                  title="Resend confirmation email"
+                                >
+                                  RESEND EMAIL
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleUpdateBookingStatus(b.id, 'Cancelled')}
+                                  className="border border-red-200 hover:border-red-600 text-red-600 px-2 py-1 font-bold uppercase rounded-none transition-all active:scale-95"
+                                >
+                                  CANCEL
+                                </button>
+                              </>
+                            )}
+                            {b.status === 'Cancelled' && (
                               <button
                                 type="button"
                                 onClick={() => handleUpdateBookingStatus(b.id, 'Confirmed')}
@@ -1350,6 +1375,8 @@ The Royal Clay Oven`);
                             <span className={`px-2 py-0.5 border text-[9px] font-bold uppercase ${
                               isCancelled
                                 ? 'bg-red-50 text-red-700 border-red-200'
+                                : fn.status === 'Pending'
+                                ? 'bg-amber-50 text-amber-800 border-amber-200'
                                 : 'bg-emerald-50 text-emerald-800 border-emerald-200'
                             }`}>
                               {fn.status}
@@ -1376,8 +1403,8 @@ The Royal Clay Oven`);
                             </div>
                           )}
 
-                          <div className="flex justify-end gap-2">
-                            {!isCancelled ? (
+                          <div className="flex justify-end gap-2 items-center">
+                            {fn.status === 'Pending' && (
                               <>
                                 <button
                                   type="button"
@@ -1394,7 +1421,29 @@ The Royal Clay Oven`);
                                   CANCEL EVENT
                                 </button>
                               </>
-                            ) : (
+                            )}
+                            {fn.status === 'Confirmed' && (
+                              <>
+                                <span className="text-[9px] font-bold text-emerald-800 bg-emerald-50 px-2 py-1 border border-emerald-300 uppercase tracking-wider">
+                                  ✓ CONFIRMED (DONE)
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={() => handleUpdateBookingStatus(fn.id, 'Confirmed', true)}
+                                  className="border border-brand-dark/15 hover:border-brand-dark text-brand-dark px-3 py-1 font-mono text-[10px] font-bold uppercase rounded-none transition-all"
+                                >
+                                  RESEND EMAIL
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleUpdateBookingStatus(fn.id, 'Cancelled')}
+                                  className="border border-red-200 hover:border-red-600 text-red-600 px-3 py-1 font-mono text-[10px] font-bold uppercase rounded-none transition-all"
+                                >
+                                  CANCEL EVENT
+                                </button>
+                              </>
+                            )}
+                            {fn.status === 'Cancelled' && (
                               <button
                                 type="button"
                                 onClick={() => handleUpdateBookingStatus(fn.id, 'Confirmed')}
