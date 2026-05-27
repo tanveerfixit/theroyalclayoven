@@ -224,8 +224,8 @@ The Royal Clay Oven`);
     setLoading(true);
     try {
       const [ordersRes, bookingsRes] = await Promise.all([
-        fetch('/api/admin/orders'),
-        fetch('/api/admin/bookings')
+        fetch(`/api/admin/orders?t=${Date.now()}`),
+        fetch(`/api/admin/bookings?t=${Date.now()}`)
       ]);
 
       if (ordersRes.ok && bookingsRes.ok) {
