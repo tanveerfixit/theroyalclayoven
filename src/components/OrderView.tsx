@@ -1008,7 +1008,7 @@ export const OrderView: React.FC<OrderViewProps> = ({
               <h3 className="font-sans text-xl sm:text-2xl font-bold tracking-tight text-brand-dark">
                 Online Ordering Notice
               </h3>
-              <p className="font-sans text-base text-brand-muted leading-relaxed font-medium">
+              <p className="font-sans text-base text-brand-muted leading-relaxed font-medium text-center">
                 {noticeText}
               </p>
               <p className="font-sans text-3xl font-extrabold text-brand-dark tracking-tight">

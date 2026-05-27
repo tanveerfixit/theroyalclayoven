@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Play, Check, X, ShieldAlert, ShoppingBag, Calendar, ListFilter, Search, RefreshCw, Volume2, ShieldCheck, Clock, Settings } from 'lucide-react';
+import { Play, Check, X, ShieldAlert, ShoppingBag, Calendar, ListFilter, Search, RefreshCw, Volume2, ShieldCheck, Clock, Settings, Sparkles } from 'lucide-react';
 import { Order, Reservation } from '../types';
 import { MENU_ITEMS, CATEGORIES } from '../data/menu';
 
@@ -10,7 +10,20 @@ export const AdminDashboard: React.FC = () => {
   const [authError, setAuthError] = useState(false);
 
   // Console active sub-tabs
-  const [adminTab, setAdminTab] = useState<'orders' | 'bookings' | 'catalog' | 'settings'>('orders');
+  const [adminTab, setAdminTab] = useState<'orders' | 'bookings' | 'functions' | 'catalog' | 'settings'>('orders');
+
+  // Form states for creating a new Function booking
+  const [funcName, setFuncName] = useState('');
+  const [funcEmail, setFuncEmail] = useState('');
+  const [funcPhone, setFuncPhone] = useState('');
+  const [funcGuests, setFuncGuests] = useState(15);
+  const [funcDate, setFuncDate] = useState('');
+  const [funcTime, setFuncTime] = useState('18:00');
+  const [funcArea, setFuncArea] = useState('Private Hall (Up to 50)');
+  const [funcRequests, setFuncRequests] = useState('');
+  const [funcPackage, setFuncPackage] = useState('Custom Karahi Feast');
+  const [funcSuccess, setFuncSuccess] = useState(false);
+  const [funcError, setFuncError] = useState('');
 
   // Custom Timings & Notice Settings states
   const [timingMonday, setTimingMonday] = useState(localStorage.getItem('clay_oven_timing_monday') || '4:00 PM - 9:00 PM');
@@ -25,6 +38,27 @@ export const AdminDashboard: React.FC = () => {
   const [noticeText, setNoticeText] = useState(localStorage.getItem('clay_oven_notice_text') || 'We are Still Working on Website, for online order please contact.');
   const [noticePhone, setNoticePhone] = useState(localStorage.getItem('clay_oven_notice_phone') || '089 489 9950');
   const [noticeEnabled, setNoticeEnabled] = useState(localStorage.getItem('clay_oven_notice_enabled') !== 'false');
+
+  const [bookingNoticeText, setBookingNoticeText] = useState(localStorage.getItem('clay_oven_booking_notice_text') || `Assalamu Alaikum, dear friends and valued guests,
+
+We are incredibly grateful for the wonderful love and support you show us every single day!
+
+While we would love nothing more than to celebrate Eid with all of you, we want to share that our restaurant is now completely fully booked for Eid this Wednesday.
+
+To ensure that everyone dining with us has a fantastic experience, we are unfortunately unable to accept any further bookings or walk-ins for that day.
+
+While we truly wish we could host every one of you on Wednesday, we would be absolutely delighted to welcome you, your family, and your friends on Thursday instead! Please do book a table with us so we can celebrate together then.
+
+To bring a little extra joy to your week, we have some exciting news!
+
+Due to popular demand, we are extending our special Pakistani breakfast service. You can now come and enjoy it with us on both Saturday and Sunday, rather than just on Sundays!
+
+Thank you from the bottom of our hearts for your understanding and continuous support. We cannot wait to see your smiling faces soon!
+
+Warmest regards,
+
+The Royal Clay Oven`);
+  const [bookingNoticeEnabled, setBookingNoticeEnabled] = useState(localStorage.getItem('clay_oven_booking_notice_enabled') !== 'false');
 
   const [saveSuccess, setSaveSuccess] = useState(false);
 
@@ -43,8 +77,74 @@ export const AdminDashboard: React.FC = () => {
     localStorage.setItem('clay_oven_notice_phone', noticePhone);
     localStorage.setItem('clay_oven_notice_enabled', String(noticeEnabled));
 
+    localStorage.setItem('clay_oven_booking_notice_text', bookingNoticeText);
+    localStorage.setItem('clay_oven_booking_notice_enabled', String(bookingNoticeEnabled));
+
     setSaveSuccess(true);
     setTimeout(() => setSaveSuccess(false), 3000);
+  };
+
+  const handleCreateFunction = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setFuncError('');
+    setFuncSuccess(false);
+
+    if (!funcName || !funcEmail || !funcPhone || !funcDate) {
+      setFuncError('Please fill in all required fields.');
+      return;
+    }
+
+    const newFunctionBooking = {
+      id: 'FUNC-' + Math.floor(100000 + Math.random() * 900000),
+      name: funcName,
+      email: funcEmail,
+      phone: funcPhone,
+      partySize: funcGuests,
+      date: funcDate,
+      time: funcTime,
+      diningArea: funcArea,
+      specialRequests: `Package: ${funcPackage}${funcRequests ? ` | Requests: ${funcRequests}` : ''}`,
+      status: 'Confirmed',
+      createdAt: new Date().toISOString()
+    };
+
+    try {
+      const response = await fetch('/api/bookings', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(newFunctionBooking)
+      });
+      if (response.ok) {
+        setFuncSuccess(true);
+        setFuncName('');
+        setFuncEmail('');
+        setFuncPhone('');
+        setFuncGuests(15);
+        setFuncDate('');
+        setFuncTime('18:00');
+        setFuncRequests('');
+        setFuncPackage('Custom Karahi Feast');
+        
+        // Refresh bookings
+        fetchData();
+      } else {
+        throw new Error('Server response was not ok');
+      }
+    } catch (err) {
+      console.error(err);
+      setFuncError('Failed to save function booking to server. Saving locally instead.');
+      
+      // Save locally as backup
+      const stored = localStorage.getItem('clay_oven_bookings');
+      const existing = stored ? JSON.parse(stored) : [];
+      existing.unshift(newFunctionBooking);
+      localStorage.setItem('clay_oven_bookings', JSON.stringify(existing));
+      
+      setFuncSuccess(true);
+      fetchData();
+    }
   };
 
   // Database states
@@ -179,14 +279,14 @@ export const AdminDashboard: React.FC = () => {
   };
 
   // Update Booking Status
-  const handleUpdateBookingStatus = async (bookingId: string, nextStatus: Reservation['status']) => {
+  const handleUpdateBookingStatus = async (bookingId: string, nextStatus: Reservation['status'], sendEmail: boolean = false) => {
     try {
       const response = await fetch(`/api/bookings/${bookingId}/status`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ status: nextStatus })
+        body: JSON.stringify({ status: nextStatus, sendEmail })
       });
       if (response.ok) {
         setBookings(prev => prev.map(b => b.id === bookingId ? { ...b, status: nextStatus } : b));
@@ -356,6 +456,17 @@ export const AdminDashboard: React.FC = () => {
         >
           <Calendar className="w-4 h-4" />
           <span>Table Bookings ({bookings.filter(b => b.status === 'Confirmed').length})</span>
+        </button>
+        <button
+          onClick={() => setAdminTab('functions')}
+          className={`pb-4 font-mono text-xs font-bold uppercase tracking-widest border-b-2 flex items-center gap-1.5 transition-all ${
+            adminTab === 'functions'
+              ? 'border-brand-dark text-brand-dark'
+              : 'border-transparent text-brand-muted hover:text-brand-dark'
+          }`}
+        >
+          <Sparkles className="w-4 h-4" />
+          <span>Functions ({bookings.filter(b => (b.id.startsWith('FUNC') || b.diningArea.includes('Private Hall') || b.partySize >= 12) && b.status === 'Confirmed').length})</span>
         </button>
         <button
           onClick={() => setAdminTab('catalog')}
@@ -680,23 +791,35 @@ export const AdminDashboard: React.FC = () => {
                           </span>
                         </td>
                         <td className="py-4 px-4 text-right">
-                          {!isCancelled ? (
-                            <button
-                              type="button"
-                              onClick={() => handleUpdateBookingStatus(b.id, 'Cancelled')}
-                              className="border border-red-200 hover:border-red-600 text-red-600 px-2 py-1 font-bold uppercase rounded-none transition-all active:scale-95"
-                            >
-                              CANCEL
-                            </button>
-                          ) : (
-                            <button
-                              type="button"
-                              onClick={() => handleUpdateBookingStatus(b.id, 'Confirmed')}
-                              className="border border-brand-dark/15 hover:border-brand-dark text-brand-dark px-2 py-1 font-bold uppercase rounded-none transition-all active:scale-95"
-                            >
-                              RESTORE
-                            </button>
-                          )}
+                          <div className="flex gap-2 justify-end">
+                            {!isCancelled ? (
+                              <>
+                                <button
+                                  type="button"
+                                  onClick={() => handleUpdateBookingStatus(b.id, 'Confirmed', true)}
+                                  className="bg-emerald-700 hover:bg-emerald-800 text-white px-2 py-1 font-bold uppercase rounded-none transition-all active:scale-95 border border-emerald-800"
+                                  title="Confirm booking and email receipt"
+                                >
+                                  CONFIRM &amp; EMAIL
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleUpdateBookingStatus(b.id, 'Cancelled')}
+                                  className="border border-red-200 hover:border-red-600 text-red-600 px-2 py-1 font-bold uppercase rounded-none transition-all active:scale-95"
+                                >
+                                  CANCEL
+                                </button>
+                              </>
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={() => handleUpdateBookingStatus(b.id, 'Confirmed')}
+                                className="border border-brand-dark/15 hover:border-brand-dark text-brand-dark px-2 py-1 font-bold uppercase rounded-none transition-all active:scale-95"
+                              >
+                                RESTORE
+                              </button>
+                            )}
+                          </div>
                         </td>
                       </tr>
                     );
@@ -859,6 +982,51 @@ export const AdminDashboard: React.FC = () => {
                     className="w-full border border-brand-dark/10 p-2.5 text-sm font-mono focus:border-brand-dark outline-none bg-brand-beige/10 rounded-none"
                   />
                 </div>
+
+                {/* Booking Page Specific Notice */}
+                <div className="border-t border-brand-dark/10 pt-4 mt-4 space-y-4">
+                  <h4 className="font-serif text-sm font-bold text-brand-dark uppercase">
+                    Book Table / Functions Specific Notice
+                  </h4>
+                  
+                  <div className="flex items-center justify-between border border-brand-dark/10 p-4 bg-brand-beige/5">
+                    <div className="space-y-0.5">
+                      <span className="block font-mono text-xs text-brand-dark font-bold uppercase tracking-wider">
+                        SHOW POPUP ON BOOKING PAGE
+                      </span>
+                      <span className="block text-[11px] text-brand-muted font-sans font-normal">
+                        When enabled, the custom timing notice pops up automatically on the Book Table / Functions page.
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setBookingNoticeEnabled(!bookingNoticeEnabled)}
+                      className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-none border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                        bookingNoticeEnabled ? 'bg-brand-accent' : 'bg-brand-dark/15'
+                      }`}
+                    >
+                      <span
+                        className={`pointer-events-none inline-block h-5 w-5 transform bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                          bookingNoticeEnabled ? 'translate-x-5' : 'translate-x-0'
+                        }`}
+                      />
+                    </button>
+                  </div>
+
+                  <div className="space-y-1">
+                    <label htmlFor="settings-booking-notice-text" className="block font-mono text-xs text-brand-accent uppercase tracking-widest font-bold">
+                      BOOKING NOTICE DESCRIPTION TEXT
+                    </label>
+                    <textarea
+                      id="settings-booking-notice-text"
+                      rows={6}
+                      required
+                      value={bookingNoticeText}
+                      onChange={(e) => setBookingNoticeText(e.target.value)}
+                      className="w-full border border-brand-dark/10 p-3 text-xs font-mono focus:border-brand-dark outline-none bg-brand-beige/10 rounded-none resize-none"
+                    />
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -978,6 +1146,276 @@ export const AdminDashboard: React.FC = () => {
 
         </form>
       )}
+
+      {/* 2.5. TAB: FUNCTIONS & BANQUETS MANAGER */}
+      {adminTab === 'functions' && (() => {
+        const functionsList = bookings.filter(b => 
+          b.id.startsWith('FUNC') || 
+          b.diningArea.includes('Private Hall') || 
+          b.partySize >= 12
+        );
+        return (
+          <div className="bg-white border border-brand-dark/10 p-6 space-y-8 animate-fade-in text-left" id="admin-functions-tab">
+            
+            <div className="border-b border-brand-dark/5 pb-4 flex justify-between items-center">
+              <h2 className="font-serif text-xl font-bold text-brand-dark flex items-center">
+                <Sparkles className="w-5 h-5 mr-2 text-brand-accent animate-pulse" />
+                Functions &amp; Large Banquets Manager
+              </h2>
+              <span className="font-mono text-xs text-brand-muted bg-brand-dark/5 px-2 py-0.5 border border-brand-dark/5">
+                {functionsList.length} Registered Events
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+              
+              {/* Create a New Function Booking Form */}
+              <form onSubmit={handleCreateFunction} className="lg:col-span-5 bg-brand-beige/5 border border-brand-dark/10 p-6 space-y-4">
+                <h3 className="font-serif text-lg font-bold text-brand-dark border-b border-brand-dark/5 pb-2">
+                  Register New Private Function
+                </h3>
+
+                {funcSuccess && (
+                  <div className="p-3 bg-emerald-50 text-emerald-800 text-xs font-mono border border-emerald-200">
+                    ✓ FUNCTION EVENT REGISTERED SUCCESSFULLY!
+                  </div>
+                )}
+
+                {funcError && (
+                  <div className="p-3 bg-amber-50 text-amber-800 text-xs font-mono border border-amber-200">
+                    ⚠ {funcError}
+                  </div>
+                )}
+
+                <div className="space-y-1">
+                  <label className="block font-mono text-[10px] text-brand-accent uppercase tracking-widest font-bold">
+                    Event / Customer Name
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. Tanveer Birthday Bash"
+                    value={funcName}
+                    onChange={(e) => setFuncName(e.target.value)}
+                    className="w-full border border-brand-dark/10 p-2.5 text-xs font-mono focus:border-brand-dark outline-none bg-white"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <label className="block font-mono text-[10px] text-brand-accent uppercase tracking-widest font-bold">
+                      Email
+                    </label>
+                    <input
+                      type="email"
+                      required
+                      placeholder="customer@email.com"
+                      value={funcEmail}
+                      onChange={(e) => setFuncEmail(e.target.value)}
+                      className="w-full border border-brand-dark/10 p-2.5 text-xs font-mono focus:border-brand-dark outline-none bg-white"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="block font-mono text-[10px] text-brand-accent uppercase tracking-widest font-bold">
+                      Telephone
+                    </label>
+                    <input
+                      type="tel"
+                      required
+                      placeholder="089 489 9950"
+                      value={funcPhone}
+                      onChange={(e) => setFuncPhone(e.target.value)}
+                      className="w-full border border-brand-dark/10 p-2.5 text-xs font-mono focus:border-brand-dark outline-none bg-white"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-3 gap-3">
+                  <div className="space-y-1">
+                    <label className="block font-mono text-[10px] text-brand-accent uppercase tracking-widest font-bold">
+                      Date
+                    </label>
+                    <input
+                      type="date"
+                      required
+                      value={funcDate}
+                      onChange={(e) => setFuncDate(e.target.value)}
+                      className="w-full border border-brand-dark/10 p-2.5 text-xs font-mono focus:border-brand-dark outline-none bg-white"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="block font-mono text-[10px] text-brand-accent uppercase tracking-widest font-bold">
+                      Time Slot
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="e.g. 18:00"
+                      value={funcTime}
+                      onChange={(e) => setFuncTime(e.target.value)}
+                      className="w-full border border-brand-dark/10 p-2.5 text-xs font-mono focus:border-brand-dark outline-none bg-white"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="block font-mono text-[10px] text-brand-accent uppercase tracking-widest font-bold">
+                      Guests (Pax)
+                    </label>
+                    <input
+                      type="number"
+                      min="1"
+                      max="150"
+                      required
+                      value={funcGuests}
+                      onChange={(e) => setFuncGuests(parseInt(e.target.value) || 15)}
+                      className="w-full border border-brand-dark/10 p-2.5 text-xs font-mono focus:border-brand-dark outline-none bg-white"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <label className="block font-mono text-[10px] text-brand-accent uppercase tracking-widest font-bold">
+                      Dining Layout Area
+                    </label>
+                    <select
+                      value={funcArea}
+                      onChange={(e) => setFuncArea(e.target.value)}
+                      className="w-full border border-brand-dark/10 p-2.5 text-xs font-mono focus:border-brand-dark outline-none bg-white"
+                    >
+                      <option value="Private Hall (Up to 50)">Private Vault (Up to 50)</option>
+                      <option value="Indoor">Indoor Main Hall</option>
+                      <option value="Outdoor Garden">Outdoor Zen Garden</option>
+                      <option value="Whole Restaurant Venue">Whole Restaurant Venue (100+)</option>
+                    </select>
+                  </div>
+                  <div className="space-y-1">
+                    <label className="block font-mono text-[10px] text-brand-accent uppercase tracking-widest font-bold">
+                      Catering Package
+                    </label>
+                    <select
+                      value={funcPackage}
+                      onChange={(e) => setFuncPackage(e.target.value)}
+                      className="w-full border border-brand-dark/10 p-2.5 text-xs font-mono focus:border-brand-dark outline-none bg-white"
+                    >
+                      <option value="Custom Karahi Feast">Custom Karahi Feast</option>
+                      <option value="Pakistani Banquet Feast (Silver)">Pakistani Banquet Feast (Silver)</option>
+                      <option value="Royal Tandoori Buffet (Gold)">Royal Tandoori Buffet (Gold)</option>
+                      <option value="Mughlai Barbecue Buffet">Mughlai Barbecue Buffet</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="block font-mono text-[10px] text-brand-accent uppercase tracking-widest font-bold">
+                    Special Requests / Setup Requirements
+                  </label>
+                  <textarea
+                    rows={2}
+                    placeholder="Need sound system, mic, customized balloon arches, or vegetarian specific buffet options..."
+                    value={funcRequests}
+                    onChange={(e) => setFuncRequests(e.target.value)}
+                    className="w-full border border-brand-dark/10 p-2.5 text-xs font-mono focus:border-brand-dark outline-none bg-white resize-none"
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  className="w-full bg-brand-accent hover:bg-brand-dark text-white py-3 text-xs font-mono uppercase tracking-widest font-bold transition-all rounded-none"
+                >
+                  CONFIRM &amp; BOOK PRIVATE EVENT
+                </button>
+              </form>
+
+              {/* Registered Functions Event List Display */}
+              <div className="lg:col-span-7 space-y-4">
+                <h3 className="font-serif text-lg font-bold text-brand-dark border-b border-brand-dark/5 pb-2">
+                  Upcoming Registered Functions List
+                </h3>
+
+                <div className="space-y-3 max-h-[60vh] overflow-y-auto pr-1">
+                  {functionsList.length === 0 ? (
+                    <p className="text-sm font-mono text-brand-muted italic text-center py-20 bg-brand-beige/5 border border-brand-dark/5">
+                      No private functions or large banquets registered.
+                    </p>
+                  ) : (
+                    functionsList.map((fn) => {
+                      const isCancelled = fn.status === 'Cancelled';
+                      return (
+                        <div key={fn.id} className={`p-4 border border-brand-dark/15 hover:border-brand-dark bg-[#FDFBF7]/40 space-y-3 relative transition-all ${isCancelled ? 'opacity-40' : ''}`}>
+                          <div className="flex justify-between items-start font-mono text-xs">
+                            <div>
+                              <span className="font-bold text-brand-dark block">EVENT ID: {fn.id}</span>
+                              <span className="text-[10px] text-brand-muted">Registered: {new Date(fn.createdAt).toLocaleDateString()}</span>
+                            </div>
+                            <span className={`px-2 py-0.5 border text-[9px] font-bold uppercase ${
+                              isCancelled
+                                ? 'bg-red-50 text-red-700 border-red-200'
+                                : 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                            }`}>
+                              {fn.status}
+                            </span>
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-4 text-xs font-mono text-brand-muted border-t border-b border-brand-dark/5 py-2">
+                            <div>
+                              <span className="font-bold text-brand-dark block">{fn.name}</span>
+                              <span className="block">{fn.email}</span>
+                              <span className="underline block">{fn.phone}</span>
+                            </div>
+                            <div>
+                              <div>Date: <span className="font-bold text-brand-dark">{fn.date}</span></div>
+                              <div>Time: <span className="font-bold text-brand-dark">{fn.time}</span></div>
+                              <div>Guests: <span className="font-bold text-brand-accent">{fn.partySize} Pax</span></div>
+                              <div>Area: <span className="font-bold text-brand-dark">{fn.diningArea}</span></div>
+                            </div>
+                          </div>
+
+                          {fn.specialRequests && (
+                            <div className="p-2.5 bg-brand-beige border border-brand-dark/5 text-[11px] font-sans text-brand-dark/80 italic leading-relaxed">
+                              {fn.specialRequests}
+                            </div>
+                          )}
+
+                          <div className="flex justify-end gap-2">
+                            {!isCancelled ? (
+                              <>
+                                <button
+                                  type="button"
+                                  onClick={() => handleUpdateBookingStatus(fn.id, 'Confirmed', true)}
+                                  className="bg-emerald-700 hover:bg-emerald-800 text-white px-3 py-1 font-mono text-[10px] font-bold uppercase rounded-none transition-all border border-emerald-800"
+                                >
+                                  CONFIRM &amp; EMAIL
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleUpdateBookingStatus(fn.id, 'Cancelled')}
+                                  className="border border-red-200 hover:border-red-600 text-red-600 px-3 py-1 font-mono text-[10px] font-bold uppercase rounded-none transition-all"
+                                >
+                                  CANCEL EVENT
+                                </button>
+                              </>
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={() => handleUpdateBookingStatus(fn.id, 'Confirmed')}
+                                className="border border-brand-dark/15 hover:border-brand-dark text-brand-dark px-3 py-1 font-mono text-[10px] font-bold uppercase rounded-none transition-all"
+                              >
+                                RESTORE EVENT
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+              </div>
+
+            </div>
+
+          </div>
+        );
+      })()}
 
     </div>
   );

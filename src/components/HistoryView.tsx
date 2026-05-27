@@ -236,6 +236,8 @@ export const HistoryView: React.FC<{ hideHeader?: boolean; showArchivedOnly?: bo
                         <span className={`font-mono text-sm border px-2 py-0.5 uppercase font-bold ${
                           isCancelled
                             ? 'bg-red-50 text-red-800 border-red-200'
+                            : booking.status === 'Pending'
+                            ? 'bg-amber-50 text-amber-800 border-amber-200'
                             : 'bg-emerald-50 text-emerald-800 border-emerald-200'
                         }`}>
                           {booking.status}

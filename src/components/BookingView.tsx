@@ -4,16 +4,129 @@
  */
 
 import React from 'react';
-import { Calendar, Users, Home, Compass, PhoneCall, HelpCircle, ShieldCheck, Mail, ArrowRight } from 'lucide-react';
+import { Calendar, Users, Home, Compass, PhoneCall, HelpCircle, ShieldCheck, Mail, ArrowRight, Sparkles, X } from 'lucide-react';
 import { Reservation } from '../types';
 
 export const BookingView: React.FC = () => {
+  const noticeText = localStorage.getItem('clay_oven_booking_notice_text') || `Assalamu Alaikum, dear friends and valued guests,
+
+We are incredibly grateful for the wonderful love and support you show us every single day!
+
+While we would love nothing more than to celebrate Eid with all of you, we want to share that our restaurant is now completely fully booked for Eid this Wednesday.
+
+To ensure that everyone dining with us has a fantastic experience, we are unfortunately unable to accept any further bookings or walk-ins for that day.
+
+While we truly wish we could host every one of you on Wednesday, we would be absolutely delighted to welcome you, your family, and your friends on Thursday instead! Please do book a table with us so we can celebrate together then.
+
+To bring a little extra joy to your week, we have some exciting news!
+
+Due to popular demand, we are extending our special Pakistani breakfast service. You can now come and enjoy it with us on both Saturday and Sunday, rather than just on Sundays!
+
+Thank you from the bottom of our hearts for your understanding and continuous support. We cannot wait to see your smiling faces soon!
+
+Warmest regards,
+
+The Royal Clay Oven`;
+  const noticePhone = localStorage.getItem('clay_oven_notice_phone') || '089 489 9950';
+  const noticeEnabled = localStorage.getItem('clay_oven_booking_notice_enabled') !== 'false';
+
+  const [showWarningModal, setShowWarningModal] = React.useState(noticeEnabled);
+
   // Booking inputs
   const [partySize, setPartySize] = React.useState<number>(2);
   const [bookingDate, setBookingDate] = React.useState<string>('');
   const [bookingTime, setBookingTime] = React.useState<string>('18:00');
   const [diningArea, setDiningArea] = React.useState<'Indoor' | 'Outdoor Garden' | 'Private Hall (Up to 50)'>('Indoor');
   const [selectedTableId, setSelectedTableId] = React.useState<number | null>(null);
+
+  // Helper to resolve opening hours for a specific date
+  const getOpeningHoursForDate = (dateStr: string): string => {
+    if (!dateStr) return '4:00 PM - 9:00 PM';
+    try {
+      const dateObj = new Date(dateStr);
+      const days = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+      const dayName = days[dateObj.getDay()];
+      return localStorage.getItem(`clay_oven_timing_${dayName}`) || getDefaultHours(dayName);
+    } catch (e) {
+      return '4:00 PM - 9:00 PM';
+    }
+  };
+
+  const getDefaultHours = (day: string): string => {
+    if (day === 'sunday') return '10:00 AM - 6:00 PM';
+    if (day === 'saturday') return '12:00 PM - 9:00 PM';
+    return '4:00 PM - 9:00 PM';
+  };
+
+  // Helper to dynamically extract hour slots from timing configurations
+  const getAvailableTimeSlots = (hoursStr: string): { value: string; label: string }[] => {
+    const defaultSlots = [
+      { value: '16:00', label: '4:00 PM' },
+      { value: '17:00', label: '5:00 PM' },
+      { value: '18:00', label: '6:00 PM' },
+      { value: '19:00', label: '7:00 PM' },
+      { value: '20:00', label: '8:00 PM' },
+      { value: '21:00', label: '9:00 PM' }
+    ];
+
+    try {
+      if (hoursStr.toUpperCase() === 'CLOSED') {
+        return [];
+      }
+
+      const parts = hoursStr.split('-');
+      if (parts.length !== 2) return defaultSlots;
+
+      const parseHour = (str: string): number => {
+        const cleaned = str.trim().toUpperCase();
+        const match = cleaned.match(/(\d+):?(\d+)?\s*(AM|PM)/);
+        if (!match) return 12;
+
+        let hour = parseInt(match[1]);
+        const period = match[3];
+
+        if (period === 'PM' && hour !== 12) hour += 12;
+        if (period === 'AM' && hour === 12) hour = 0;
+
+        return hour;
+      };
+
+      const startHour = parseHour(parts[0]);
+      const endHour = parseHour(parts[1]);
+
+      const slots = [];
+      for (let h = startHour; h < endHour; h++) {
+        const ampm = h >= 12 ? 'PM' : 'AM';
+        const displayHour = h % 12 === 0 ? 12 : h % 12;
+        const padHour = String(h).padStart(2, '0');
+        
+        slots.push({
+          value: `${padHour}:00`,
+          label: `${displayHour}:00 ${ampm}`
+        });
+      }
+      
+      return slots.length > 0 ? slots : defaultSlots;
+    } catch (err) {
+      console.error('Error generating slots from timings', err);
+      return defaultSlots;
+    }
+  };
+
+  const currentDayHours = getOpeningHoursForDate(bookingDate);
+  const timeSlots = getAvailableTimeSlots(currentDayHours);
+
+  // Synchronize time selection when the selected date (and its available slots) shifts
+  React.useEffect(() => {
+    if (timeSlots.length > 0) {
+      const isCurrentTimeValid = timeSlots.some(s => s.value === bookingTime);
+      if (!isCurrentTimeValid) {
+        setBookingTime(timeSlots[0].value);
+      }
+    } else {
+      setBookingTime('');
+    }
+  }, [bookingDate, currentDayHours]);
   
   const [customerName, setCustomerName] = React.useState('');
   const [customerPhone, setCustomerPhone] = React.useState('');
@@ -120,7 +233,7 @@ export const BookingView: React.FC = () => {
       time: bookingTime,
       diningArea,
       specialRequests: specialRequests.trim() ? specialRequests : undefined,
-      status: 'Confirmed',
+      status: 'Pending',
       createdAt: new Date().toISOString()
     };
 
@@ -229,10 +342,10 @@ export const BookingView: React.FC = () => {
           
           <div className="space-y-1">
             <span className="font-mono text-sm text-brand-accent font-bold tracking-widest uppercase">
-              RESERVATION SECURED
+              RESERVATION REQUEST SUBMITTED
             </span>
             <h2 className="font-serif text-2xl font-bold text-brand-dark">
-              See You Soon, {confirmationMessage.name}!
+              We'll secure your table soon, {confirmationMessage.name}!
             </h2>
             <span className="font-mono text-sm text-brand-muted uppercase block">
               Reference: <span className="font-bold text-brand-dark">{confirmationMessage.id}</span>
@@ -319,25 +432,22 @@ export const BookingView: React.FC = () => {
 
               <div className="space-y-1">
                 <label htmlFor="bk-time" className="block font-mono text-xs text-brand-accent uppercase tracking-widest font-bold">
-                  PICKUP TIME
+                  RESERVATION TIME
                 </label>
                 <select
                   id="bk-time"
                   value={bookingTime}
                   onChange={(e) => setBookingTime(e.target.value)}
                   className="w-full border border-brand-dark/10 p-3 text-sm font-mono bg-white outline-none focus:border-brand-dark"
+                  disabled={timeSlots.length === 0}
                 >
-                  <option value="12:00">12:00 PM</option>
-                  <option value="13:00">1:00 PM</option>
-                  <option value="14:00">2:00 PM</option>
-                  <option value="15:00">3:00 PM</option>
-                  <option value="16:00">4:00 PM</option>
-                  <option value="17:00">5:00 PM</option>
-                  <option value="18:00">6:00 PM</option>
-                  <option value="19:00">7:00 PM</option>
-                  <option value="20:00">8:00 PM</option>
-                  <option value="21:00">9:00 PM</option>
-                  <option value="22:00">10:00 PM</option>
+                  {timeSlots.length === 0 ? (
+                    <option value="">Closed on this day</option>
+                  ) : (
+                    timeSlots.map(slot => (
+                      <option key={slot.value} value={slot.value}>{slot.label}</option>
+                    ))
+                  )}
                 </select>
               </div>
 
@@ -516,6 +626,61 @@ export const BookingView: React.FC = () => {
             </div>
           </div>
 
+        </div>
+      )}
+
+      {/* Custom Warning Modal Dialog */}
+      {showWarningModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-brand-dark/70 backdrop-blur-sm animate-fade-in">
+          <div className="relative w-full max-w-md bg-white border border-brand-dark p-6 sm:p-8 space-y-6 shadow-[0_20px_50px_rgba(0,0,0,0.3)] animate-slide-up">
+            
+            {/* Close Button X */}
+            <button
+              type="button"
+              onClick={() => setShowWarningModal(false)}
+              className="absolute top-4 right-4 p-1.5 text-brand-muted hover:text-brand-dark hover:bg-brand-dark/5 transition-colors border border-transparent hover:border-brand-dark/10"
+              aria-label="Close warning"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            {/* Warning Content */}
+            <div className="text-center space-y-4 pt-2">
+              <div className="w-12 h-12 bg-brand-accent/10 text-brand-accent flex items-center justify-center mx-auto">
+                <Sparkles className="w-6 h-6 animate-pulse" />
+              </div>
+              <h3 className="font-sans text-xl sm:text-2xl font-bold tracking-tight text-brand-dark">
+                Book Table / Functions Notice
+              </h3>
+              <div className="max-h-[35vh] overflow-y-auto pr-1 text-left scrollbar-thin border-y border-brand-dark/5 py-2">
+                <p className="font-sans text-xs sm:text-sm text-brand-muted leading-relaxed font-medium whitespace-pre-line">
+                  {noticeText}
+                </p>
+              </div>
+              <p className="font-sans text-2xl font-extrabold text-brand-dark tracking-tight">
+                {noticePhone}
+              </p>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex flex-col sm:flex-row gap-3 pt-2">
+              <a
+                href={`tel:${noticePhone.replace(/\s+/g, '')}`}
+                className="flex-1 bg-brand-accent hover:bg-brand-dark text-white py-3.5 text-sm font-sans font-bold uppercase tracking-wider text-center transition-colors flex items-center justify-center space-x-2"
+              >
+                <PhoneCall className="w-4 h-4" />
+                <span>Call Now</span>
+              </a>
+              <button
+                type="button"
+                onClick={() => setShowWarningModal(false)}
+                className="flex-1 border border-brand-dark/15 hover:border-brand-dark text-brand-dark py-3.5 text-sm font-sans font-bold uppercase tracking-wider text-center transition-colors"
+              >
+                Dismiss
+              </button>
+            </div>
+
+          </div>
         </div>
       )}
 

@@ -378,10 +378,17 @@ export default function App() {
             <span className="font-mono font-bold text-brand-dark tracking-wider block uppercase text-sm">
               THE CLAY HOUSE
             </span>
-            <p className="text-brand-muted leading-relaxed font-normal">
-              Ballycasey Craft And Design Center,<br />
-              Shannon, County Clare V14 AW71
-            </p>
+            <a
+              href="https://maps.google.com/?q=The+Royal+Clay+Oven+Ballycasey+Craft+And+Design+Center+Shannon+County+Clare+V14+AW71"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="block group hover:text-brand-accent transition-colors"
+            >
+              <p className="text-brand-muted leading-relaxed font-normal group-hover:text-brand-dark transition-colors">
+                Ballycasey Craft And Design Center,<br />
+                Shannon, County Clare V14 AW71
+              </p>
+            </a>
             <div className="flex flex-col text-sm text-brand-muted font-mono space-y-1.5 pt-1">
               <span>Phone: <a href="tel:061703636" className="hover:text-brand-accent transition-colors">061 703 636</a></span>
               <span>Mobile: <a href="tel:0894899950" className="hover:text-brand-accent transition-colors">089 489 9950</a></span>

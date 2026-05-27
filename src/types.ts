@@ -73,6 +73,6 @@ export interface Reservation {
   time: string;
    diningArea: 'Indoor' | 'Outdoor Garden' | 'Private Hall (Up to 50)';
   specialRequests?: string;
-  status: 'Confirmed' | 'Cancelled';
+  status: 'Pending' | 'Confirmed' | 'Cancelled';
   createdAt: string;
 }
