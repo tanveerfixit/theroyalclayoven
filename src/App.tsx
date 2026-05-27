@@ -23,36 +23,6 @@ export default function App() {
   const [isCartOpen, setIsCartOpen] = React.useState<boolean>(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = React.useState<boolean>(false);
 
-  // SEO navigation hash-routing helper
-  const navigateToTab = (tab: string) => {
-    window.location.hash = tab;
-    window.scrollTo({ top: 0, behavior: 'instant' });
-  };
-
-  React.useEffect(() => {
-    const handleHashChange = () => {
-      const hash = window.location.hash.replace('#', '');
-      const validTabs = ['home', 'menu', 'takeaway', 'booking', 'history', 'profile', 'admin'];
-      if (validTabs.includes(hash)) {
-        setCurrentTab(hash);
-      } else {
-        // Default to home if empty or invalid
-        if (!hash) {
-          window.location.hash = 'home';
-        } else {
-          setCurrentTab('home');
-        }
-      }
-    };
-
-    window.addEventListener('hashchange', handleHashChange);
-    handleHashChange(); // Sync on load
-
-    return () => {
-      window.removeEventListener('hashchange', handleHashChange);
-    };
-  }, []);
-
   // Synchronize cart with localStorage for continuity
   React.useEffect(() => {
     const savedCart = localStorage.getItem('clay_oven_active_cart');
@@ -139,7 +109,11 @@ export default function App() {
       {/* Top Navigation */}
       <Navbar
         currentTab={currentTab}
-        setCurrentTab={navigateToTab}
+        setCurrentTab={(tab) => {
+          setCurrentTab(tab);
+          // Scroll smoothly to top on tab modification
+          window.scrollTo({ top: 0, behavior: 'instant' });
+        }}
         cartCount={totalCartCount}
         openCartDrawer={() => setIsCartOpen(true)}
         onOpenAuthModal={() => setIsAuthModalOpen(true)}
@@ -156,7 +130,7 @@ export default function App() {
             transition={{ duration: 0.18, ease: 'easeOut' }}
             className="w-full"
           >
-            {currentTab === 'home' && <HomeView setCurrentTab={navigateToTab} />}
+            {currentTab === 'home' && <HomeView setCurrentTab={setCurrentTab} />}
             {currentTab === 'menu' && <MenuView />}
             {currentTab === 'takeaway' && (
               <OrderView
@@ -224,7 +198,7 @@ export default function App() {
                       type="button"
                       onClick={() => {
                         setIsCartOpen(false);
-                        navigateToTab('takeaway');
+                        setCurrentTab('takeaway');
                       }}
                       className="inline-block text-sm font-mono font-bold text-brand-accent hover:underline uppercase"
                     >
@@ -328,7 +302,7 @@ export default function App() {
                       type="button"
                       onClick={() => {
                         setIsCartOpen(false);
-                        navigateToTab('takeaway');
+                        setCurrentTab('takeaway');
                         // Trigger checkout focus if possible
                         setTimeout(() => {
                           const checkoutBtn = document.getElementById('start-checkout-btn');
@@ -372,27 +346,27 @@ export default function App() {
             </span>
             <ul className="space-y-1.5 text-brand-muted uppercase">
               <li>
-                <button type="button" onClick={() => navigateToTab('home')} className="hover:text-brand-dark transition-colors">
+                <button type="button" onClick={() => setCurrentTab('home')} className="hover:text-brand-dark transition-colors">
                   The Restaurant
                 </button>
               </li>
               <li>
-                <button type="button" onClick={() => navigateToTab('menu')} className="hover:text-brand-dark transition-colors">
+                <button type="button" onClick={() => setCurrentTab('menu')} className="hover:text-brand-dark transition-colors">
                   Our Menu Booklet
                 </button>
               </li>
               <li>
-                <button type="button" onClick={() => navigateToTab('takeaway')} className="hover:text-brand-dark transition-colors">
+                <button type="button" onClick={() => setCurrentTab('takeaway')} className="hover:text-brand-dark transition-colors">
                   Collection Takeaway
                 </button>
               </li>
               <li>
-                <button type="button" onClick={() => navigateToTab('booking')} className="hover:text-brand-dark transition-colors">
+                <button type="button" onClick={() => setCurrentTab('booking')} className="hover:text-brand-dark transition-colors">
                   Book Event Layout
                 </button>
               </li>
               <li>
-                <button type="button" onClick={() => navigateToTab('admin')} className="text-brand-accent hover:text-brand-dark transition-colors font-bold">
+                <button type="button" onClick={() => setCurrentTab('admin')} className="text-brand-accent hover:text-brand-dark transition-colors font-bold">
                   Admin Console
                 </button>
               </li>
@@ -431,7 +405,7 @@ export default function App() {
         onLoginSuccess={(user) => {
           localStorage.setItem('clay_oven_google_user', JSON.stringify(user));
           window.dispatchEvent(new Event('profile_updated'));
-          navigateToTab('profile');
+          setCurrentTab('profile');
         }}
       />
 
