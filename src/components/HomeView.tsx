@@ -476,47 +476,47 @@ Falooda (1 Serving) | A delicious, cold traditional dessert drink featuring rose
       {/* Custom Warning Modal Dialog */}
       {showWarningModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-brand-dark/70 backdrop-blur-sm animate-fade-in">
-          <div className="relative w-full max-w-[360px] bg-white border border-brand-dark p-5 sm:p-6 space-y-4 shadow-[0_20px_50px_rgba(0,0,0,0.3)] animate-slide-up">
+          <div className="relative w-full max-w-md bg-white border border-brand-dark p-6 sm:p-8 space-y-6 shadow-[0_20px_50px_rgba(0,0,0,0.3)] animate-slide-up">
             
             {/* Close Button X */}
             <button
               type="button"
               onClick={() => setShowWarningModal(false)}
-              className="absolute top-3.5 right-3.5 p-1 text-brand-muted hover:text-brand-dark hover:bg-brand-dark/5 transition-colors border border-transparent hover:border-brand-dark/10"
+              className="absolute top-4 right-4 p-1.5 text-brand-muted hover:text-brand-dark hover:bg-brand-dark/5 transition-colors border border-transparent hover:border-brand-dark/10"
               aria-label="Close warning"
             >
-              <X className="w-4 h-4" />
+              <X className="w-5 h-5" />
             </button>
 
             {/* Warning Content */}
-            <div className="text-center space-y-3 pt-1">
-              <div className="w-10 h-10 bg-brand-accent/10 text-brand-accent flex items-center justify-center mx-auto">
-                <Sparkles className="w-5 h-5 animate-pulse" />
+            <div className="text-center space-y-4 pt-2">
+              <div className="w-12 h-12 bg-brand-accent/10 text-brand-accent flex items-center justify-center mx-auto">
+                <Sparkles className="w-6 h-6 animate-pulse" />
               </div>
-              <h3 className="font-sans text-lg font-bold tracking-tight text-brand-dark">
+              <h3 className="font-sans text-xl sm:text-2xl font-bold tracking-tight text-brand-dark">
                 Online Ordering Notice
               </h3>
-              <p className="font-sans text-xs sm:text-sm text-brand-muted leading-relaxed font-medium text-center">
+              <p className="font-sans text-base text-brand-muted leading-relaxed font-medium text-center">
                 {noticeText}
               </p>
-              <p className="font-sans text-xl sm:text-2xl font-extrabold text-brand-dark tracking-tight">
+              <p className="font-sans text-3xl font-extrabold text-brand-dark tracking-tight">
                 {noticePhone}
               </p>
             </div>
 
             {/* Action Buttons */}
-            <div className="flex flex-col gap-2 pt-1">
+            <div className="flex flex-col sm:flex-row gap-3 pt-2">
               <a
                 href={`tel:${noticePhone.replace(/\s+/g, '')}`}
-                className="w-full bg-brand-accent hover:bg-brand-dark text-white py-2.5 text-xs font-sans font-bold uppercase tracking-wider text-center transition-colors flex items-center justify-center space-x-1.5"
+                className="flex-1 bg-brand-accent hover:bg-brand-dark text-white py-3.5 text-sm font-sans font-bold uppercase tracking-wider text-center transition-colors flex items-center justify-center space-x-2"
               >
-                <Phone className="w-3.5 h-3.5" />
+                <Phone className="w-4 h-4" />
                 <span>Call Now</span>
               </a>
               <button
                 type="button"
                 onClick={() => setShowWarningModal(false)}
-                className="w-full border border-brand-dark/15 hover:border-brand-dark text-brand-dark py-2.5 text-xs font-sans font-bold uppercase tracking-wider text-center transition-colors"
+                className="flex-1 border border-brand-dark/15 hover:border-brand-dark text-brand-dark py-3.5 text-sm font-sans font-bold uppercase tracking-wider text-center transition-colors"
               >
                 Dismiss
               </button>
