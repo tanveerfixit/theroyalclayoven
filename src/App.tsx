@@ -6,16 +6,31 @@
 import React from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { Navbar } from './components/Navbar';
-import { HomeView } from './components/HomeView';
-import { MenuView } from './components/MenuView';
-import { OrderView } from './components/OrderView';
-import { BookingView } from './components/BookingView';
-import { HistoryView } from './components/HistoryView';
-import { ProfileView } from './components/ProfileView';
-import { AdminDashboard } from './components/AdminDashboard';
-import { AuthModal } from './components/AuthModal';
 import { CartItem, MenuItem } from './types';
 import { Plus, Minus, Trash2, X, ShoppingBag, Send, PhoneCall } from 'lucide-react';
+
+// Lazy loading views for high-performance code splitting
+const HomeView = React.lazy(() => import('./components/HomeView').then(m => ({ default: m.HomeView })));
+const MenuView = React.lazy(() => import('./components/MenuView').then(m => ({ default: m.MenuView })));
+const OrderView = React.lazy(() => import('./components/OrderView').then(m => ({ default: m.OrderView })));
+const BookingView = React.lazy(() => import('./components/BookingView').then(m => ({ default: m.BookingView })));
+const HistoryView = React.lazy(() => import('./components/HistoryView').then(m => ({ default: m.HistoryView })));
+const ProfileView = React.lazy(() => import('./components/ProfileView').then(m => ({ default: m.ProfileView })));
+const AdminDashboard = React.lazy(() => import('./components/AdminDashboard').then(m => ({ default: m.AdminDashboard })));
+const AuthModal = React.lazy(() => import('./components/AuthModal').then(m => ({ default: m.AuthModal })));
+
+// Brand themed loading animation aligned with editorial/sharp style guidelines
+const BrandLoader = () => (
+  <div className="min-h-[60vh] w-full flex flex-col items-center justify-center space-y-4 animate-fade-in bg-brand-beige">
+    <div className="relative w-10 h-10">
+      <div className="absolute inset-0 border border-brand-accent/20 rounded-none"></div>
+      <div className="absolute inset-0 border border-t-brand-accent border-r-brand-accent rounded-none animate-spin"></div>
+    </div>
+    <span className="font-mono text-[10px] font-bold tracking-[0.25em] text-brand-accent uppercase animate-pulse">
+      Preparing Authenticity...
+    </span>
+  </div>
+);
 
 export default function App() {
   const [currentTab, setCurrentTab] = React.useState<string>('home');
@@ -130,21 +145,23 @@ export default function App() {
             transition={{ duration: 0.18, ease: 'easeOut' }}
             className="w-full"
           >
-            {currentTab === 'home' && <HomeView setCurrentTab={setCurrentTab} />}
-            {currentTab === 'menu' && <MenuView />}
-            {currentTab === 'takeaway' && (
-              <OrderView
-                cart={cart}
-                setCart={setCart}
-                addToCart={addToCart}
-                removeFromCart={removeFromCart}
-                updateQuantity={updateQuantity}
-              />
-            )}
-            {currentTab === 'booking' && <BookingView />}
-            {currentTab === 'history' && <HistoryView />}
-            {currentTab === 'profile' && <ProfileView />}
-            {currentTab === 'admin' && <AdminDashboard />}
+            <React.Suspense fallback={<BrandLoader />}>
+              {currentTab === 'home' && <HomeView setCurrentTab={setCurrentTab} />}
+              {currentTab === 'menu' && <MenuView />}
+              {currentTab === 'takeaway' && (
+                <OrderView
+                  cart={cart}
+                  setCart={setCart}
+                  addToCart={addToCart}
+                  removeFromCart={removeFromCart}
+                  updateQuantity={updateQuantity}
+                />
+              )}
+              {currentTab === 'booking' && <BookingView />}
+              {currentTab === 'history' && <HistoryView />}
+              {currentTab === 'profile' && <ProfileView />}
+              {currentTab === 'admin' && <AdminDashboard />}
+            </React.Suspense>
           </motion.div>
         </AnimatePresence>
       </main>
@@ -399,15 +416,17 @@ export default function App() {
         </div>
       </footer>
 
-      <AuthModal
-        isOpen={isAuthModalOpen}
-        onClose={() => setIsAuthModalOpen(false)}
-        onLoginSuccess={(user) => {
-          localStorage.setItem('clay_oven_google_user', JSON.stringify(user));
-          window.dispatchEvent(new Event('profile_updated'));
-          setCurrentTab('profile');
-        }}
-      />
+      <React.Suspense fallback={null}>
+        <AuthModal
+          isOpen={isAuthModalOpen}
+          onClose={() => setIsAuthModalOpen(false)}
+          onLoginSuccess={(user) => {
+            localStorage.setItem('clay_oven_google_user', JSON.stringify(user));
+            window.dispatchEvent(new Event('profile_updated'));
+            setCurrentTab('profile');
+          }}
+        />
+      </React.Suspense>
 
     </div>
   );

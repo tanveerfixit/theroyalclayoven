@@ -44,6 +44,7 @@ export const HomeView: React.FC<HomeViewProps> = ({ setCurrentTab }) => {
             alt="Smoky background" 
             className="w-full h-full object-cover"
             referrerPolicy="no-referrer"
+            fetchPriority="high"
           />
         </div>
         
@@ -159,6 +160,7 @@ export const HomeView: React.FC<HomeViewProps> = ({ setCurrentTab }) => {
                 alt="Karahi cooking" 
                 className="w-full h-full object-cover grayscale hover:grayscale-0 transition-all duration-300"
                 referrerPolicy="no-referrer"
+                loading="lazy"
               />
             </div>
             <div className="p-6 border border-brand-dark/10 bg-white shadow-none space-y-2">
@@ -178,6 +180,7 @@ export const HomeView: React.FC<HomeViewProps> = ({ setCurrentTab }) => {
                 alt="Skewers roasting" 
                 className="w-full h-full object-cover grayscale hover:grayscale-0 transition-all duration-300"
                 referrerPolicy="no-referrer"
+                loading="lazy"
               />
             </div>
           </div>
