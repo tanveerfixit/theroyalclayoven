@@ -9,15 +9,15 @@ import { Navbar } from './components/Navbar';
 import { CartItem, MenuItem } from './types';
 import { Plus, Minus, Trash2, X, ShoppingBag, Send, PhoneCall } from 'lucide-react';
 
-// Lazy loading views for high-performance code splitting
-const HomeView = React.lazy(() => import('./components/HomeView').then(m => ({ default: m.HomeView })));
-const MenuView = React.lazy(() => import('./components/MenuView').then(m => ({ default: m.MenuView })));
-const OrderView = React.lazy(() => import('./components/OrderView').then(m => ({ default: m.OrderView })));
-const BookingView = React.lazy(() => import('./components/BookingView').then(m => ({ default: m.BookingView })));
-const HistoryView = React.lazy(() => import('./components/HistoryView').then(m => ({ default: m.HistoryView })));
-const ProfileView = React.lazy(() => import('./components/ProfileView').then(m => ({ default: m.ProfileView })));
-const AdminDashboard = React.lazy(() => import('./components/AdminDashboard').then(m => ({ default: m.AdminDashboard })));
-const AuthModal = React.lazy(() => import('./components/AuthModal').then(m => ({ default: m.AuthModal })));
+// Static imports of views for instantaneous page transitions and zero load lag
+import { HomeView } from './components/HomeView';
+import { MenuView } from './components/MenuView';
+import { OrderView } from './components/OrderView';
+import { BookingView } from './components/BookingView';
+import { HistoryView } from './components/HistoryView';
+import { ProfileView } from './components/ProfileView';
+import { AdminDashboard } from './components/AdminDashboard';
+import { AuthModal } from './components/AuthModal';
 
 // Brand themed loading animation aligned with editorial/sharp style guidelines
 const BrandLoader = () => (
