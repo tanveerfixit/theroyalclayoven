@@ -385,41 +385,46 @@ The Royal Clay Oven`);
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-20 space-y-12 animate-fade-in" id="booking-view">
       
-      {/* RESERVATIONS CLOSED PERSISTENT BANNER */}
-      {!reservationsEnabled && (
-        <div className="border border-red-200 bg-red-50 p-4 text-left animate-fade-in" id="reservations-disabled-banner">
-          <div className="flex items-start">
-            <div className="flex-shrink-0">
-              <span className="font-bold text-red-800 text-sm font-mono block">★ ONLINE RESERVATIONS PAUSED — WE ARE HAPPILY TAKING BOOKINGS OVER THE PHONE!</span>
-            </div>
-          </div>
-          <div className="mt-2 text-xs sm:text-sm text-red-700 leading-relaxed font-sans font-medium">
-            {reservationsNoticeText}
-          </div>
-          <div className="mt-3">
-            <a
-              href={`tel:${noticePhone.replace(/\s+/g, '')}`}
-              className="inline-flex items-center justify-center bg-red-700 hover:bg-red-800 text-white font-mono font-bold text-xs uppercase tracking-wider px-4 py-2"
-            >
-              <PhoneCall className="w-3.5 h-3.5 mr-1.5" />
-              Call to Book Table Now: {noticePhone}
-            </a>
-          </div>
+      {/* Editorial Header - Only displayed when table reservations are active */}
+      {reservationsEnabled && (
+        <div className="text-center max-w-xl mx-auto pt-4 sm:pt-8 space-y-2 mb-6 sm:mb-10">
+          <span className="font-mono text-xs sm:text-sm tracking-widest text-brand-accent uppercase font-bold">
+            RESERVATIONS
+          </span>
+          <h1 className="font-serif text-2xl sm:text-4xl font-bold tracking-tight text-brand-dark">
+            Book Table / Functions
+          </h1>
+          <p className="text-xs sm:text-sm text-brand-muted leading-relaxed font-normal px-2 sm:px-0">
+            Enjoy in-house luxury dining. Double-capped private hall allows grand birthday layouts, corporate conferences, and outdoor barbecue buffet arrangements for up to 50 guests.
+          </p>
         </div>
       )}
 
-      {/* Editorial Header */}
-      <div className="text-center max-w-xl mx-auto pt-8 space-y-3">
-        <span className="font-mono text-sm tracking-widest text-brand-accent uppercase font-bold">
-          RESERVATIONS
-        </span>
-        <h1 className="font-serif text-3xl sm:text-4xl font-bold tracking-tight text-brand-dark">
-          Book Table / Functions
-        </h1>
-        <p className="text-sm text-brand-muted leading-relaxed font-normal">
-          Enjoy in-house luxury dining. Double-capped private hall allows grand birthday layouts, corporate conferences, and outdoor barbecue buffet arrangements for up to 50 guests.
-        </p>
-      </div>
+      {/* TIGHT MOBILE RESPONSIVE EMERGENCY RESERVATIONS BANNER (Only displays when reservations are paused) */}
+      {!reservationsEnabled && (
+        <div className="mb-6 border border-red-200 bg-red-50 p-4 text-left animate-fade-in" id="reservations-disabled-banner">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="space-y-1">
+              <span className="font-mono text-[10px] text-red-800 font-extrabold uppercase tracking-widest block">★ ONLINE RESERVATIONS PAUSED</span>
+              <h2 className="font-serif text-lg sm:text-xl font-bold tracking-tight text-brand-dark">
+                We are actively taking bookings over the phone!
+              </h2>
+              <p className="text-xs sm:text-sm text-red-700 leading-relaxed font-sans font-medium">
+                {reservationsNoticeText}
+              </p>
+            </div>
+            <div className="shrink-0">
+              <a
+                href={`tel:${noticePhone.replace(/\s+/g, '')}`}
+                className="w-full sm:w-auto inline-flex items-center justify-center bg-red-700 hover:bg-red-800 text-white font-mono font-bold text-xs uppercase tracking-wider px-5 py-3.5 transition-colors"
+              >
+                <PhoneCall className="w-3.5 h-3.5 mr-2" />
+                Call to Book Table Now: {noticePhone}
+              </a>
+            </div>
+          </div>
+        </div>
+      )}
 
       {confirmationMessage ? (
         

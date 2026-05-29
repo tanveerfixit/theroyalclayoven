@@ -415,40 +415,43 @@ export const OrderView: React.FC<OrderViewProps> = ({
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-20 animate-fade-in" id="order-takeaway-view">
       
-      {/* Editorial Header - Hidden in Checkout Mode to center form at top of fold */}
-      {!isCheckoutMode && (
-        <div className="text-center max-w-xl mx-auto pt-8 space-y-3 mb-10">
-          <span className="font-mono text-sm tracking-widest text-brand-accent uppercase font-bold">
+      {/* Editorial Header - Only displayed when online takeaway is active and not in checkout mode */}
+      {!isCheckoutMode && takeawayEnabled && (
+        <div className="text-center max-w-xl mx-auto pt-4 sm:pt-8 space-y-2 mb-6 sm:mb-10">
+          <span className="font-mono text-xs sm:text-sm tracking-widest text-brand-accent uppercase font-bold">
             FAST ONLINE ORDER
           </span>
-          <h1 className="font-serif text-3xl sm:text-4xl font-bold tracking-tight text-brand-dark">
+          <h1 className="font-serif text-2xl sm:text-4xl font-bold tracking-tight text-brand-dark">
             Order &amp; Takeaway Service
           </h1>
-          <p className="text-sm text-brand-muted leading-relaxed font-normal">
+          <p className="text-xs sm:text-sm text-brand-muted leading-relaxed font-normal px-2 sm:px-0">
             Enjoy the same high-grade clay oven flavor at home. Choose self-collection or speedy delivery inside our local radius. A statutory €0.95 packaging fee applies.
           </p>
         </div>
       )}
 
-      {/* TAKEAWAY CLOSED PERSISTENT BANNER */}
+      {/* TIGHT MOBILE RESPONSIVE EMERGENCY PHONE NOTICE (Only displays when online ordering is paused) */}
       {!takeawayEnabled && (
-        <div className="mb-8 border border-red-200 bg-red-50 p-4 text-left animate-fade-in" id="takeaway-disabled-banner">
-          <div className="flex items-start">
-            <div className="flex-shrink-0">
-              <span className="font-bold text-red-800 text-sm font-mono block">★ ONLINE ORDERING PAUSED — WE ARE HAPPILY TAKING ORDERS OVER THE PHONE!</span>
+        <div className="mb-6 border border-red-200 bg-red-50 p-4 text-left animate-fade-in" id="takeaway-disabled-banner">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="space-y-1">
+              <span className="font-mono text-[10px] text-red-800 font-extrabold uppercase tracking-widest block">★ ONLINE ORDERING PAUSED</span>
+              <h2 className="font-serif text-lg sm:text-xl font-bold tracking-tight text-brand-dark">
+                We are actively taking orders over the phone!
+              </h2>
+              <p className="text-xs sm:text-sm text-red-700 leading-relaxed font-sans font-medium">
+                {takeawayNotice}
+              </p>
             </div>
-          </div>
-          <div className="mt-2 text-xs sm:text-sm text-red-700 leading-relaxed font-sans font-medium">
-            {takeawayNotice}
-          </div>
-          <div className="mt-3">
-            <a
-              href={`tel:${noticePhone.replace(/\s+/g, '')}`}
-              className="inline-flex items-center justify-center bg-red-700 hover:bg-red-800 text-white font-mono font-bold text-xs uppercase tracking-wider px-4 py-2"
-            >
-              <Phone className="w-3.5 h-3.5 mr-1.5" />
-              Call to Order Now: {noticePhone}
-            </a>
+            <div className="shrink-0">
+              <a
+                href={`tel:${noticePhone.replace(/\s+/g, '')}`}
+                className="w-full sm:w-auto inline-flex items-center justify-center bg-red-700 hover:bg-red-800 text-white font-mono font-bold text-xs uppercase tracking-wider px-5 py-3.5 transition-colors"
+              >
+                <Phone className="w-3.5 h-3.5 mr-2" />
+                Call to Order Now: {noticePhone}
+              </a>
+            </div>
           </div>
         </div>
       )}     {isCheckoutMode ? (
