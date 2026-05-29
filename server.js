@@ -186,9 +186,17 @@ const pool = mysql.createPool({
     await connection.query(`
       CREATE TABLE IF NOT EXISTS store_settings (
         setting_key VARCHAR(255) PRIMARY KEY,
-        setting_value TEXT NOT NULL
+        setting_value LONGTEXT NOT NULL
       )
     `);
+
+    // Upgrade column to LONGTEXT dynamically to support base64 images
+    try {
+      await connection.query('ALTER TABLE store_settings MODIFY COLUMN setting_value LONGTEXT NOT NULL');
+      console.log('Verified store_settings schema modified to LONGTEXT successfully.');
+    } catch (alterErr) {
+      console.warn('Altering store_settings column failed (might be already LONGTEXT):', alterErr.message);
+    }
 
     // Default settings to seed
     const defaultSettings = {
@@ -960,48 +968,31 @@ app.post('/api/admin/upload-image', async (req, res) => {
   }
 
   try {
-    // Parse base64 header to get extension and raw data
-    const matches = imageBytes.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
-    if (!matches || matches.length !== 3) {
-      return res.status(400).json({ error: 'Invalid Base64 image payload format' });
+    // Validate base64 payload prefix
+    if (!imageBytes.startsWith('data:image/')) {
+      return res.status(400).json({ error: 'Invalid image data format. Must be a base64 image data URI' });
     }
 
-    const mimeType = matches[1];
-    const base64Data = matches[2];
-    const buffer = Buffer.from(base64Data, 'base64');
-
-    // Deduce file extension
-    let ext = 'jpg';
-    if (mimeType.includes('png')) ext = 'png';
-    else if (mimeType.includes('webp')) ext = 'webp';
-    else if (mimeType.includes('gif')) ext = 'gif';
-
-    const filename = `${imageType}-${Date.now()}.${ext}`;
-    const filePath = path.join(__dirname, 'uploads', filename);
-
-    // Write binary buffer to file
-    await fs.promises.writeFile(filePath, buffer);
-    console.log(`Successfully uploaded self-hosted image to: ${filePath}`);
-
-    // Update database path setting
-    const relativeUrl = `/uploads/${filename}`;
     const settingKey = `clay_oven_image_${imageType}`;
 
+    // Store raw base64 data directly inside store_settings database
     await pool.query(
       `INSERT INTO store_settings (setting_key, setting_value)
        VALUES (?, ?)
        ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value)`,
-      [settingKey, relativeUrl]
+      [settingKey, imageBytes]
     );
+
+    console.log(`Successfully stored self-hosted image directly in database under key: ${settingKey}`);
 
     res.json({
       success: true,
-      imageUrl: relativeUrl,
-      message: 'Gallery image uploaded and persistent settings updated successfully.'
+      imageUrl: imageBytes,
+      message: 'Gallery image uploaded and database persistent settings successfully updated.'
     });
   } catch (error) {
-    console.error('Error saving uploaded image:', error);
-    res.status(500).json({ error: 'Failed to process and save gallery image on server host' });
+    console.error('Error saving uploaded image in database:', error);
+    res.status(500).json({ error: 'Failed to process and save gallery image in database settings' });
   }
 });
 
