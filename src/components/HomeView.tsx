@@ -313,8 +313,8 @@ Falooda (1 Serving) | A delicious, cold traditional dessert drink featuring rose
         </div>
 
         <div className="lg:col-span-7 grid grid-cols-2 gap-4">
-          <div className="space-y-4">
-            <div className="h-48 sm:h-64 border border-brand-dark/10 bg-transparent">
+          <div className="space-y-3 sm:space-y-4">
+            <div className="h-48 sm:h-64 border border-brand-dark/10 bg-white">
               <img 
                 src={imageHeritageLeft} 
                 alt="Karahi cooking" 
@@ -323,18 +323,18 @@ Falooda (1 Serving) | A delicious, cold traditional dessert drink featuring rose
                 loading="lazy"
               />
             </div>
-            <div className="p-6 border border-brand-dark/10 bg-white shadow-none space-y-2">
-              <span className="font-serif text-2xl font-bold block text-brand-dark">100%</span>
-              <span className="font-mono text-sm text-brand-muted tracking-wider uppercase block">Hand-Prepared Spices</span>
+            <div className="p-3 sm:p-6 border border-brand-dark/10 bg-white shadow-none space-y-1 sm:space-y-2">
+              <span className="font-serif text-lg sm:text-2xl font-bold block text-brand-dark">100%</span>
+              <span className="font-mono text-[10px] sm:text-sm text-brand-muted tracking-wider uppercase block">Hand-Prepared Spices</span>
             </div>
           </div>
 
-          <div className="space-y-4 pt-8">
-            <div className="p-6 border border-brand-dark/10 bg-white shadow-none space-y-2">
-              <span className="font-serif text-2xl font-bold block text-brand-dark">50+</span>
-              <span className="font-mono text-sm text-brand-muted tracking-wider uppercase block">Guest Capacity Hall</span>
+          <div className="space-y-3 sm:space-y-4 pt-4 sm:pt-8">
+            <div className="p-3 sm:p-6 border border-brand-dark/10 bg-white shadow-none space-y-1 sm:space-y-2">
+              <span className="font-serif text-lg sm:text-2xl font-bold block text-brand-dark">50+</span>
+              <span className="font-mono text-[10px] sm:text-sm text-brand-muted tracking-wider uppercase block">Guest Capacity Hall</span>
             </div>
-            <div className="h-48 sm:h-64 border border-brand-dark/10 bg-transparent">
+            <div className="h-48 sm:h-64 border border-brand-dark/10 bg-white">
               <img 
                 src={imageHeritageRight} 
                 alt="Skewers roasting" 
