@@ -86,3 +86,85 @@ input, select, textarea, button {
   background-size: 200% 100%;
   animation: shimmer 3s infinite linear;
 }
+
+/* Mobile viewport optimization rules (enlarge font scale and tighten whitespace spacing) */
+@media (max-width: 768px) {
+  html, body {
+    font-size: 15px; /* Boost base font size */
+  }
+
+  /* Enlarge typography slightly on mobile for easier reading */
+  p, li, span, button, input, select, textarea {
+    font-size: 14.5px !important;
+  }
+
+  h1, h2 {
+    font-size: 1.95rem !important;
+    line-height: 1.15 !important;
+    letter-spacing: -0.015em !important;
+  }
+
+  h3 {
+    font-size: 1.35rem !important;
+  }
+
+  /* Boost brand name font size in navbar on mobile */
+  #nav-logo span:first-child {
+    font-size: 1.3rem !important;
+    letter-spacing: 0.05em !important;
+  }
+
+  /* Make the absolute festive tag relative on mobile to prevent overlapping headers */
+  .animate-shimmer.absolute.top-0.right-0 {
+    position: relative !important;
+    top: auto !important;
+    right: auto !important;
+    display: inline-flex !important;
+    margin-bottom: 1.25rem !important;
+    width: auto !important;
+    justify-content: center !important;
+  }
+
+  /* Reduce margin and padding offsets to bring elements closer together */
+  .px-4, .px-6, .px-8 {
+    padding-left: 0.85rem !important; /* 13.6px instead of 16px-32px */
+    padding-right: 0.85rem !important;
+  }
+
+  .p-5, .p-6, .p-8, .p-10, .p-12 {
+    padding: 1.15rem !important; /* Bring card borders inward */
+  }
+
+  .py-16, .py-20, .py-28, .py-12 {
+    padding-top: 2.25rem !important;
+    padding-bottom: 2.25rem !important;
+  }
+
+  .gap-6, .gap-8, .gap-10, .gap-12 {
+    gap: 1.15rem !important; /* Tighten stacked columns */
+  }
+
+  .mt-6, .mt-8, .mt-12, .mt-16, .mt-20 {
+    margin-top: 1.6rem !important;
+  }
+
+  /* Tighter vertical spacing for block groups */
+  .space-y-4 > :not([hidden]) ~ :not([hidden]) {
+    margin-top: 0.85rem !important;
+  }
+  .space-y-6 > :not([hidden]) ~ :not([hidden]) {
+    margin-top: 1.15rem !important;
+  }
+  .space-y-8 > :not([hidden]) ~ :not([hidden]) {
+    margin-top: 1.4rem !important;
+  }
+  .space-y-12 > :not([hidden]) ~ :not([hidden]) {
+    margin-top: 1.85rem !important;
+  }
+
+  /* Optimizing the hero py-16 banner size */
+  section.py-16 {
+    padding-top: 3.5rem !important;
+    padding-bottom: 3.5rem !important;
+  }
+}
