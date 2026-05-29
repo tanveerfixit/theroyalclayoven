@@ -32,8 +32,39 @@ export const OrderView: React.FC<OrderViewProps> = ({
   const [showWarningModal, setShowWarningModal] = React.useState(false);
   const [serviceType, setServiceType] = React.useState<'takeaway' | 'delivery'>('takeaway');
 
-  const noticeText = localStorage.getItem('clay_oven_notice_text') || 'We are Still Working on Website, for online order please contact.';
-  const noticePhone = localStorage.getItem('clay_oven_notice_phone') || '089 489 9950';
+  const [noticeText, setNoticeText] = React.useState(localStorage.getItem('clay_oven_notice_text') || 'We are Still Working on Website, for online order please contact.');
+  const [noticePhone, setNoticePhone] = React.useState(localStorage.getItem('clay_oven_notice_phone') || '089 489 9950');
+  const [takeawayEnabled, setTakeawayEnabled] = React.useState(localStorage.getItem('clay_oven_takeaway_enabled') !== 'false');
+  const [takeawayNotice, setTakeawayNotice] = React.useState(localStorage.getItem('clay_oven_takeaway_notice') || 'We are temporarily not taking online orders. Please phone us to order directly!');
+  const [showTakeawayWarningModal, setShowTakeawayWarningModal] = React.useState(false);
+
+  // Sync settings with database on mount
+  React.useEffect(() => {
+    const loadSettings = async () => {
+      try {
+        const response = await fetch('/api/settings');
+        if (response.ok) {
+          const data = await response.json();
+          if (data.clay_oven_notice_text) setNoticeText(data.clay_oven_notice_text);
+          if (data.clay_oven_notice_phone) setNoticePhone(data.clay_oven_notice_phone);
+          if (data.clay_oven_takeaway_enabled !== undefined) {
+            const enabled = data.clay_oven_takeaway_enabled !== 'false';
+            setTakeawayEnabled(enabled);
+            setShowTakeawayWarningModal(!enabled);
+          } else {
+            setShowTakeawayWarningModal(!takeawayEnabled);
+          }
+          if (data.clay_oven_takeaway_notice) setTakeawayNotice(data.clay_oven_takeaway_notice);
+        } else {
+          setShowTakeawayWarningModal(!takeawayEnabled);
+        }
+      } catch (err) {
+        console.error('Failed to retrieve storefront settings:', err);
+        setShowTakeawayWarningModal(!takeawayEnabled);
+      }
+    };
+    loadSettings();
+  }, []);
   
   // Checkout inputs
   const [customerName, setCustomerName] = React.useState('');
@@ -379,11 +410,7 @@ export const OrderView: React.FC<OrderViewProps> = ({
     );
   }
 
-  // Load custom takeaway config
-  const takeawayEnabled = localStorage.getItem('clay_oven_takeaway_enabled') !== 'false';
-  const takeawayNotice = localStorage.getItem('clay_oven_takeaway_notice') || 'We are temporarily not taking online orders. Please phone us to order directly!';
-
-  const [showTakeawayWarningModal, setShowTakeawayWarningModal] = React.useState(!takeawayEnabled);
+  // Takeaway configurations are handled via synchronized React state hooks defined at the top of the view.
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-20 animate-fade-in" id="order-takeaway-view">

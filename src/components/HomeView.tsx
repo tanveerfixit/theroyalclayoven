@@ -12,7 +12,8 @@ interface HomeViewProps {
 }
 
 export const HomeView: React.FC<HomeViewProps> = ({ setCurrentTab }) => {
-  const weeklyTimings = {
+  // Operational timings states
+  const [weeklyTimings, setWeeklyTimings] = React.useState({
     monday: localStorage.getItem('clay_oven_timing_monday') || '4:00 PM - 9:00 PM',
     tuesday: localStorage.getItem('clay_oven_timing_tuesday') || '4:00 PM - 9:00 PM',
     wednesday: localStorage.getItem('clay_oven_timing_wednesday') || '4:00 PM - 9:00 PM',
@@ -21,25 +22,71 @@ export const HomeView: React.FC<HomeViewProps> = ({ setCurrentTab }) => {
     saturday: localStorage.getItem('clay_oven_timing_saturday') || '12:00 PM - 9:00 PM',
     sunday: localStorage.getItem('clay_oven_timing_sunday') || '10:00 AM - 6:00 PM',
     offset: localStorage.getItem('clay_oven_timing_offset') || 'KITCHEN CLOSES 15 MINS PRIOR'
-  };
+  });
 
-  const noticeText = localStorage.getItem('clay_oven_notice_text') || 'We are Still Working on Website, for online order please contact.';
-  const noticePhone = localStorage.getItem('clay_oven_notice_phone') || '089 489 9950';
-  const noticeEnabled = localStorage.getItem('clay_oven_notice_enabled') !== 'false';
+  const [noticeText, setNoticeText] = React.useState(localStorage.getItem('clay_oven_notice_text') || 'We are Still Working on Website, for online order please contact.');
+  const [noticePhone, setNoticePhone] = React.useState(localStorage.getItem('clay_oven_notice_phone') || '089 489 9950');
+  const [noticeEnabled, setNoticeEnabled] = React.useState(localStorage.getItem('clay_oven_notice_enabled') !== 'false');
 
-  const [showWarningModal, setShowWarningModal] = React.useState(noticeEnabled);
+  const [showWarningModal, setShowWarningModal] = React.useState(false);
 
   // Dynamic Festive Offer State
-  const festiveEnabled = localStorage.getItem('clay_oven_festive_enabled') !== 'false';
-  const festiveHeader = localStorage.getItem('clay_oven_festive_header') || 'BANK HOLIDAY WEEKEND';
-  const festiveSubheader = localStorage.getItem('clay_oven_festive_subheader') || 'Running: Thursday — Friday — Monday';
-  const festiveDescription = localStorage.getItem('clay_oven_festive_description') || 'Celebrate the festive weekend with our custom curated clay oven specialty platter. Crafted with premium Pakistani heritage recipes and fresh local ingredients.';
-  const festivePrice = localStorage.getItem('clay_oven_festive_price') || '35.00';
-  const festiveItemsRaw = localStorage.getItem('clay_oven_festive_items') || `Beef Nihari | Slow-cooked, rich beef shank stew cooked to melt-in-mouth perfection, served with 1 fresh hot tandoori naan.
+  const [festiveEnabled, setFestiveEnabled] = React.useState(localStorage.getItem('clay_oven_festive_enabled') !== 'false');
+  const [festiveHeader, setFestiveHeader] = React.useState(localStorage.getItem('clay_oven_festive_header') || 'BANK HOLIDAY WEEKEND');
+  const [festiveSubheader, setFestiveSubheader] = React.useState(localStorage.getItem('clay_oven_festive_subheader') || 'Running: Thursday — Friday — Monday');
+  const [festiveDescription, setFestiveDescription] = React.useState(localStorage.getItem('clay_oven_festive_description') || 'Celebrate the festive weekend with our custom curated clay oven specialty platter. Crafted with premium Pakistani heritage recipes and fresh local ingredients.');
+  const [festivePrice, setFestivePrice] = React.useState(localStorage.getItem('clay_oven_festive_price') || '35.00');
+  const [festiveItemsRaw, setFestiveItemsRaw] = React.useState(localStorage.getItem('clay_oven_festive_items') || `Beef Nihari | Slow-cooked, rich beef shank stew cooked to melt-in-mouth perfection, served with 1 fresh hot tandoori naan.
 Clay Oven BBQ Platter | A flame-roasted collection of 1 Beef Chapli Kebab, 1 tender Lamb Chop, and 1 Royal Kebab Skewer.
 Zeera Rice | Fragrant cumin-tempered basmati rice with aromatic herbs.
 Complimentary Accompaniments | Includes fresh garden salad, traditional yogurt Raita, and tangy herb chutney.
-Falooda (1 Serving) | A delicious, cold traditional dessert drink featuring rose syrup, basil seeds, vermicelli, and sweet milk.`;
+Falooda (1 Serving) | A delicious, cold traditional dessert drink featuring rose syrup, basil seeds, vermicelli, and sweet milk.`);
+
+  // Effect to synchronize settings with server database
+  React.useEffect(() => {
+    const loadSettings = async () => {
+      try {
+        const response = await fetch('/api/settings');
+        if (response.ok) {
+          const data = await response.json();
+          setWeeklyTimings({
+            monday: data.clay_oven_timing_monday || weeklyTimings.monday,
+            tuesday: data.clay_oven_timing_tuesday || weeklyTimings.tuesday,
+            wednesday: data.clay_oven_timing_wednesday || weeklyTimings.wednesday,
+            thursday: data.clay_oven_timing_thursday || weeklyTimings.thursday,
+            friday: data.clay_oven_timing_friday || weeklyTimings.friday,
+            saturday: data.clay_oven_timing_saturday || weeklyTimings.saturday,
+            sunday: data.clay_oven_timing_sunday || weeklyTimings.sunday,
+            offset: data.clay_oven_timing_offset || weeklyTimings.offset
+          });
+
+          if (data.clay_oven_notice_text) setNoticeText(data.clay_oven_notice_text);
+          if (data.clay_oven_notice_phone) setNoticePhone(data.clay_oven_notice_phone);
+          if (data.clay_oven_notice_enabled !== undefined) {
+            const enabled = data.clay_oven_notice_enabled !== 'false';
+            setNoticeEnabled(enabled);
+            setShowWarningModal(enabled);
+          } else {
+            setShowWarningModal(noticeEnabled);
+          }
+
+          if (data.clay_oven_festive_enabled !== undefined) setFestiveEnabled(data.clay_oven_festive_enabled !== 'false');
+          if (data.clay_oven_festive_header) setFestiveHeader(data.clay_oven_festive_header);
+          if (data.clay_oven_festive_subheader) setFestiveSubheader(data.clay_oven_festive_subheader);
+          if (data.clay_oven_festive_description) setFestiveDescription(data.clay_oven_festive_description);
+          if (data.clay_oven_festive_price) setFestivePrice(data.clay_oven_festive_price);
+          if (data.clay_oven_festive_items) setFestiveItemsRaw(data.clay_oven_festive_items);
+        } else {
+          // Keep showing warning modal using local notice status if fetch failed
+          setShowWarningModal(noticeEnabled);
+        }
+      } catch (err) {
+        console.error('Failed to retrieve storefront settings:', err);
+        setShowWarningModal(noticeEnabled);
+      }
+    };
+    loadSettings();
+  }, []);
 
   const parsedFestiveItems = festiveItemsRaw
     .split('\n')

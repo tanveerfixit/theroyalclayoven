@@ -180,6 +180,72 @@ const pool = mysql.createPool({
       console.log('Default SMTP configurations initialized inside database settings successfully.');
     }
 
+    // Auto-create store settings table
+    await connection.query(`
+      CREATE TABLE IF NOT EXISTS store_settings (
+        setting_key VARCHAR(255) PRIMARY KEY,
+        setting_value TEXT NOT NULL
+      )
+    `);
+
+    // Default settings to seed
+    const defaultSettings = {
+      'clay_oven_timing_monday': '4:00 PM - 9:00 PM',
+      'clay_oven_timing_tuesday': '4:00 PM - 9:00 PM',
+      'clay_oven_timing_wednesday': '4:00 PM - 9:00 PM',
+      'clay_oven_timing_thursday': '4:00 PM - 9:00 PM',
+      'clay_oven_timing_friday': '4:00 PM - 9:00 PM',
+      'clay_oven_timing_saturday': '12:00 PM - 9:00 PM',
+      'clay_oven_timing_sunday': '10:00 AM - 6:00 PM',
+      'clay_oven_timing_offset': 'KITCHEN CLOSES 15 MINS PRIOR',
+      'clay_oven_notice_text': 'We are Still Working on Website, for online order please contact.',
+      'clay_oven_notice_phone': '089 489 9950',
+      'clay_oven_notice_enabled': 'true',
+      'clay_oven_booking_notice_text': `Assalamu Alaikum, dear friends and valued guests,
+
+We are incredibly grateful for the wonderful love and support you show us every single day!
+
+While we would love nothing more than to celebrate Eid with all of you, we want to share that our restaurant is now completely fully booked for Eid this Wednesday.
+
+To ensure that everyone dining with us has a fantastic experience, we are unfortunately unable to accept any further bookings or walk-ins for that day.
+
+While we truly wish we could host every one of you on Wednesday, we would be absolutely delighted to welcome you, your family, and your friends on Thursday instead! Please do book a table with us so we can celebrate together then.
+
+To bring a little extra joy to your week, we have some exciting news!
+
+Due to popular demand, we are extending our special Pakistani breakfast service. You can now come and enjoy it with us on both Saturday and Sunday, rather than just on Sundays!
+
+Thank you from the bottom of our hearts for your understanding and continuous support. We cannot wait to see your smiling faces soon!
+
+Warmest regards,
+
+The Royal Clay Oven`,
+      'clay_oven_booking_notice_enabled': 'true',
+      'clay_oven_takeaway_enabled': 'true',
+      'clay_oven_takeaway_notice': 'We are temporarily not taking online orders. Please phone us to order directly!',
+      'clay_oven_reservations_enabled': 'true',
+      'clay_oven_reservations_notice': 'Table reservations are temporarily closed. Please telephone us to book a table!',
+      'clay_oven_festive_enabled': 'true',
+      'clay_oven_festive_header': 'BANK HOLIDAY WEEKEND',
+      'clay_oven_festive_subheader': 'Running: Thursday — Friday — Monday',
+      'clay_oven_festive_description': 'Celebrate the festive weekend with our custom curated clay oven specialty platter. Crafted with premium Pakistani heritage recipes and fresh local ingredients.',
+      'clay_oven_festive_price': '35.00',
+      'clay_oven_festive_items': `Beef Nihari | Slow-cooked, rich beef shank stew cooked to melt-in-mouth perfection, served with 1 fresh hot tandoori naan.
+Clay Oven BBQ Platter | A flame-roasted collection of 1 Beef Chapli Kebab, 1 tender Lamb Chop, and 1 Royal Kebab Skewer.
+Zeera Rice | Fragrant cumin-tempered basmati rice with aromatic herbs.
+Complimentary Accompaniments | Includes fresh garden salad, traditional yogurt Raita, and tangy herb chutney.
+Falooda (1 Serving) | A delicious, cold traditional dessert drink featuring rose syrup, basil seeds, vermicelli, and sweet milk.`
+    };
+
+    for (const [key, value] of Object.entries(defaultSettings)) {
+      await connection.query(`
+        INSERT INTO store_settings (setting_key, setting_value)
+        VALUES (?, ?)
+        ON DUPLICATE KEY UPDATE setting_value = setting_value
+      `, [key, value]);
+    }
+    console.log('Global storefront settings verified and seeded in database successfully.');
+
     console.log('Database tables verified and auto-created successfully.');
     connection.release();
   } catch (error) {
@@ -823,6 +889,49 @@ app.get('/api/admin/bookings', async (req, res) => {
   } catch (error) {
     console.error('Error fetching admin bookings:', error);
     res.status(500).json({ error: 'Database query failed' });
+  }
+});
+
+// 5. Store Settings API Endpoints
+app.get('/api/settings', async (req, res) => {
+  try {
+    const [rows] = await pool.query('SELECT * FROM store_settings');
+    const settingsObj = {};
+    rows.forEach(row => {
+      settingsObj[row.setting_key] = row.setting_value;
+    });
+    res.json(settingsObj);
+  } catch (error) {
+    console.error('Error fetching store settings:', error);
+    res.status(500).json({ error: 'Failed to retrieve storefront settings' });
+  }
+});
+
+app.post('/api/settings', async (req, res) => {
+  const settings = req.body;
+  if (!settings || typeof settings !== 'object') {
+    return res.status(400).json({ error: 'Payload must be a key-value settings object' });
+  }
+
+  const connection = await pool.getConnection();
+  try {
+    await connection.beginTransaction();
+    for (const [key, value] of Object.entries(settings)) {
+      await connection.query(
+        `INSERT INTO store_settings (setting_key, setting_value)
+         VALUES (?, ?)
+         ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value)`,
+        [key, String(value)]
+      );
+    }
+    await connection.commit();
+    res.json({ success: true, message: 'Settings successfully synchronized with server database' });
+  } catch (error) {
+    await connection.rollback();
+    console.error('Error updating store settings in database:', error);
+    res.status(500).json({ error: 'Failed to update storefront settings in database' });
+  } finally {
+    connection.release();
   }
 });
 

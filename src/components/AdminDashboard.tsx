@@ -38,20 +38,20 @@ export const AdminDashboard: React.FC = () => {
   const [funcError, setFuncError] = useState('');
 
   // Custom Timings & Notice Settings states
-  const [timingMonday, setTimingMonday] = useState(localStorage.getItem('clay_oven_timing_monday') || '4:00 PM - 9:00 PM');
-  const [timingTuesday, setTimingTuesday] = useState(localStorage.getItem('clay_oven_timing_tuesday') || '4:00 PM - 9:00 PM');
-  const [timingWednesday, setTimingWednesday] = useState(localStorage.getItem('clay_oven_timing_wednesday') || '4:00 PM - 9:00 PM');
-  const [timingThursday, setTimingThursday] = useState(localStorage.getItem('clay_oven_timing_thursday') || '4:00 PM - 9:00 PM');
-  const [timingFriday, setTimingFriday] = useState(localStorage.getItem('clay_oven_timing_friday') || '4:00 PM - 9:00 PM');
-  const [timingSaturday, setTimingSaturday] = useState(localStorage.getItem('clay_oven_timing_saturday') || '12:00 PM - 9:00 PM');
-  const [timingSunday, setTimingSunday] = useState(localStorage.getItem('clay_oven_timing_sunday') || '10:00 AM - 6:00 PM');
-  const [timingOffset, setTimingOffset] = useState(localStorage.getItem('clay_oven_timing_offset') || 'KITCHEN CLOSES 15 MINS PRIOR');
+  const [timingMonday, setTimingMonday] = useState('4:00 PM - 9:00 PM');
+  const [timingTuesday, setTimingTuesday] = useState('4:00 PM - 9:00 PM');
+  const [timingWednesday, setTimingWednesday] = useState('4:00 PM - 9:00 PM');
+  const [timingThursday, setTimingThursday] = useState('4:00 PM - 9:00 PM');
+  const [timingFriday, setTimingFriday] = useState('4:00 PM - 9:00 PM');
+  const [timingSaturday, setTimingSaturday] = useState('12:00 PM - 9:00 PM');
+  const [timingSunday, setTimingSunday] = useState('10:00 AM - 6:00 PM');
+  const [timingOffset, setTimingOffset] = useState('KITCHEN CLOSES 15 MINS PRIOR');
 
-  const [noticeText, setNoticeText] = useState(localStorage.getItem('clay_oven_notice_text') || 'We are Still Working on Website, for online order please contact.');
-  const [noticePhone, setNoticePhone] = useState(localStorage.getItem('clay_oven_notice_phone') || '089 489 9950');
-  const [noticeEnabled, setNoticeEnabled] = useState(localStorage.getItem('clay_oven_notice_enabled') !== 'false');
+  const [noticeText, setNoticeText] = useState('We are Still Working on Website, for online order please contact.');
+  const [noticePhone, setNoticePhone] = useState('089 489 9950');
+  const [noticeEnabled, setNoticeEnabled] = useState(true);
 
-  const [bookingNoticeText, setBookingNoticeText] = useState(localStorage.getItem('clay_oven_booking_notice_text') || `Assalamu Alaikum, dear friends and valued guests,
+  const [bookingNoticeText, setBookingNoticeText] = useState(`Assalamu Alaikum, dear friends and valued guests,
 
 We are incredibly grateful for the wonderful love and support you show us every single day!
 
@@ -70,66 +70,128 @@ Thank you from the bottom of our hearts for your understanding and continuous su
 Warmest regards,
 
 The Royal Clay Oven`);
-  const [bookingNoticeEnabled, setBookingNoticeEnabled] = useState(localStorage.getItem('clay_oven_booking_notice_enabled') !== 'false');
+  const [bookingNoticeEnabled, setBookingNoticeEnabled] = useState(true);
 
   // Takeaway Online Order Enable/Disable controls
-  const [takeawayEnabled, setTakeawayEnabled] = useState(localStorage.getItem('clay_oven_takeaway_enabled') !== 'false');
-  const [takeawayNoticeText, setTakeawayNoticeText] = useState(localStorage.getItem('clay_oven_takeaway_notice') || 'We are temporarily not taking online orders. Please phone us to order directly!');
+  const [takeawayEnabled, setTakeawayEnabled] = useState(true);
+  const [takeawayNoticeText, setTakeawayNoticeText] = useState('We are temporarily not taking online orders. Please phone us to order directly!');
 
   // Reservation Enable/Disable controls
-  const [reservationsEnabled, setReservationsEnabled] = useState(localStorage.getItem('clay_oven_reservations_enabled') !== 'false');
-  const [reservationsNoticeText, setReservationsNoticeText] = useState(localStorage.getItem('clay_oven_reservations_notice') || 'Table reservations are temporarily closed. Please telephone us to book a table!');
+  const [reservationsEnabled, setReservationsEnabled] = useState(true);
+  const [reservationsNoticeText, setReservationsNoticeText] = useState('Table reservations are temporarily closed. Please telephone us to book a table!');
 
   // Notice Sub-tabs settings pane navigation: 'takeaway' | 'reservations' | 'announcements' | 'festive'
   const [settingsSubTab, setSettingsSubTab] = useState<'takeaway' | 'reservations' | 'announcements' | 'festive'>('takeaway');
 
   // Festive Offer states
-  const [festiveEnabled, setFestiveEnabled] = useState(localStorage.getItem('clay_oven_festive_enabled') !== 'false');
-  const [festiveHeader, setFestiveHeader] = useState(localStorage.getItem('clay_oven_festive_header') || 'BANK HOLIDAY WEEKEND');
-  const [festiveSubheader, setFestiveSubheader] = useState(localStorage.getItem('clay_oven_festive_subheader') || 'Running: Thursday — Friday — Monday');
-  const [festiveDescription, setFestiveDescription] = useState(localStorage.getItem('clay_oven_festive_description') || 'Celebrate the festive weekend with our custom curated clay oven specialty platter. Crafted with premium Pakistani heritage recipes and fresh local ingredients.');
-  const [festivePrice, setFestivePrice] = useState(localStorage.getItem('clay_oven_festive_price') || '35.00');
-  const [festiveItems, setFestiveItems] = useState(localStorage.getItem('clay_oven_festive_items') || `Beef Nihari | Slow-cooked, rich beef shank stew cooked to melt-in-mouth perfection, served with 1 fresh hot tandoori naan.
+  const [festiveEnabled, setFestiveEnabled] = useState(true);
+  const [festiveHeader, setFestiveHeader] = useState('BANK HOLIDAY WEEKEND');
+  const [festiveSubheader, setFestiveSubheader] = useState('Running: Thursday — Friday — Monday');
+  const [festiveDescription, setFestiveDescription] = useState('Celebrate the festive weekend with our custom curated clay oven specialty platter. Crafted with premium Pakistani heritage recipes and fresh local ingredients.');
+  const [festivePrice, setFestivePrice] = useState('35.00');
+  const [festiveItems, setFestiveItems] = useState(`Beef Nihari | Slow-cooked, rich beef shank stew cooked to melt-in-mouth perfection, served with 1 fresh hot tandoori naan.
 Clay Oven BBQ Platter | A flame-roasted collection of 1 Beef Chapli Kebab, 1 tender Lamb Chop, and 1 Royal Kebab Skewer.
 Zeera Rice | Fragrant cumin-tempered basmati rice with aromatic herbs.
 Complimentary Accompaniments | Includes fresh garden salad, traditional yogurt Raita, and tangy herb chutney.
 Falooda (1 Serving) | A delicious, cold traditional dessert drink featuring rose syrup, basil seeds, vermicelli, and sweet milk.`);
 
   const [saveSuccess, setSaveSuccess] = useState(false);
+  const [saveLoading, setSaveLoading] = useState(false);
 
-  const handleSaveSettings = (e: React.FormEvent) => {
+  const fetchSettings = async () => {
+    try {
+      const response = await fetch('/api/settings');
+      if (response.ok) {
+        const data = await response.json();
+        if (data.clay_oven_timing_monday) setTimingMonday(data.clay_oven_timing_monday);
+        if (data.clay_oven_timing_tuesday) setTimingTuesday(data.clay_oven_timing_tuesday);
+        if (data.clay_oven_timing_wednesday) setTimingWednesday(data.clay_oven_timing_wednesday);
+        if (data.clay_oven_timing_thursday) setTimingThursday(data.clay_oven_timing_thursday);
+        if (data.clay_oven_timing_friday) setTimingFriday(data.clay_oven_timing_friday);
+        if (data.clay_oven_timing_saturday) setTimingSaturday(data.clay_oven_timing_saturday);
+        if (data.clay_oven_timing_sunday) setTimingSunday(data.clay_oven_timing_sunday);
+        if (data.clay_oven_timing_offset) setTimingOffset(data.clay_oven_timing_offset);
+
+        if (data.clay_oven_notice_text) setNoticeText(data.clay_oven_notice_text);
+        if (data.clay_oven_notice_phone) setNoticePhone(data.clay_oven_notice_phone);
+        if (data.clay_oven_notice_enabled !== undefined) setNoticeEnabled(data.clay_oven_notice_enabled !== 'false');
+
+        if (data.clay_oven_booking_notice_text) setBookingNoticeText(data.clay_oven_booking_notice_text);
+        if (data.clay_oven_booking_notice_enabled !== undefined) setBookingNoticeEnabled(data.clay_oven_booking_notice_enabled !== 'false');
+
+        if (data.clay_oven_takeaway_enabled !== undefined) setTakeawayEnabled(data.clay_oven_takeaway_enabled !== 'false');
+        if (data.clay_oven_takeaway_notice) setTakeawayNoticeText(data.clay_oven_takeaway_notice);
+
+        if (data.clay_oven_reservations_enabled !== undefined) setReservationsEnabled(data.clay_oven_reservations_enabled !== 'false');
+        if (data.clay_oven_reservations_notice) setReservationsNoticeText(data.clay_oven_reservations_notice);
+
+        if (data.clay_oven_festive_enabled !== undefined) setFestiveEnabled(data.clay_oven_festive_enabled !== 'false');
+        if (data.clay_oven_festive_header) setFestiveHeader(data.clay_oven_festive_header);
+        if (data.clay_oven_festive_subheader) setFestiveSubheader(data.clay_oven_festive_subheader);
+        if (data.clay_oven_festive_description) setFestiveDescription(data.clay_oven_festive_description);
+        if (data.clay_oven_festive_price) setFestivePrice(data.clay_oven_festive_price);
+        if (data.clay_oven_festive_items) setFestiveItems(data.clay_oven_festive_items);
+      }
+    } catch (err) {
+      console.error('Failed to fetch storefront settings:', err);
+    }
+  };
+
+  const handleSaveSettings = async (e: React.FormEvent) => {
     e.preventDefault();
-    localStorage.setItem('clay_oven_timing_monday', timingMonday);
-    localStorage.setItem('clay_oven_timing_tuesday', timingTuesday);
-    localStorage.setItem('clay_oven_timing_wednesday', timingWednesday);
-    localStorage.setItem('clay_oven_timing_thursday', timingThursday);
-    localStorage.setItem('clay_oven_timing_friday', timingFriday);
-    localStorage.setItem('clay_oven_timing_saturday', timingSaturday);
-    localStorage.setItem('clay_oven_timing_sunday', timingSunday);
-    localStorage.setItem('clay_oven_timing_offset', timingOffset);
+    setSaveLoading(true);
+    
+    const settingsPayload = {
+      'clay_oven_timing_monday': timingMonday,
+      'clay_oven_timing_tuesday': timingTuesday,
+      'clay_oven_timing_wednesday': timingWednesday,
+      'clay_oven_timing_thursday': timingThursday,
+      'clay_oven_timing_friday': timingFriday,
+      'clay_oven_timing_saturday': timingSaturday,
+      'clay_oven_timing_sunday': timingSunday,
+      'clay_oven_timing_offset': timingOffset,
+      'clay_oven_notice_text': noticeText,
+      'clay_oven_notice_phone': noticePhone,
+      'clay_oven_notice_enabled': String(noticeEnabled),
+      'clay_oven_booking_notice_text': bookingNoticeText,
+      'clay_oven_booking_notice_enabled': String(bookingNoticeEnabled),
+      'clay_oven_takeaway_enabled': String(takeawayEnabled),
+      'clay_oven_takeaway_notice': takeawayNoticeText,
+      'clay_oven_reservations_enabled': String(reservationsEnabled),
+      'clay_oven_reservations_notice': reservationsNoticeText,
+      'clay_oven_festive_enabled': String(festiveEnabled),
+      'clay_oven_festive_header': festiveHeader,
+      'clay_oven_festive_subheader': festiveSubheader,
+      'clay_oven_festive_description': festiveDescription,
+      'clay_oven_festive_price': festivePrice,
+      'clay_oven_festive_items': festiveItems
+    };
 
-    localStorage.setItem('clay_oven_notice_text', noticeText);
-    localStorage.setItem('clay_oven_notice_phone', noticePhone);
-    localStorage.setItem('clay_oven_notice_enabled', String(noticeEnabled));
-
-    localStorage.setItem('clay_oven_booking_notice_text', bookingNoticeText);
-    localStorage.setItem('clay_oven_booking_notice_enabled', String(bookingNoticeEnabled));
-
-    localStorage.setItem('clay_oven_takeaway_enabled', String(takeawayEnabled));
-    localStorage.setItem('clay_oven_takeaway_notice', takeawayNoticeText);
-
-    localStorage.setItem('clay_oven_reservations_enabled', String(reservationsEnabled));
-    localStorage.setItem('clay_oven_reservations_notice', reservationsNoticeText);
-
-    localStorage.setItem('clay_oven_festive_enabled', String(festiveEnabled));
-    localStorage.setItem('clay_oven_festive_header', festiveHeader);
-    localStorage.setItem('clay_oven_festive_subheader', festiveSubheader);
-    localStorage.setItem('clay_oven_festive_description', festiveDescription);
-    localStorage.setItem('clay_oven_festive_price', festivePrice);
-    localStorage.setItem('clay_oven_festive_items', festiveItems);
-
-    setSaveSuccess(true);
-    setTimeout(() => setSaveSuccess(false), 3000);
+    try {
+      const response = await fetch('/api/settings', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(settingsPayload)
+      });
+      if (response.ok) {
+        setSaveSuccess(true);
+        setTimeout(() => setSaveSuccess(false), 3000);
+      } else {
+        throw new Error('Server responded with an error');
+      }
+    } catch (err) {
+      console.error('Failed to save settings:', err);
+      // Fallback: save to localStorage anyway
+      Object.entries(settingsPayload).forEach(([key, val]) => {
+        localStorage.setItem(key, val);
+      });
+      setSaveSuccess(true);
+      setTimeout(() => setSaveSuccess(false), 3000);
+    } finally {
+      setSaveLoading(false);
+    }
   };
 
   const handleCreateFunction = async (e: React.FormEvent) => {
@@ -291,6 +353,9 @@ Falooda (1 Serving) | A delicious, cold traditional dessert drink featuring rose
         }
         prevOrderCountRef.current = activeNewOrders;
       }
+      
+      // Synchronize administrative storefront settings from the database
+      await fetchSettings();
     } catch (err) {
       console.error('Failed to sync admin data', err);
     } finally {

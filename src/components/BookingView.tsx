@@ -8,17 +8,95 @@ import { Calendar, Users, Home, Compass, PhoneCall, HelpCircle, ShieldCheck, Mai
 import { Reservation } from '../types';
 
 export const BookingView: React.FC = () => {
-  const noticeText = localStorage.getItem('clay_oven_booking_notice_text') || `Assalamu Alaikum, dear friends and valued guests,
-...
-The Royal Clay Oven`;
-  const noticePhone = localStorage.getItem('clay_oven_notice_phone') || '089 489 9950';
-  const noticeEnabled = localStorage.getItem('clay_oven_booking_notice_enabled') !== 'false';
+  const [noticeText, setNoticeText] = React.useState(localStorage.getItem('clay_oven_booking_notice_text') || `Assalamu Alaikum, dear friends and valued guests,
 
-  const reservationsEnabled = localStorage.getItem('clay_oven_reservations_enabled') !== 'false';
-  const reservationsNoticeText = localStorage.getItem('clay_oven_reservations_notice') || 'Table reservations are temporarily closed. Please telephone us to book a table!';
+We are incredibly grateful for the wonderful love and support you show us every single day!
 
-  const [showWarningModal, setShowWarningModal] = React.useState(noticeEnabled);
-  const [showReservationsWarningModal, setShowReservationsWarningModal] = React.useState(!reservationsEnabled);
+While we would love nothing more than to celebrate Eid with all of you, we want to share that our restaurant is now completely fully booked for Eid this Wednesday.
+
+To ensure that everyone dining with us has a fantastic experience, we are unfortunately unable to accept any further bookings or walk-ins for that day.
+
+While we truly wish we could host every one of you on Wednesday, we would be absolutely delighted to welcome you, your family, and your friends on Thursday instead! Please do book a table with us so we can celebrate together then.
+
+To bring a little extra joy to your week, we have some exciting news!
+
+Due to popular demand, we are extending our special Pakistani breakfast service. You can now come and enjoy it with us on both Saturday and Sunday, rather than just on Sundays!
+
+Thank you from the bottom of our hearts for your understanding and continuous support. We cannot wait to see your smiling faces soon!
+
+Warmest regards,
+
+The Royal Clay Oven`);
+  const [noticePhone, setNoticePhone] = React.useState(localStorage.getItem('clay_oven_notice_phone') || '089 489 9950');
+  const [noticeEnabled, setNoticeEnabled] = React.useState(localStorage.getItem('clay_oven_booking_notice_enabled') !== 'false');
+
+  const [reservationsEnabled, setReservationsEnabled] = React.useState(localStorage.getItem('clay_oven_reservations_enabled') !== 'false');
+  const [reservationsNoticeText, setReservationsNoticeText] = React.useState(localStorage.getItem('clay_oven_reservations_notice') || 'Table reservations are temporarily closed. Please telephone us to book a table!');
+
+  const [showWarningModal, setShowWarningModal] = React.useState(false);
+  const [showReservationsWarningModal, setShowReservationsWarningModal] = React.useState(false);
+
+  const [timingSettings, setTimingSettings] = React.useState<Record<string, string>>({
+    monday: localStorage.getItem('clay_oven_timing_monday') || '4:00 PM - 9:00 PM',
+    tuesday: localStorage.getItem('clay_oven_timing_tuesday') || '4:00 PM - 9:00 PM',
+    wednesday: localStorage.getItem('clay_oven_timing_wednesday') || '4:00 PM - 9:00 PM',
+    thursday: localStorage.getItem('clay_oven_timing_thursday') || '4:00 PM - 9:00 PM',
+    friday: localStorage.getItem('clay_oven_timing_friday') || '4:00 PM - 9:00 PM',
+    saturday: localStorage.getItem('clay_oven_timing_saturday') || '12:00 PM - 9:00 PM',
+    sunday: localStorage.getItem('clay_oven_timing_sunday') || '10:00 AM - 6:00 PM',
+    offset: localStorage.getItem('clay_oven_timing_offset') || 'KITCHEN CLOSES 15 MINS PRIOR'
+  });
+
+  // Sync settings with database on mount
+  React.useEffect(() => {
+    const loadSettings = async () => {
+      try {
+        const response = await fetch('/api/settings');
+        if (response.ok) {
+          const data = await response.json();
+          setTimingSettings({
+            monday: data.clay_oven_timing_monday || timingSettings.monday,
+            tuesday: data.clay_oven_timing_tuesday || timingSettings.tuesday,
+            wednesday: data.clay_oven_timing_wednesday || timingSettings.wednesday,
+            thursday: data.clay_oven_timing_thursday || timingSettings.thursday,
+            friday: data.clay_oven_timing_friday || timingSettings.friday,
+            saturday: data.clay_oven_timing_saturday || timingSettings.saturday,
+            sunday: data.clay_oven_timing_sunday || timingSettings.sunday,
+            offset: data.clay_oven_timing_offset || timingSettings.offset
+          });
+
+          if (data.clay_oven_booking_notice_text) setNoticeText(data.clay_oven_booking_notice_text);
+          if (data.clay_oven_notice_phone) setNoticePhone(data.clay_oven_notice_phone);
+          
+          if (data.clay_oven_booking_notice_enabled !== undefined) {
+            const enabled = data.clay_oven_booking_notice_enabled !== 'false';
+            setNoticeEnabled(enabled);
+            setShowWarningModal(enabled);
+          } else {
+            setShowWarningModal(noticeEnabled);
+          }
+
+          if (data.clay_oven_reservations_enabled !== undefined) {
+            const enabled = data.clay_oven_reservations_enabled !== 'false';
+            setReservationsEnabled(enabled);
+            setShowReservationsWarningModal(!enabled);
+          } else {
+            setShowReservationsWarningModal(!reservationsEnabled);
+          }
+
+          if (data.clay_oven_reservations_notice) setReservationsNoticeText(data.clay_oven_reservations_notice);
+        } else {
+          setShowWarningModal(noticeEnabled);
+          setShowReservationsWarningModal(!reservationsEnabled);
+        }
+      } catch (err) {
+        console.error('Failed to retrieve storefront settings:', err);
+        setShowWarningModal(noticeEnabled);
+        setShowReservationsWarningModal(!reservationsEnabled);
+      }
+    };
+    loadSettings();
+  }, []);
 
   // Booking inputs
   const [partySize, setPartySize] = React.useState<number>(2);
@@ -34,7 +112,7 @@ The Royal Clay Oven`;
       const dateObj = new Date(dateStr);
       const days = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
       const dayName = days[dateObj.getDay()];
-      return localStorage.getItem(`clay_oven_timing_${dayName}`) || getDefaultHours(dayName);
+      return timingSettings[dayName] || getDefaultHours(dayName);
     } catch (e) {
       return '4:00 PM - 9:00 PM';
     }
