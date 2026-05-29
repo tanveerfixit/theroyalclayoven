@@ -314,7 +314,7 @@ Falooda (1 Serving) | A delicious, cold traditional dessert drink featuring rose
 
         <div className="lg:col-span-7 grid grid-cols-2 gap-4">
           <div className="space-y-4">
-            <div className="h-48 sm:h-64 border border-brand-dark/10 bg-white">
+            <div className="h-48 sm:h-64 border border-brand-dark/10 bg-transparent">
               <img 
                 src={imageHeritageLeft} 
                 alt="Karahi cooking" 
@@ -334,7 +334,7 @@ Falooda (1 Serving) | A delicious, cold traditional dessert drink featuring rose
               <span className="font-serif text-2xl font-bold block text-brand-dark">50+</span>
               <span className="font-mono text-sm text-brand-muted tracking-wider uppercase block">Guest Capacity Hall</span>
             </div>
-            <div className="h-48 sm:h-64 border border-brand-dark/10 bg-white">
+            <div className="h-48 sm:h-64 border border-brand-dark/10 bg-transparent">
               <img 
                 src={imageHeritageRight} 
                 alt="Skewers roasting" 
