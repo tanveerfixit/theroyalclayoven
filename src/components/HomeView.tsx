@@ -42,6 +42,11 @@ Zeera Rice | Fragrant cumin-tempered basmati rice with aromatic herbs.
 Complimentary Accompaniments | Includes fresh garden salad, traditional yogurt Raita, and tangy herb chutney.
 Falooda (1 Serving) | A delicious, cold traditional dessert drink featuring rose syrup, basil seeds, vermicelli, and sweet milk.`);
 
+  // Self-hosted Gallery Image States
+  const [imageHeroBg, setImageHeroBg] = React.useState(localStorage.getItem('clay_oven_image_hero_bg') || 'https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=1600&q=80');
+  const [imageHeritageLeft, setImageHeritageLeft] = React.useState(localStorage.getItem('clay_oven_image_heritage_left') || 'https://images.unsplash.com/photo-1627308595229-7830a5c91f9f?auto=format&fit=crop&w=600&q=80');
+  const [imageHeritageRight, setImageHeritageRight] = React.useState(localStorage.getItem('clay_oven_image_heritage_right') || 'https://images.unsplash.com/photo-1603360946369-dc9bb6258143?auto=format&fit=crop&w=600&q=80');
+
   // Effect to synchronize settings with server database
   React.useEffect(() => {
     const loadSettings = async () => {
@@ -76,6 +81,10 @@ Falooda (1 Serving) | A delicious, cold traditional dessert drink featuring rose
           if (data.clay_oven_festive_description) setFestiveDescription(data.clay_oven_festive_description);
           if (data.clay_oven_festive_price) setFestivePrice(data.clay_oven_festive_price);
           if (data.clay_oven_festive_items) setFestiveItemsRaw(data.clay_oven_festive_items);
+
+          if (data.clay_oven_image_hero_bg) setImageHeroBg(data.clay_oven_image_hero_bg);
+          if (data.clay_oven_image_heritage_left) setImageHeritageLeft(data.clay_oven_image_heritage_left);
+          if (data.clay_oven_image_heritage_right) setImageHeritageRight(data.clay_oven_image_heritage_right);
         } else {
           // Keep showing warning modal using local notice status if fetch failed
           setShowWarningModal(noticeEnabled);
@@ -110,7 +119,7 @@ Falooda (1 Serving) | A delicious, cold traditional dessert drink featuring rose
       <section className="relative bg-brand-dark text-brand-beige border-b border-brand-dark px-4 py-16 sm:px-6 lg:px-8 lg:py-28 rounded-none">
         <div className="absolute inset-0 opacity-20 pointer-events-none mix-blend-overlay">
           <img 
-            src="https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=1600&q=80" 
+            src={imageHeroBg} 
             alt="Smoky background" 
             className="w-full h-full object-cover"
             referrerPolicy="no-referrer"
@@ -307,9 +316,9 @@ Falooda (1 Serving) | A delicious, cold traditional dessert drink featuring rose
           <div className="space-y-4">
             <div className="h-48 sm:h-64 border border-brand-dark/10 bg-white">
               <img 
-                src="https://images.unsplash.com/photo-1627308595229-7830a5c91f9f?auto=format&fit=crop&w=600&q=80" 
+                src={imageHeritageLeft} 
                 alt="Karahi cooking" 
-                className="w-full h-full object-cover grayscale hover:grayscale-0 transition-all duration-300"
+                className="w-full h-full object-cover"
                 referrerPolicy="no-referrer"
                 loading="lazy"
               />
@@ -327,9 +336,9 @@ Falooda (1 Serving) | A delicious, cold traditional dessert drink featuring rose
             </div>
             <div className="h-48 sm:h-64 border border-brand-dark/10 bg-white">
               <img 
-                src="https://images.unsplash.com/photo-1603360946369-dc9bb6258143?auto=format&fit=crop&w=600&q=80" 
+                src={imageHeritageRight} 
                 alt="Skewers roasting" 
-                className="w-full h-full object-cover grayscale hover:grayscale-0 transition-all duration-300"
+                className="w-full h-full object-cover"
                 referrerPolicy="no-referrer"
                 loading="lazy"
               />

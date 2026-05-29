@@ -55,7 +55,9 @@ async function getTransporter() {
 
 // Middleware
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ limit: '10mb', extended: true }));
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Anti-caching headers for API endpoints to prevent aggressive browser/CDN caching
 app.use('/api', (req, res, next) => {
@@ -234,7 +236,10 @@ The Royal Clay Oven`,
 Clay Oven BBQ Platter | A flame-roasted collection of 1 Beef Chapli Kebab, 1 tender Lamb Chop, and 1 Royal Kebab Skewer.
 Zeera Rice | Fragrant cumin-tempered basmati rice with aromatic herbs.
 Complimentary Accompaniments | Includes fresh garden salad, traditional yogurt Raita, and tangy herb chutney.
-Falooda (1 Serving) | A delicious, cold traditional dessert drink featuring rose syrup, basil seeds, vermicelli, and sweet milk.`
+Falooda (1 Serving) | A delicious, cold traditional dessert drink featuring rose syrup, basil seeds, vermicelli, and sweet milk.`,
+      'clay_oven_image_hero_bg': 'https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=1600&q=80',
+      'clay_oven_image_heritage_left': 'https://images.unsplash.com/photo-1627308595229-7830a5c91f9f?auto=format&fit=crop&w=600&q=80',
+      'clay_oven_image_heritage_right': 'https://images.unsplash.com/photo-1603360946369-dc9bb6258143?auto=format&fit=crop&w=600&q=80'
     };
 
     for (const [key, value] of Object.entries(defaultSettings)) {
@@ -245,6 +250,13 @@ Falooda (1 Serving) | A delicious, cold traditional dessert drink featuring rose
       `, [key, value]);
     }
     console.log('Global storefront settings verified and seeded in database successfully.');
+
+    // Ensure local uploads folder exists
+    const uploadsDir = path.join(__dirname, 'uploads');
+    if (!fs.existsSync(uploadsDir)) {
+      fs.mkdirSync(uploadsDir, { recursive: true });
+      console.log('Static self-hosted uploads directory verified and created successfully.');
+    }
 
     console.log('Database tables verified and auto-created successfully.');
     connection.release();
@@ -932,6 +944,64 @@ app.post('/api/settings', async (req, res) => {
     res.status(500).json({ error: 'Failed to update storefront settings in database' });
   } finally {
     connection.release();
+  }
+});
+
+// 6. Gallery Image Upload API Endpoint
+app.post('/api/admin/upload-image', async (req, res) => {
+  const { imageType, imageBytes } = req.body;
+  if (!imageType || !imageBytes) {
+    return res.status(400).json({ error: 'imageType and imageBytes (Base64 string) are required' });
+  }
+
+  const allowedTypes = ['hero_bg', 'heritage_left', 'heritage_right'];
+  if (!allowedTypes.includes(imageType)) {
+    return res.status(400).json({ error: 'Invalid imageType specified' });
+  }
+
+  try {
+    // Parse base64 header to get extension and raw data
+    const matches = imageBytes.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
+    if (!matches || matches.length !== 3) {
+      return res.status(400).json({ error: 'Invalid Base64 image payload format' });
+    }
+
+    const mimeType = matches[1];
+    const base64Data = matches[2];
+    const buffer = Buffer.from(base64Data, 'base64');
+
+    // Deduce file extension
+    let ext = 'jpg';
+    if (mimeType.includes('png')) ext = 'png';
+    else if (mimeType.includes('webp')) ext = 'webp';
+    else if (mimeType.includes('gif')) ext = 'gif';
+
+    const filename = `${imageType}-${Date.now()}.${ext}`;
+    const filePath = path.join(__dirname, 'uploads', filename);
+
+    // Write binary buffer to file
+    await fs.promises.writeFile(filePath, buffer);
+    console.log(`Successfully uploaded self-hosted image to: ${filePath}`);
+
+    // Update database path setting
+    const relativeUrl = `/uploads/${filename}`;
+    const settingKey = `clay_oven_image_${imageType}`;
+
+    await pool.query(
+      `INSERT INTO store_settings (setting_key, setting_value)
+       VALUES (?, ?)
+       ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value)`,
+      [settingKey, relativeUrl]
+    );
+
+    res.json({
+      success: true,
+      imageUrl: relativeUrl,
+      message: 'Gallery image uploaded and persistent settings updated successfully.'
+    });
+  } catch (error) {
+    console.error('Error saving uploaded image:', error);
+    res.status(500).json({ error: 'Failed to process and save gallery image on server host' });
   }
 });
 

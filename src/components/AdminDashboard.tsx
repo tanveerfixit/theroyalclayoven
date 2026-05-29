@@ -80,8 +80,13 @@ The Royal Clay Oven`);
   const [reservationsEnabled, setReservationsEnabled] = useState(true);
   const [reservationsNoticeText, setReservationsNoticeText] = useState('Table reservations are temporarily closed. Please telephone us to book a table!');
 
-  // Notice Sub-tabs settings pane navigation: 'takeaway' | 'reservations' | 'announcements' | 'festive'
-  const [settingsSubTab, setSettingsSubTab] = useState<'takeaway' | 'reservations' | 'announcements' | 'festive'>('takeaway');
+  // Notice Sub-tabs settings pane navigation: 'takeaway' | 'reservations' | 'announcements' | 'festive' | 'gallery'
+  const [settingsSubTab, setSettingsSubTab] = useState<'takeaway' | 'reservations' | 'announcements' | 'festive' | 'gallery'>('takeaway');
+
+  // Self-hosted Gallery Image States
+  const [imageHeroBg, setImageHeroBg] = useState('https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=1600&q=80');
+  const [imageHeritageLeft, setImageHeritageLeft] = useState('https://images.unsplash.com/photo-1627308595229-7830a5c91f9f?auto=format&fit=crop&w=600&q=80');
+  const [imageHeritageRight, setImageHeritageRight] = useState('https://images.unsplash.com/photo-1603360946369-dc9bb6258143?auto=format&fit=crop&w=600&q=80');
 
   // Festive Offer states
   const [festiveEnabled, setFestiveEnabled] = useState(true);
@@ -131,6 +136,10 @@ Falooda (1 Serving) | A delicious, cold traditional dessert drink featuring rose
         if (data.clay_oven_festive_description) setFestiveDescription(data.clay_oven_festive_description);
         if (data.clay_oven_festive_price) setFestivePrice(data.clay_oven_festive_price);
         if (data.clay_oven_festive_items) setFestiveItems(data.clay_oven_festive_items);
+
+        if (data.clay_oven_image_hero_bg) setImageHeroBg(data.clay_oven_image_hero_bg);
+        if (data.clay_oven_image_heritage_left) setImageHeritageLeft(data.clay_oven_image_heritage_left);
+        if (data.clay_oven_image_heritage_right) setImageHeritageRight(data.clay_oven_image_heritage_right);
       }
     } catch (err) {
       console.error('Failed to fetch storefront settings:', err);
@@ -192,6 +201,49 @@ Falooda (1 Serving) | A delicious, cold traditional dessert drink featuring rose
     } finally {
       setSaveLoading(false);
     }
+  };
+
+  const [imageUploadLoading, setImageUploadLoading] = useState<string | null>(null);
+
+  const handleImageFileChange = async (e: React.ChangeEvent<HTMLInputElement>, imageType: 'hero_bg' | 'heritage_left' | 'heritage_right') => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setImageUploadLoading(imageType);
+    const reader = new FileReader();
+    reader.onloadend = async () => {
+      const base64Data = reader.result as string;
+      try {
+        const response = await fetch('/api/admin/upload-image', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            imageType,
+            imageBytes: base64Data
+          })
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          if (imageType === 'hero_bg') setImageHeroBg(data.imageUrl);
+          else if (imageType === 'heritage_left') setImageHeritageLeft(data.imageUrl);
+          else if (imageType === 'heritage_right') setImageHeritageRight(data.imageUrl);
+          
+          setSaveSuccess(true);
+          setTimeout(() => setSaveSuccess(false), 3000);
+        } else {
+          throw new Error('Image upload failed');
+        }
+      } catch (err) {
+        console.error(err);
+        alert('Failed to upload image to your hosting server.');
+      } finally {
+        setImageUploadLoading(null);
+      }
+    };
+    reader.readAsDataURL(file);
   };
 
   const handleCreateFunction = async (e: React.FormEvent) => {
@@ -1193,6 +1245,17 @@ Falooda (1 Serving) | A delicious, cold traditional dessert drink featuring rose
             >
               4. Festive Offer
             </button>
+            <button
+              type="button"
+              onClick={() => setSettingsSubTab('gallery')}
+              className={`px-4 py-2.5 font-mono text-xs font-bold uppercase tracking-wider border-b-2 transition-all ${
+                settingsSubTab === 'gallery'
+                  ? 'border-brand-accent text-brand-accent bg-brand-beige/10'
+                  : 'border-transparent text-brand-muted hover:text-brand-dark'
+              }`}
+            >
+              5. Gallery Images
+            </button>
           </div>
 
           <form onSubmit={handleSaveSettings} className="space-y-8">
@@ -1594,6 +1657,117 @@ Falooda (1 Serving) | A delicious, cold traditional dessert drink featuring rose
                       </span>
                     </div>
                   </div>
+                </div>
+              </div>
+            )}
+
+            {/* SUBTAB 5: GALLERY IMAGES SETTINGS */}
+            {settingsSubTab === 'gallery' && (
+              <div className="space-y-6 animate-fade-in">
+                <div className="space-y-2 border-b border-brand-dark/5 pb-4 text-left">
+                  <h3 className="font-serif text-lg font-bold text-brand-dark">
+                    Self-Hosted Gallery Settings
+                  </h3>
+                  <p className="font-sans text-xs text-brand-muted font-normal">
+                    Directly upload images onto your server hosting to replace Unsplash defaults. Supports JPG, PNG, and WEBP formats.
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-left">
+                  
+                  {/* HERO BG IMAGE UPLOAD */}
+                  <div className="border border-brand-dark/15 bg-white p-5 space-y-4">
+                    <span className="font-mono text-[10px] text-brand-accent uppercase font-bold tracking-widest block">1. HERO BANNER BACKGROUND</span>
+                    <div className="aspect-video bg-brand-beige border border-brand-dark/5 overflow-hidden flex items-center justify-center relative">
+                      {imageHeroBg ? (
+                        <img src={imageHeroBg} alt="Hero Banner Preview" className="w-full h-full object-cover" />
+                      ) : (
+                        <span className="font-mono text-xs text-brand-muted">No custom image</span>
+                      )}
+                      {imageUploadLoading === 'hero_bg' && (
+                        <div className="absolute inset-0 bg-brand-dark/60 backdrop-blur-sm flex items-center justify-center text-white font-mono text-xs font-bold uppercase tracking-wider">
+                          UPLOADING...
+                        </div>
+                      )}
+                    </div>
+                    <div className="space-y-2">
+                      <label className="block bg-brand-dark hover:bg-brand-accent text-white py-2.5 text-center font-mono text-xs font-bold uppercase tracking-wider cursor-pointer active:scale-98 transition-all">
+                        <span>SELECT HERO IMAGE</span>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={(e) => handleImageFileChange(e, 'hero_bg')}
+                          className="hidden"
+                        />
+                      </label>
+                      <p className="text-[9px] font-mono text-brand-muted text-center uppercase tracking-wide">
+                        * Ideal size: 1600x800px
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* HERITAGE LEFT IMAGE UPLOAD */}
+                  <div className="border border-brand-dark/15 bg-white p-5 space-y-4">
+                    <span className="font-mono text-[10px] text-brand-accent uppercase font-bold tracking-widest block">2. HERITAGE KARAHI COOKING</span>
+                    <div className="aspect-video bg-brand-beige border border-brand-dark/5 overflow-hidden flex items-center justify-center relative">
+                      {imageHeritageLeft ? (
+                        <img src={imageHeritageLeft} alt="Heritage Left Preview" className="w-full h-full object-cover" />
+                      ) : (
+                        <span className="font-mono text-xs text-brand-muted">No custom image</span>
+                      )}
+                      {imageUploadLoading === 'heritage_left' && (
+                        <div className="absolute inset-0 bg-brand-dark/60 backdrop-blur-sm flex items-center justify-center text-white font-mono text-xs font-bold uppercase tracking-wider">
+                          UPLOADING...
+                        </div>
+                      )}
+                    </div>
+                    <div className="space-y-2">
+                      <label className="block bg-brand-dark hover:bg-brand-accent text-white py-2.5 text-center font-mono text-xs font-bold uppercase tracking-wider cursor-pointer active:scale-98 transition-all">
+                        <span>SELECT LEFT IMAGE</span>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={(e) => handleImageFileChange(e, 'heritage_left')}
+                          className="hidden"
+                        />
+                      </label>
+                      <p className="text-[9px] font-mono text-brand-muted text-center uppercase tracking-wide">
+                        * Ideal size: 600x600px (Square)
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* HERITAGE RIGHT IMAGE UPLOAD */}
+                  <div className="border border-brand-dark/15 bg-white p-5 space-y-4">
+                    <span className="font-mono text-[10px] text-brand-accent uppercase font-bold tracking-widest block">3. HERITAGE SKEWERS ROASTING</span>
+                    <div className="aspect-video bg-brand-beige border border-brand-dark/5 overflow-hidden flex items-center justify-center relative">
+                      {imageHeritageRight ? (
+                        <img src={imageHeritageRight} alt="Heritage Right Preview" className="w-full h-full object-cover" />
+                      ) : (
+                        <span className="font-mono text-xs text-brand-muted">No custom image</span>
+                      )}
+                      {imageUploadLoading === 'heritage_right' && (
+                        <div className="absolute inset-0 bg-brand-dark/60 backdrop-blur-sm flex items-center justify-center text-white font-mono text-xs font-bold uppercase tracking-wider">
+                          UPLOADING...
+                        </div>
+                      )}
+                    </div>
+                    <div className="space-y-2">
+                      <label className="block bg-brand-dark hover:bg-brand-accent text-white py-2.5 text-center font-mono text-xs font-bold uppercase tracking-wider cursor-pointer active:scale-98 transition-all">
+                        <span>SELECT RIGHT IMAGE</span>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={(e) => handleImageFileChange(e, 'heritage_right')}
+                          className="hidden"
+                        />
+                      </label>
+                      <p className="text-[9px] font-mono text-brand-muted text-center uppercase tracking-wide">
+                        * Ideal size: 600x600px (Square)
+                      </p>
+                    </div>
+                  </div>
+
                 </div>
               </div>
             )}

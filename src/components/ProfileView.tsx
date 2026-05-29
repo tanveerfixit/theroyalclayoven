@@ -183,7 +183,7 @@ export const ProfileView: React.FC = () => {
             <img 
               src={profile.picture} 
               alt={profile.name} 
-              className="w-20 h-20 rounded-full filter grayscale hover:grayscale-0 transition-all duration-300 border border-brand-dark/10 p-1"
+              className="w-20 h-20 rounded-full border border-brand-dark/10 p-1"
               referrerPolicy="no-referrer"
             />
             <div className="text-center sm:text-left flex-grow space-y-2">
