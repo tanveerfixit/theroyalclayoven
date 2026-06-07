@@ -1,0 +1,21 @@
+# The Royal Clay Oven
+
+The Royal Clay Oven is an authentic Pakistani restaurant and takeaway located in Shannon, County Clare, Ireland. We specialize in flame-grilled charcoal tandoor (clay oven) cooked dishes, naans, traditional kebabs, curries, and gourmet pizzas.
+
+## Contact Information
+- **Phone**: 061 703 636
+- **Mobile / WhatsApp**: 089 489 9950
+- **Email**: customers@clayoven.ie
+- **Address**: Ballycasey Craft And Design Center, Shannon, County Clare, V14 AW71
+- **Domain**: https://www.clayoven.ie
+
+## Pages & Deep Links
+- **Home**: https://www.clayoven.ie/
+- **Menu Booklet**: https://www.clayoven.ie/menu
+- **Takeaway Order (Online Collection)**: https://www.clayoven.ie/takeaway
+- **Table Reservations**: https://www.clayoven.ie/booking
+
+## Core Offerings & Dietary
+- **100% Halal**: All meat is sourced locally and is certified 100% Halal.
+- **Charcoal Tandoor**: Traditional clay oven fueled with charcoal for authentic high-fire cooking of naans, chicken tikka, and tandoori seekh kebabs.
+- **Service Types**: Online ordering for collection (takeaway) and standard table reservations.

@@ -12,6 +12,22 @@ export const MenuView: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = React.useState<string>('All');
   const [vegetarianFilter, setVegetarianFilter] = React.useState(false);
   const [showAllergensKey, setShowAllergensKey] = React.useState(false);
+  const [dishImages, setDishImages] = React.useState<any>({});
+
+  React.useEffect(() => {
+    const fetchDishImages = async () => {
+      try {
+        const response = await fetch('/api/settings');
+        if (response.ok) {
+          const data = await response.json();
+          setDishImages(data);
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    };
+    fetchDishImages();
+  }, []);
 
   // Filter items
   const filteredItems = MENU_ITEMS.filter((item) => {
@@ -146,6 +162,15 @@ export const MenuView: React.FC = () => {
               key={item.id} 
               className="bg-white p-6 sm:p-8 border border-brand-dark/15 flex flex-col justify-between hover:border-brand-dark/40 transition-colors bg-gradient-to-br from-white to-brand-beige/10"
             >
+              {dishImages[`clay_oven_dish_image_${item.id}`] && (
+                <div className="w-full h-48 mb-4 border border-brand-dark/10 bg-brand-beige/5 overflow-hidden">
+                  <img
+                    src={dishImages[`clay_oven_dish_image_${item.id}`]}
+                    alt={item.name}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+              )}
               <div className="space-y-3">
                 
                 {/* Header item */}

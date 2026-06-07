@@ -88,6 +88,9 @@ The Royal Clay Oven`);
   const [imageHeritageLeft, setImageHeritageLeft] = useState('https://images.unsplash.com/photo-1627308595229-7830a5c91f9f?auto=format&fit=crop&w=600&q=80');
   const [imageHeritageRight, setImageHeritageRight] = useState('https://images.unsplash.com/photo-1603360946369-dc9bb6258143?auto=format&fit=crop&w=600&q=80');
 
+  // Database settings raw data state
+  const [settingsData, setSettingsData] = useState<any>({});
+
   // Festive Offer states
   const [festiveEnabled, setFestiveEnabled] = useState(true);
   const [festiveHeader, setFestiveHeader] = useState('BANK HOLIDAY WEEKEND');
@@ -140,6 +143,8 @@ Falooda (1 Serving) | A delicious, cold traditional dessert drink featuring rose
         if (data.clay_oven_image_hero_bg) setImageHeroBg(data.clay_oven_image_hero_bg);
         if (data.clay_oven_image_heritage_left) setImageHeritageLeft(data.clay_oven_image_heritage_left);
         if (data.clay_oven_image_heritage_right) setImageHeritageRight(data.clay_oven_image_heritage_right);
+        
+        setSettingsData(data);
       }
     } catch (err) {
       console.error('Failed to fetch storefront settings:', err);
@@ -1167,6 +1172,100 @@ Falooda (1 Serving) | A delicious, cold traditional dessert drink featuring rose
                             ))}
                           </div>
                         )}
+
+                        {/* Dish Photo Editor Section */}
+                        <div className="mt-2.5 pt-2.5 border-t border-dashed border-brand-dark/10 bg-brand-beige/25 p-2 space-y-3">
+                          <div className="flex items-center justify-between">
+                            <span className="text-[10px] font-mono text-brand-muted uppercase tracking-wider text-left">
+                              Dish Photo
+                            </span>
+                            {settingsData[`clay_oven_dish_image_${item.id}`] && (
+                              <button
+                                type="button"
+                                onClick={async () => {
+                                  try {
+                                    const response = await fetch('/api/settings', {
+                                      method: 'POST',
+                                      headers: { 'Content-Type': 'application/json' },
+                                      body: JSON.stringify({ [`clay_oven_dish_image_${item.id}`]: '' })
+                                    });
+                                    if (response.ok) {
+                                      fetchSettings();
+                                    }
+                                  } catch (err) {
+                                    console.error(err);
+                                  }
+                                }}
+                                className="text-red-600 hover:text-red-800 text-[10px] font-mono font-bold uppercase"
+                              >
+                                Remove
+                              </button>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <div className="w-12 h-12 border border-brand-dark/10 overflow-hidden bg-white flex-shrink-0 flex items-center justify-center">
+                              {settingsData[`clay_oven_dish_image_${item.id}`] ? (
+                                <img
+                                  src={settingsData[`clay_oven_dish_image_${item.id}`]}
+                                  alt={item.name}
+                                  className="w-full h-full object-cover"
+                                />
+                              ) : (
+                                <span className="text-[9px] text-brand-muted font-mono uppercase text-center leading-tight">No Photo</span>
+                              )}
+                            </div>
+                            <div className="flex-grow flex items-center gap-1.5">
+                              <input
+                                type="text"
+                                placeholder="Paste image URL or upload..."
+                                value={settingsData[`clay_oven_dish_image_${item.id}`] || ''}
+                                onChange={async (e) => {
+                                  const newVal = e.target.value;
+                                  setSettingsData(prev => ({ ...prev, [`clay_oven_dish_image_${item.id}`]: newVal }));
+                                  try {
+                                    await fetch('/api/settings', {
+                                      method: 'POST',
+                                      headers: { 'Content-Type': 'application/json' },
+                                      body: JSON.stringify({ [`clay_oven_dish_image_${item.id}`]: newVal })
+                                    });
+                                  } catch (err) {
+                                    console.error(err);
+                                  }
+                                }}
+                                className="flex-grow border border-brand-dark/15 p-1 px-2 text-[10px] font-mono focus:border-brand-dark outline-none bg-white rounded-none"
+                              />
+                              <label className="bg-brand-dark hover:bg-brand-accent text-white py-1 px-2 text-[10px] font-mono font-bold uppercase rounded-none cursor-pointer flex-shrink-0 flex items-center justify-center">
+                                <span>Upload</span>
+                                <input
+                                  type="file"
+                                  accept="image/*"
+                                  className="hidden"
+                                  onChange={async (e) => {
+                                    const file = e.target.files?.[0];
+                                    if (!file) return;
+                                    const reader = new FileReader();
+                                    reader.onload = async () => {
+                                      const base64Data = reader.result as string;
+                                      try {
+                                        const response = await fetch('/api/settings', {
+                                          method: 'POST',
+                                          headers: { 'Content-Type': 'application/json' },
+                                          body: JSON.stringify({ [`clay_oven_dish_image_${item.id}`]: base64Data })
+                                        });
+                                        if (response.ok) {
+                                          fetchSettings();
+                                        }
+                                      } catch (err) {
+                                        console.error(err);
+                                      }
+                                    };
+                                    reader.readAsDataURL(file);
+                                  }}
+                                />
+                              </label>
+                            </div>
+                          </div>
+                        </div>
                       </div>
                     ))}
                   </div>

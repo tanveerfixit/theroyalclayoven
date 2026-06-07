@@ -1,0 +1,449 @@
+[
+  {
+    "id": "pk-butter-chicken",
+    "name": "Butter Chicken",
+    "price": 14.95,
+    "description": "Chicken cooked in a creamy tomato butter sauce. Served with fragrant basmati rice.",
+    "allergens": [7, 11],
+    "category": "Pakistani Cuisine",
+    "imageUrl": "/dishes/butter-chicken.jpeg",
+    "imageUrls": [
+      "/dishes/butter-chicken.jpeg",
+      "/dishes/butter-chicken-2.jpeg",
+      "/dishes/butter-chicken-3.jpeg"
+    ]
+  },
+  {
+    "id": "pk-tikka-masala",
+    "name": "Chicken Tikka Masala",
+    "price": 14.95,
+    "description": "Grilled chicken cooked in a rich spiced tomato sauce. Served with fragrant basmati rice.",
+    "allergens": [7, 11],
+    "category": "Pakistani Cuisine"
+  },
+  {
+    "id": "pk-biryani",
+    "name": "Chicken Biryani",
+    "price": 14.95,
+    "description": "Fragrant basmati rice cooked layered with spiced chicken and traditional aromatics.",
+    "allergens": [11],
+    "category": "Pakistani Cuisine"
+  },
+  {
+    "id": "pk-channa-masala",
+    "name": "Channa Masala",
+    "price": 14.95,
+    "description": "Soft chickpeas cooked in a rich spiced curry blend. Served with basmati rice.",
+    "allergens": [11],
+    "isVeg": true,
+    "category": "Pakistani Cuisine"
+  },
+  {
+    "id": "pk-bbq-platter",
+    "name": "Pakistani Barbeque Platter",
+    "price": 25.95,
+    "description": "A feast of mixed grilled kebabs and juicy wings. served with fresh clay-oven naan and diagnostic mint yoghurt.",
+    "allergens": [7, 11],
+    "category": "Pakistani Cuisine"
+  },
+  {
+    "id": "pk-white-qorma",
+    "name": "White Qorma",
+    "price": 14.95,
+    "description": "Mild, luxurious creamy chicken curry cooked with delicate spices. Served with basmati rice.",
+    "allergens": [7, 8],
+    "category": "Pakistani Cuisine"
+  },
+  {
+    "id": "pk-jalfrezi",
+    "name": "Chicken Jalfrezi",
+    "price": 14.95,
+    "description": "Tender chicken pieces cooked with fresh peppers and onions in a spiced tangy sauce. Served with basmati rice.",
+    "allergens": [11],
+    "category": "Pakistani Cuisine"
+  },
+  {
+    "id": "pk-bhuna",
+    "name": "Chicken Bhuna",
+    "price": 14.95,
+    "description": "Chicken tikka pieces cooked in a heavy, highly reduced onion and tomato blend. Served with basmati rice.",
+    "allergens": [7, 11],
+    "category": "Pakistani Cuisine"
+  },
+  {
+    "id": "pk-madras",
+    "name": "Chicken Madras",
+    "price": 14.95,
+    "description": "Hot and fiery chicken curry cooked in an aromatic Southern-style sauce. Served with basmati rice.",
+    "allergens": [7, 11],
+    "category": "Pakistani Cuisine"
+  },
+  {
+    "id": "pk-rogan-josh",
+    "name": "Rogan Josh",
+    "price": 14.95,
+    "description": "A traditional slow-cooked succulent chicken curry prepared in a rich aromatic red gravy. Served with basmati rice.",
+    "allergens": [7, 11],
+    "category": "Pakistani Cuisine"
+  },
+  {
+    "id": "co-peppercorn",
+    "name": "Grilled Peppercorn Chicken",
+    "price": 16.95,
+    "description": "Char-grilled chicken breast topped with rich, warm peppercorn sauce. Served with a portion of crispy chips.",
+    "allergens": [7, 11],
+    "category": "Clay Oven Specials"
+  },
+  {
+    "id": "co-sirloin",
+    "name": "Sirloin Steak",
+    "price": 24.95,
+    "description": "Juicy sirloin steak with pan-fried mushrooms, caramelized onions, and finished with warm peppercorn sauce. Served with chips.",
+    "allergens": [7, 11],
+    "category": "Clay Oven Specials",
+    "imageUrl": "/dishes/sirloin-steak.jpeg"
+  },
+  {
+    "id": "co-lamb-chops",
+    "name": "Lamb Chops",
+    "price": 21.95,
+    "description": "Traditional flame-grilled lamb chops marinate in deep aromatic spices. Served with hot chips.",
+    "allergens": [11],
+    "category": "Clay Oven Specials"
+  },
+  {
+    "id": "co-mixed-grill",
+    "name": "Clay Oven Mixed Grill",
+    "price": 25.95,
+    "description": "An ultimate selection of flame-grilled meats served with grilled mushrooms and onions. Served with chips.",
+    "allergens": [7, 11],
+    "category": "Clay Oven Specials"
+  },
+  {
+    "id": "kb-shish",
+    "name": "Chicken Shish Kebab",
+    "price": 14.95,
+    "description": "Flame-grilled skewered chicken breast with fresh naan, crisp salad, and house garlic or chili sauce.",
+    "allergens": [1, 7, 11],
+    "category": "Kebabs"
+  },
+  {
+    "id": "kb-malai",
+    "name": "Chicken Malai Tikka Kebab",
+    "price": 14.95,
+    "description": "Creamy-marinated tender chicken cooked on skewers. Served with fresh naan, salad, and signature sauce.",
+    "allergens": [1, 7, 11],
+    "category": "Kebabs"
+  },
+  {
+    "id": "kb-tikka",
+    "name": "Chicken Tikka Kebab",
+    "price": 14.95,
+    "description": "Classic spiced chicken tikka skewered and grilled. Accompanied by fresh naan, crisp salad, and sauce.",
+    "allergens": [1, 7, 11],
+    "category": "Kebabs"
+  },
+  {
+    "id": "kb-doner",
+    "name": "Lamb Doner Kebab",
+    "price": 14.95,
+    "description": "Finely seasoned lamb doner meat served in a warm fresh naan alongside local salad and sauce.",
+    "allergens": [1, 7, 11],
+    "category": "Kebabs"
+  },
+  {
+    "id": "kb-shawarma",
+    "name": "Chicken Shawarma Kebab",
+    "price": 14.95,
+    "description": "Zesty marinated shredded chicken cooked slowly. Wrapped in handmade naan with garlic-tahini or chili sauce & salad.",
+    "allergens": [1, 7, 11],
+    "category": "Kebabs"
+  },
+  {
+    "id": "bg-veg",
+    "name": "Vegetable Burger",
+    "price": 13.95,
+    "description": "Savory vegetable patty layered with crisp salad and burger dressing in a lightly toasted bun. Includes chips and a soft drink.",
+    "allergens": [1, 3, 11],
+    "isVeg": true,
+    "category": "Burgers"
+  },
+  {
+    "id": "bg-steak",
+    "name": "Steak Burger",
+    "price": 15.95,
+    "description": "Tender sirloin steak strips topped with cheese, shredded lettuce, and burger sauce. Includes chips and a soft drink.",
+    "allergens": [1, 3, 7, 11],
+    "category": "Burgers",
+    "imageUrl": "/dishes/steak-burger.jpeg",
+    "imageUrls": [
+      "/dishes/steak-burger.jpeg",
+      "/dishes/steak-burger-2.jpeg",
+      "/dishes/steak-burger-3.jpeg"
+    ]
+  },
+  {
+    "id": "bg-smash",
+    "name": "Smash Burger",
+    "price": 14.95,
+    "description": "Smashed double beef patties with melted cheese, raw and grilled onions, crisp lettuce, and special sauce. Includes chips and a soft drink.",
+    "allergens": [1, 3, 7, 11],
+    "category": "Burgers"
+  },
+  {
+    "id": "bg-peri",
+    "name": "Peri-Peri Chicken Burger",
+    "price": 14.95,
+    "description": "Flame-licked peri-peri chicken breast fillet with crisp lettuce and creamy mayo. Includes chips and a soft drink.",
+    "allergens": [1, 3, 7, 11],
+    "category": "Burgers"
+  },
+  {
+    "id": "bg-korean",
+    "name": "Korean-Style Chicken Burger",
+    "price": 14.95,
+    "description": "Crispy batter-fried chicken fillet tossed in a sticky sweet & spicy Korean glaze. Includes chips and a soft drink.",
+    "allergens": [1, 3, 6, 11],
+    "category": "Burgers"
+  },
+  {
+    "id": "pz-margherita",
+    "name": "Margherita Pizza",
+    "price": 11.95,
+    "description": "Classic house-made tomato sauce and 100% mozzarella cheese baked in a hot brick oven.",
+    "allergens": [1, 7],
+    "sizeOptions": [
+      { "name": "10 inch", "price": 11.95 },
+      { "name": "12 inch", "price": 14.95 }
+    ],
+    "category": "Pizza"
+  },
+  {
+    "id": "pz-hawaiian",
+    "name": "Hawaiian Pizza",
+    "price": 12.95,
+    "description": "Hearty tomato sauce, premium turkey ham, juicy pineapple chunks, and mozzarella.",
+    "allergens": [1, 7],
+    "sizeOptions": [
+      { "name": "10 inch", "price": 12.95 },
+      { "name": "12 inch", "price": 15.95 }
+    ],
+    "category": "Pizza"
+  },
+  {
+    "id": "pz-allmeat",
+    "name": "All Meat Pizza",
+    "price": 13.95,
+    "description": "Loaded with spicy pepperoni slices, turkey ham, and grilled chicken on a bed of rich cheese.",
+    "allergens": [1, 7],
+    "sizeOptions": [
+      { "name": "10 inch", "price": 13.95 },
+      { "name": "12 inch", "price": 16.95 }
+    ],
+    "category": "Pizza"
+  },
+  {
+    "id": "pz-pepperoni",
+    "name": "Hot Pepperoni Pizza",
+    "price": 12.95,
+    "description": "Spicy Italian pepperoni and hot jalapeño peppers with melted mozzarella. Try with a drizzle of Hot Honey!",
+    "allergens": [1, 7],
+    "sizeOptions": [
+      { "name": "10 inch", "price": 12.95 },
+      { "name": "12 inch", "price": 15.95 }
+    ],
+    "category": "Pizza"
+  },
+  {
+    "id": "pz-garlic",
+    "name": "Garlic Bread (10\")",
+    "price": 9.95,
+    "description": "Crisp, fresh-baked garlic bread seasoned with Mediterranean herbs. (+1.00 for Melted Cheese available on notes)",
+    "allergens": [1, 7],
+    "category": "Pizza"
+  },
+  {
+    "id": "dl-one",
+    "name": "Deal 1",
+    "price": 14.95,
+    "description": "One 10-inch custom pizza of your choice served with hot chips and a cold soft drink.",
+    "category": "Pizza Deals"
+  },
+  {
+    "id": "dl-two",
+    "name": "Deal 2",
+    "price": 19.95,
+    "description": "One 12-inch custom pizza of your choice accompanied by hot chips and a cold soft drink.",
+    "category": "Pizza Deals"
+  },
+  {
+    "id": "dl-family",
+    "name": "Family Deal",
+    "price": 39.95,
+    "description": "A mega meal including 2x 12-inch Pizzas, 2x portion of Large Fries, 2x Cans, 2x Juices, 2x dipping sauces, and a 10-inch Garlic Bread with cheese.",
+    "category": "Pizza Deals"
+  },
+  {
+    "id": "lb-peri-strips",
+    "name": "Peri-Peri Chicken Strips",
+    "price": 6.95,
+    "description": "Juicy chicken tender strips served with creamy, hot peri-peri dipping sauce.",
+    "allergens": [1, 3, 7, 11],
+    "category": "Light Bites",
+    "imageUrl": "/dishes/peri-peri-strips.jpeg"
+  },
+  {
+    "id": "lb-shish",
+    "name": "Chicken Shish Kebab (Light)",
+    "price": 7.95,
+    "description": "Flame-grilled traditional mini chicken kebab skewer served with charred peppers and sweet onions.",
+    "allergens": [11],
+    "category": "Light Bites"
+  },
+  {
+    "id": "lb-malai-tikka",
+    "name": "Chicken Malai Tikka (Light)",
+    "price": 7.95,
+    "description": "Creamy-marinated mini chicken chunks skewered and grilled cleanly with onions and capsicum.",
+    "allergens": [7, 8, 11],
+    "category": "Light Bites"
+  },
+  {
+    "id": "lb-onion-bhaji",
+    "name": "Onion Bhaji",
+    "price": 6.95,
+    "description": "Crisp-fried spiced golden onion fritters with a hint of cumin and coriander.",
+    "allergens": [1, 11],
+    "isVeg": true,
+    "category": "Light Bites"
+  },
+  {
+    "id": "lb-falafel-hummus",
+    "name": "Falafel & Hummus",
+    "price": 6.95,
+    "description": "Handmade crispy vegetarian falafel balls served with creamy chickpea hummus and fresh salad.",
+    "allergens": [1, 6, 10, 14],
+    "isVeg": true,
+    "category": "Light Bites",
+    "imageUrl": "/dishes/falafel.jpeg"
+  },
+  {
+    "id": "ww-wings",
+    "name": "Chicken Wings (6 or 10 pcs)",
+    "price": 7.95,
+    "description": "Succulent wings toasted in your secret favorite sauce. Choose from Sweet Mango Chilli, BBQ, Hot & Spicy, Korean, or Cajun.",
+    "allergens": [3, 6, 11],
+    "sizeOptions": [
+      { "name": "6 Pieces", "price": 7.95 },
+      { "name": "10 Pieces", "price": 10.95 }
+    ],
+    "category": "Wings & Wraps",
+    "imageUrl": "/dishes/chicken-wings.jpeg"
+  },
+  {
+    "id": "ww-boneless",
+    "name": "Crispy Boneless Wings",
+    "price": 7.95,
+    "description": "Fried breaded chicken bites tossed in your choice of sauce.",
+    "allergens": [1, 3, 6, 11],
+    "sizeOptions": [
+      { "name": "6 Pieces", "price": 7.95 },
+      { "name": "10 Pieces", "price": 10.95 }
+    ],
+    "category": "Wings & Wraps"
+  },
+  {
+    "id": "ww-wrap-grilled",
+    "name": "Grilled Chicken Wrap",
+    "price": 12.95,
+    "description": "A soft flat tortilla wrap filled with sliced grilled breast chicken, garden salad, and sweet chili sauce. With fries & drink.",
+    "allergens": [1, 3, 11, 14],
+    "category": "Wings & Wraps"
+  },
+  {
+    "id": "ww-wrap-crispy",
+    "name": "Crispy Chicken Wrap",
+    "price": 12.95,
+    "description": "Soft tortilla wrap with golden breaded chicken goujons, crisp lettuce, tomato, salad, and sweet chili. With fries & drink.",
+    "allergens": [1, 3, 6, 10, 11, 14],
+    "category": "Wings & Wraps"
+  },
+  {
+    "id": "sd-naan",
+    "name": "Naan Bread",
+    "price": 2.50,
+    "description": "Fresh, airy bread baked inside the traditional high-heat tandoor clay oven.",
+    "allergens": [1, 7],
+    "category": "Sides & Dips"
+  },
+  {
+    "id": "co-sweet-potato",
+    "name": "Sweet Potato Fries",
+    "price": 3.50,
+    "description": "Crimson-brown sweet potato strips fried to perfection.",
+    "category": "Sides & Dips"
+  },
+  {
+    "id": "sd-fries",
+    "name": "Fries",
+    "price": 2.95,
+    "description": "Fresh cut crisp golden potato french fries.",
+    "allergens": [1],
+    "category": "Sides & Dips"
+  },
+  {
+    "id": "sd-sauce-peri",
+    "name": "Peri-Peri Mayo Dip",
+    "price": 1.50,
+    "description": "Creamy mayonnaise customized with peri peri chilies and spices.",
+    "allergens": [3, 11],
+    "category": "Sides & Dips"
+  },
+  {
+    "id": "sd-sauce-chutney",
+    "name": "Mint Yogurt Dip",
+    "price": 1.50,
+    "description": "Refreshing cool homemade yogurt mixed with mint leaf paste.",
+    "allergens": [7, 11],
+    "category": "Sides & Dips"
+  },
+  {
+    "id": "dd-soft-drink",
+    "name": "Premium Soft Can",
+    "price": 2.95,
+    "description": "Refreshing cold can of Cola, Lemon & Lime, or Orange.",
+    "category": "Drinks & Desserts"
+  },
+  {
+    "id": "dd-shake-oreo",
+    "name": "Oreo Premium Milkshake",
+    "price": 4.95,
+    "description": "Rich vanilla ice-milk shake blended with authentic Oreo biscuit crumbles and chocolate swirl.",
+    "allergens": [1, 7],
+    "category": "Drinks & Desserts"
+  },
+  {
+    "id": "dd-shake-biscoff",
+    "name": "Lotus Biscoff Milkshake",
+    "price": 4.95,
+    "description": "Decadent creamy milkshake loaded with famous Lotus Biscoff caramelized cookie spread.",
+    "allergens": [1, 7],
+    "category": "Drinks & Desserts"
+  },
+  {
+    "id": "dd-toffee",
+    "name": "Sticky Toffee Pudding",
+    "price": 7.95,
+    "description": "Decadently warm sticky sponge toffee pudding matched with cold scoop of vanilla ice-cream.",
+    "allergens": [1, 3, 7],
+    "category": "Drinks & Desserts"
+  },
+  {
+    "id": "dd-brownie",
+    "name": "Warm Fudge Chocolate Brownie",
+    "price": 7.95,
+    "description": "Moist rich chocolate brownie served warm with a scoop of premium vanilla bean ice-cream.",
+    "allergens": [1, 3, 7],
+    "category": "Drinks & Desserts"
+  }
+]

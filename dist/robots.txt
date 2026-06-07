@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /
+Allow: /menu
+Allow: /takeaway
+Allow: /booking
+Allow: /profile
+Allow: /history
+
+Sitemap: https://www.clayoven.ie/sitemap.xml
