@@ -661,11 +661,11 @@ Falooda (1 Serving) | A delicious, cold traditional dessert drink featuring rose
         </div>
 
         {/* Global Controls Panel */}
-        <div className="flex flex-wrap items-center gap-3">
+        <div className="grid grid-cols-1 sm:flex sm:flex-wrap gap-2.5 w-full sm:w-auto">
           <button
             type="button"
             onClick={() => setMuteSound(!muteSound)}
-            className={`px-4 py-2 border font-mono text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 transition-all ${
+            className={`px-4 py-2 border font-mono text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all ${
               muteSound
                 ? 'bg-amber-50 text-amber-700 border-amber-300'
                 : 'bg-white hover:bg-brand-dark/5 border-brand-dark/10 text-brand-muted'
@@ -678,7 +678,7 @@ Falooda (1 Serving) | A delicious, cold traditional dessert drink featuring rose
             type="button"
             onClick={fetchData}
             disabled={loading}
-            className="bg-white border border-brand-dark/10 hover:border-brand-dark text-brand-dark px-4 py-2 font-mono text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 active:bg-brand-dark/5 disabled:opacity-50 transition-all rounded-none"
+            className="bg-white border border-brand-dark/10 hover:border-brand-dark text-brand-dark px-4 py-2 font-mono text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-1.5 active:bg-brand-dark/5 disabled:opacity-50 transition-all rounded-none"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
             <span>{loading ? 'SYNCING...' : 'SYNC CONSOLE'}</span>
@@ -686,7 +686,7 @@ Falooda (1 Serving) | A delicious, cold traditional dessert drink featuring rose
           <button
             type="button"
             onClick={() => setIsAuthenticated(false)}
-            className="border border-red-200 hover:border-red-600 text-red-600 px-4 py-2 font-mono text-xs font-bold uppercase tracking-wider rounded-none transition-colors"
+            className="border border-red-200 hover:border-red-600 text-red-600 px-4 py-2 font-mono text-xs font-bold uppercase tracking-wider rounded-none text-center transition-colors"
           >
             LOCK SESSION
           </button>
@@ -694,10 +694,10 @@ Falooda (1 Serving) | A delicious, cold traditional dessert drink featuring rose
       </div>
 
       {/* Main Console Subtabs Navigation */}
-      <div className="flex space-x-6 border-b border-brand-dark/10">
+      <div className="flex space-x-4 border-b border-brand-dark/10 overflow-x-auto whitespace-nowrap scrollbar-none pb-1">
         <button
           onClick={() => setAdminTab('orders')}
-          className={`pb-4 font-mono text-xs font-bold uppercase tracking-widest border-b-2 flex items-center gap-1.5 transition-all ${
+          className={`pb-3 font-mono text-xs font-bold uppercase tracking-widest border-b-2 flex items-center gap-1.5 transition-all shrink-0 ${
             adminTab === 'orders'
               ? 'border-brand-dark text-brand-dark'
               : 'border-transparent text-brand-muted hover:text-brand-dark'
@@ -708,7 +708,7 @@ Falooda (1 Serving) | A delicious, cold traditional dessert drink featuring rose
         </button>
         <button
           onClick={() => setAdminTab('bookings')}
-          className={`pb-4 font-mono text-xs font-bold uppercase tracking-widest border-b-2 flex items-center gap-1.5 transition-all ${
+          className={`pb-3 font-mono text-xs font-bold uppercase tracking-widest border-b-2 flex items-center gap-1.5 transition-all shrink-0 ${
             adminTab === 'bookings'
               ? 'border-brand-dark text-brand-dark'
               : 'border-transparent text-brand-muted hover:text-brand-dark'
@@ -719,7 +719,7 @@ Falooda (1 Serving) | A delicious, cold traditional dessert drink featuring rose
         </button>
         <button
           onClick={() => setAdminTab('functions')}
-          className={`pb-4 font-mono text-xs font-bold uppercase tracking-widest border-b-2 flex items-center gap-1.5 transition-all ${
+          className={`pb-3 font-mono text-xs font-bold uppercase tracking-widest border-b-2 flex items-center gap-1.5 transition-all shrink-0 ${
             adminTab === 'functions'
               ? 'border-brand-dark text-brand-dark'
               : 'border-transparent text-brand-muted hover:text-brand-dark'
@@ -730,7 +730,7 @@ Falooda (1 Serving) | A delicious, cold traditional dessert drink featuring rose
         </button>
         <button
           onClick={() => setAdminTab('catalog')}
-          className={`pb-4 font-mono text-xs font-bold uppercase tracking-widest border-b-2 flex items-center gap-1.5 transition-all ${
+          className={`pb-3 font-mono text-xs font-bold uppercase tracking-widest border-b-2 flex items-center gap-1.5 transition-all shrink-0 ${
             adminTab === 'catalog'
               ? 'border-brand-dark text-brand-dark'
               : 'border-transparent text-brand-muted hover:text-brand-dark'
@@ -741,7 +741,7 @@ Falooda (1 Serving) | A delicious, cold traditional dessert drink featuring rose
         </button>
         <button
           onClick={() => setAdminTab('settings')}
-          className={`pb-4 font-mono text-xs font-bold uppercase tracking-widest border-b-2 flex items-center gap-1.5 transition-all ${
+          className={`pb-3 font-mono text-xs font-bold uppercase tracking-widest border-b-2 flex items-center gap-1.5 transition-all shrink-0 ${
             adminTab === 'settings'
               ? 'border-brand-dark text-brand-dark'
               : 'border-transparent text-brand-muted hover:text-brand-dark'
@@ -998,51 +998,133 @@ Falooda (1 Serving) | A delicious, cold traditional dessert drink featuring rose
             </div>
           </div>
 
-          <div className="overflow-x-auto">
+          <div>
             {filteredBookings.length === 0 ? (
               <p className="text-sm font-mono text-brand-muted text-center py-20 italic">
                 No matching dining reservations mapped.
               </p>
             ) : (
-              <table className="w-full border-collapse font-mono text-xs text-left">
-                <thead>
-                  <tr className="border-b border-brand-dark/15 text-brand-muted uppercase text-[10px] tracking-wider bg-brand-beige/10">
-                    <th className="py-3 px-4">REF ID</th>
-                    <th className="py-3 px-4">CUSTOMER Details</th>
-                    <th className="py-3 px-4">GUESTS</th>
-                    <th className="py-3 px-4">TIMINGS</th>
-                    <th className="py-3 px-4">ZONE SECTION</th>
-                    <th className="py-3 px-4">SPECIAL REQUESTS</th>
-                    <th className="py-3 px-4">STATUS</th>
-                    <th className="py-3 px-4 text-right">ACTIONS</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-brand-dark/5">
+              <>
+                {/* Desktop View Table */}
+                <div className="hidden md:block overflow-x-auto">
+                  <table className="w-full border-collapse font-mono text-xs text-left">
+                    <thead>
+                      <tr className="border-b border-brand-dark/15 text-brand-muted uppercase text-[10px] tracking-wider bg-brand-beige/10">
+                        <th className="py-3 px-4">REF ID</th>
+                        <th className="py-3 px-4">CUSTOMER Details</th>
+                        <th className="py-3 px-4">GUESTS</th>
+                        <th className="py-3 px-4">TIMINGS</th>
+                        <th className="py-3 px-4">ZONE SECTION</th>
+                        <th className="py-3 px-4">SPECIAL REQUESTS</th>
+                        <th className="py-3 px-4">STATUS</th>
+                        <th className="py-3 px-4 text-right">ACTIONS</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-brand-dark/5">
+                      {filteredBookings.map((b) => {
+                        const isCancelled = b.status === 'Cancelled';
+                        return (
+                          <tr key={b.id} className={`hover:bg-brand-beige/20 transition-colors ${isCancelled ? 'opacity-50' : ''}`}>
+                            <td className="py-4 px-4 font-bold text-brand-dark">{b.id}</td>
+                            <td className="py-4 px-4 font-sans text-sm">
+                              <div className="font-bold text-brand-dark font-mono text-xs">{b.name}</div>
+                              <div className="text-xs text-brand-muted">{b.email}</div>
+                              <div className="text-xs text-brand-muted font-mono">{b.phone}</div>
+                            </td>
+                            <td className="py-4 px-4 font-bold text-brand-dark">{b.partySize} Pax</td>
+                            <td className="py-4 px-4">
+                              <div className="font-bold text-brand-dark">{b.date}</div>
+                              <div className="text-brand-muted">{b.time}</div>
+                            </td>
+                            <td className="py-4 px-4">
+                              <span className="bg-brand-dark/5 px-2 py-0.5 border border-brand-dark/5 font-semibold text-brand-dark">
+                                {b.diningArea}
+                              </span>
+                            </td>
+                            <td className="py-4 px-4 max-w-xs font-sans text-brand-muted text-xs leading-relaxed italic">
+                              {b.specialRequests || <span className="text-brand-muted/30 font-mono">&mdash; None</span>}
+                            </td>
+                            <td className="py-4 px-4">
+                              <span className={`px-2 py-0.5 border text-[10px] font-bold uppercase ${
+                                isCancelled
+                                  ? 'bg-red-50 text-red-700 border-red-200'
+                                  : b.status === 'Pending'
+                                  ? 'bg-amber-50 text-amber-800 border-amber-200'
+                                  : 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                              }`}>
+                                {b.status}
+                              </span>
+                            </td>
+                            <td className="py-4 px-4 text-right">
+                              <div className="flex gap-2 justify-end items-center">
+                                {b.status === 'Pending' && (
+                                  <>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleUpdateBookingStatus(b.id, 'Confirmed', true)}
+                                      className="bg-emerald-700 hover:bg-emerald-800 text-white px-2 py-1 font-bold uppercase rounded-none transition-all active:scale-95 border border-emerald-800"
+                                      title="Confirm booking and send receipt"
+                                    >
+                                      CONFIRM &amp; EMAIL
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleUpdateBookingStatus(b.id, 'Cancelled')}
+                                      className="border border-red-200 hover:border-red-600 text-red-600 px-2 py-1 font-bold uppercase rounded-none transition-all active:scale-95"
+                                    >
+                                      CANCEL
+                                    </button>
+                                  </>
+                                )}
+                                {b.status === 'Confirmed' && (
+                                  <>
+                                    <span className="text-[10px] font-bold text-emerald-800 bg-emerald-50 px-2 py-1 border border-emerald-300 uppercase tracking-wider">
+                                      ✓ CONFIRMED (DONE)
+                                    </span>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleUpdateBookingStatus(b.id, 'Confirmed', true)}
+                                      className="border border-brand-dark/15 hover:border-brand-dark text-brand-dark px-2 py-1 font-bold uppercase rounded-none transition-all active:scale-95 text-[10px]"
+                                      title="Resend confirmation email"
+                                    >
+                                      RESEND EMAIL
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleUpdateBookingStatus(b.id, 'Cancelled')}
+                                      className="border border-red-200 hover:border-red-600 text-red-600 px-2 py-1 font-bold uppercase rounded-none transition-all active:scale-95"
+                                    >
+                                      CANCEL
+                                    </button>
+                                  </>
+                                )}
+                                {b.status === 'Cancelled' && (
+                                  <button
+                                    type="button"
+                                    onClick={() => handleUpdateBookingStatus(b.id, 'Confirmed')}
+                                    className="border border-brand-dark/15 hover:border-brand-dark text-brand-dark px-2 py-1 font-bold uppercase rounded-none transition-all active:scale-95"
+                                  >
+                                    RESTORE
+                                  </button>
+                                )}
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Mobile View Cards */}
+                <div className="block md:hidden space-y-4">
                   {filteredBookings.map((b) => {
                     const isCancelled = b.status === 'Cancelled';
                     return (
-                      <tr key={b.id} className={`hover:bg-brand-beige/20 transition-colors ${isCancelled ? 'opacity-50' : ''}`}>
-                        <td className="py-4 px-4 font-bold text-brand-dark">{b.id}</td>
-                        <td className="py-4 px-4 font-sans text-sm">
-                          <div className="font-bold text-brand-dark font-mono text-xs">{b.name}</div>
-                          <div className="text-xs text-brand-muted">{b.email}</div>
-                          <div className="text-xs text-brand-muted font-mono">{b.phone}</div>
-                        </td>
-                        <td className="py-4 px-4 font-bold text-brand-dark">{b.partySize} Pax</td>
-                        <td className="py-4 px-4">
-                          <div className="font-bold text-brand-dark">{b.date}</div>
-                          <div className="text-brand-muted">{b.time}</div>
-                        </td>
-                        <td className="py-4 px-4">
-                          <span className="bg-brand-dark/5 px-2 py-0.5 border border-brand-dark/5 font-semibold text-brand-dark">
-                            {b.diningArea}
-                          </span>
-                        </td>
-                        <td className="py-4 px-4 max-w-xs font-sans text-brand-muted text-xs leading-relaxed italic">
-                          {b.specialRequests || <span className="text-brand-muted/30 font-mono">&mdash; None</span>}
-                        </td>
-                        <td className="py-4 px-4">
-                          <span className={`px-2 py-0.5 border text-[10px] font-bold uppercase ${
+                      <div key={b.id} className={`p-4 border border-brand-dark/10 bg-[#FDFBF7]/40 space-y-3 font-mono text-xs text-left ${isCancelled ? 'opacity-50' : ''}`}>
+                        <div className="flex justify-between items-center border-b border-brand-dark/5 pb-2">
+                          <span className="font-bold text-brand-dark">{b.id}</span>
+                          <span className={`px-2 py-0.5 border text-[9px] font-bold uppercase ${
                             isCancelled
                               ? 'bg-red-50 text-red-700 border-red-200'
                               : b.status === 'Pending'
@@ -1051,66 +1133,83 @@ Falooda (1 Serving) | A delicious, cold traditional dessert drink featuring rose
                           }`}>
                             {b.status}
                           </span>
-                        </td>
-                        <td className="py-4 px-4 text-right">
-                          <div className="flex gap-2 justify-end items-center">
-                            {b.status === 'Pending' && (
-                              <>
-                                <button
-                                  type="button"
-                                  onClick={() => handleUpdateBookingStatus(b.id, 'Confirmed', true)}
-                                  className="bg-emerald-700 hover:bg-emerald-800 text-white px-2 py-1 font-bold uppercase rounded-none transition-all active:scale-95 border border-emerald-800"
-                                  title="Confirm booking and send receipt"
-                                >
-                                  CONFIRM &amp; EMAIL
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => handleUpdateBookingStatus(b.id, 'Cancelled')}
-                                  className="border border-red-200 hover:border-red-600 text-red-600 px-2 py-1 font-bold uppercase rounded-none transition-all active:scale-95"
-                                >
-                                  CANCEL
-                                </button>
-                              </>
-                            )}
-                            {b.status === 'Confirmed' && (
-                              <>
-                                <span className="text-[10px] font-bold text-emerald-800 bg-emerald-50 px-2 py-1 border border-emerald-300 uppercase tracking-wider">
-                                  ✓ CONFIRMED (DONE)
-                                </span>
-                                <button
-                                  type="button"
-                                  onClick={() => handleUpdateBookingStatus(b.id, 'Confirmed', true)}
-                                  className="border border-brand-dark/15 hover:border-brand-dark text-brand-dark px-2 py-1 font-bold uppercase rounded-none transition-all active:scale-95 text-[10px]"
-                                  title="Resend confirmation email"
-                                >
-                                  RESEND EMAIL
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => handleUpdateBookingStatus(b.id, 'Cancelled')}
-                                  className="border border-red-200 hover:border-red-600 text-red-600 px-2 py-1 font-bold uppercase rounded-none transition-all active:scale-95"
-                                >
-                                  CANCEL
-                                </button>
-                              </>
-                            )}
-                            {b.status === 'Cancelled' && (
+                        </div>
+                        <div className="space-y-1">
+                          <div className="font-sans font-bold text-brand-dark text-sm">{b.name}</div>
+                          <div className="text-brand-muted text-[11px] truncate">{b.email}</div>
+                          <div className="underline text-brand-muted">{b.phone}</div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-2 text-[10px] bg-brand-dark/5 p-2.5">
+                          <div>
+                            <span className="block text-brand-muted text-[8px] uppercase">Guests</span>
+                            <span className="font-bold text-brand-dark">{b.partySize} Pax</span>
+                          </div>
+                          <div>
+                            <span className="block text-brand-muted text-[8px] uppercase">Zone</span>
+                            <span className="font-bold text-brand-dark truncate block max-w-[120px]">{b.diningArea}</span>
+                          </div>
+                          <div className="col-span-2 border-t border-brand-dark/5 pt-1 mt-1">
+                            <span className="block text-brand-muted text-[8px] uppercase">Timings</span>
+                            <span className="font-bold text-brand-dark">{b.date} &bull; {b.time}</span>
+                          </div>
+                        </div>
+                        {b.specialRequests && (
+                          <div className="text-xs italic font-sans text-brand-muted leading-relaxed bg-brand-beige/30 p-2">
+                            ★ "{b.specialRequests}"
+                          </div>
+                        )}
+                        <div className="pt-2 border-t border-brand-dark/5 flex flex-wrap gap-1.5 justify-end">
+                          {b.status === 'Pending' && (
+                            <>
                               <button
                                 type="button"
-                                onClick={() => handleUpdateBookingStatus(b.id, 'Confirmed')}
-                                className="border border-brand-dark/15 hover:border-brand-dark text-brand-dark px-2 py-1 font-bold uppercase rounded-none transition-all active:scale-95"
+                                onClick={() => handleUpdateBookingStatus(b.id, 'Confirmed', true)}
+                                className="bg-emerald-700 text-white px-2.5 py-1.5 font-bold uppercase text-[9px] rounded-none"
                               >
-                                RESTORE
+                                CONFIRM &amp; EMAIL
                               </button>
-                            )}
-                          </div>
-                        </td>
-                      </tr>
+                              <button
+                                type="button"
+                                onClick={() => handleUpdateBookingStatus(b.id, 'Cancelled')}
+                                className="border border-red-200 text-red-600 px-2.5 py-1.5 font-bold uppercase text-[9px] rounded-none"
+                              >
+                                CANCEL
+                              </button>
+                            </>
+                          )}
+                          {b.status === 'Confirmed' && (
+                            <>
+                              <button
+                                type="button"
+                                onClick={() => handleUpdateBookingStatus(b.id, 'Confirmed', true)}
+                                className="border border-brand-dark/15 text-brand-dark px-2.5 py-1.5 font-bold uppercase text-[9px] rounded-none"
+                              >
+                                RESEND EMAIL
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleUpdateBookingStatus(b.id, 'Cancelled')}
+                                className="border border-red-200 text-red-600 px-2.5 py-1.5 font-bold uppercase text-[9px] rounded-none"
+                              >
+                                CANCEL
+                              </button>
+                            </>
+                          )}
+                          {b.status === 'Cancelled' && (
+                            <button
+                              type="button"
+                              onClick={() => handleUpdateBookingStatus(b.id, 'Confirmed')}
+                              className="border border-brand-dark/15 text-brand-dark px-2.5 py-1.5 font-bold uppercase text-[9px] rounded-none"
+                            >
+                              RESTORE
+                            </button>
+                          )}
+                        </div>
+                      </div>
                     );
                   })}
-                </tbody>
-              </table>
+                </div>
+              </>
             )}
           </div>
         </div>
@@ -1202,22 +1301,22 @@ Falooda (1 Serving) | A delicious, cold traditional dessert drink featuring rose
                               </button>
                             )}
                           </div>
-                          <div className="flex items-center gap-2">
-                            <div className="w-12 h-12 border border-brand-dark/10 overflow-hidden bg-white flex-shrink-0 flex items-center justify-center">
-                              {settingsData[`clay_oven_dish_image_${item.id}`] ? (
-                                <img
-                                  src={settingsData[`clay_oven_dish_image_${item.id}`]}
-                                  alt={item.name}
-                                  className="w-full h-full object-cover"
-                                />
-                              ) : (
-                                <span className="text-[9px] text-brand-muted font-mono uppercase text-center leading-tight">No Photo</span>
-                              )}
-                            </div>
-                            <div className="flex-grow flex items-center gap-1.5">
+                          <div className="flex flex-col sm:flex-row sm:items-center gap-2.5 w-full">
+                            <div className="flex items-center gap-2 flex-grow">
+                              <div className="w-12 h-12 border border-brand-dark/10 overflow-hidden bg-white flex-shrink-0 flex items-center justify-center">
+                                {settingsData[`clay_oven_dish_image_${item.id}`] ? (
+                                  <img
+                                    src={settingsData[`clay_oven_dish_image_${item.id}`]}
+                                    alt={item.name}
+                                    className="w-full h-full object-cover"
+                                  />
+                                ) : (
+                                  <span className="text-[9px] text-brand-muted font-mono uppercase text-center leading-tight">No Photo</span>
+                                )}
+                              </div>
                               <input
                                 type="text"
-                                placeholder="Paste image URL or upload..."
+                                placeholder="Paste image URL..."
                                 value={settingsData[`clay_oven_dish_image_${item.id}`] || ''}
                                 onChange={async (e) => {
                                   const newVal = e.target.value;
@@ -1232,38 +1331,38 @@ Falooda (1 Serving) | A delicious, cold traditional dessert drink featuring rose
                                     console.error(err);
                                   }
                                 }}
-                                className="flex-grow border border-brand-dark/15 p-1 px-2 text-[10px] font-mono focus:border-brand-dark outline-none bg-white rounded-none"
+                                className="flex-grow border border-brand-dark/15 p-1.5 px-2 text-[10px] font-mono focus:border-brand-dark outline-none bg-white rounded-none w-full min-w-0"
                               />
-                              <label className="bg-brand-dark hover:bg-brand-accent text-white py-1 px-2 text-[10px] font-mono font-bold uppercase rounded-none cursor-pointer flex-shrink-0 flex items-center justify-center">
-                                <span>Upload</span>
-                                <input
-                                  type="file"
-                                  accept="image/*"
-                                  className="hidden"
-                                  onChange={async (e) => {
-                                    const file = e.target.files?.[0];
-                                    if (!file) return;
-                                    const reader = new FileReader();
-                                    reader.onload = async () => {
-                                      const base64Data = reader.result as string;
-                                      try {
-                                        const response = await fetch('/api/settings', {
-                                          method: 'POST',
-                                          headers: { 'Content-Type': 'application/json' },
-                                          body: JSON.stringify({ [`clay_oven_dish_image_${item.id}`]: base64Data })
-                                        });
-                                        if (response.ok) {
-                                          fetchSettings();
-                                        }
-                                      } catch (err) {
-                                        console.error(err);
-                                      }
-                                    };
-                                    reader.readAsDataURL(file);
-                                  }}
-                                />
-                              </label>
                             </div>
+                            <label className="bg-brand-dark hover:bg-brand-accent text-white py-1.5 px-3 text-[10px] font-mono font-bold uppercase rounded-none cursor-pointer text-center sm:flex-shrink-0 flex items-center justify-center">
+                              <span>Upload file</span>
+                              <input
+                                type="file"
+                                accept="image/*"
+                                className="hidden"
+                                onChange={async (e) => {
+                                  const file = e.target.files?.[0];
+                                  if (!file) return;
+                                  const reader = new FileReader();
+                                  reader.onload = async () => {
+                                    const base64Data = reader.result as string;
+                                    try {
+                                      const response = await fetch('/api/settings', {
+                                        method: 'POST',
+                                        headers: { 'Content-Type': 'application/json' },
+                                        body: JSON.stringify({ [`clay_oven_dish_image_${item.id}`]: base64Data })
+                                      });
+                                      if (response.ok) {
+                                        fetchSettings();
+                                      }
+                                    } catch (err) {
+                                      console.error(err);
+                                    }
+                                  };
+                                  reader.readAsDataURL(file);
+                                }}
+                              />
+                            </label>
                           </div>
                         </div>
                       </div>
@@ -1299,11 +1398,11 @@ Falooda (1 Serving) | A delicious, cold traditional dessert drink featuring rose
           </div>
 
           {/* Sub-tab navigation */}
-          <div className="flex border-b border-brand-dark/10">
+          <div className="flex border-b border-brand-dark/10 overflow-x-auto whitespace-nowrap scrollbar-none pb-1">
             <button
               type="button"
               onClick={() => setSettingsSubTab('takeaway')}
-              className={`px-4 py-2.5 font-mono text-xs font-bold uppercase tracking-wider border-b-2 transition-all ${
+              className={`px-4 py-2.5 font-mono text-xs font-bold uppercase tracking-wider border-b-2 transition-all shrink-0 ${
                 settingsSubTab === 'takeaway'
                   ? 'border-brand-accent text-brand-accent bg-brand-beige/10'
                   : 'border-transparent text-brand-muted hover:text-brand-dark'
@@ -1314,7 +1413,7 @@ Falooda (1 Serving) | A delicious, cold traditional dessert drink featuring rose
             <button
               type="button"
               onClick={() => setSettingsSubTab('reservations')}
-              className={`px-4 py-2.5 font-mono text-xs font-bold uppercase tracking-wider border-b-2 transition-all ${
+              className={`px-4 py-2.5 font-mono text-xs font-bold uppercase tracking-wider border-b-2 transition-all shrink-0 ${
                 settingsSubTab === 'reservations'
                   ? 'border-brand-accent text-brand-accent bg-brand-beige/10'
                   : 'border-transparent text-brand-muted hover:text-brand-dark'
@@ -1325,7 +1424,7 @@ Falooda (1 Serving) | A delicious, cold traditional dessert drink featuring rose
             <button
               type="button"
               onClick={() => setSettingsSubTab('announcements')}
-              className={`px-4 py-2.5 font-mono text-xs font-bold uppercase tracking-wider border-b-2 transition-all ${
+              className={`px-4 py-2.5 font-mono text-xs font-bold uppercase tracking-wider border-b-2 transition-all shrink-0 ${
                 settingsSubTab === 'announcements'
                   ? 'border-brand-accent text-brand-accent bg-brand-beige/10'
                   : 'border-transparent text-brand-muted hover:text-brand-dark'
@@ -1336,7 +1435,7 @@ Falooda (1 Serving) | A delicious, cold traditional dessert drink featuring rose
             <button
               type="button"
               onClick={() => setSettingsSubTab('festive')}
-              className={`px-4 py-2.5 font-mono text-xs font-bold uppercase tracking-wider border-b-2 transition-all ${
+              className={`px-4 py-2.5 font-mono text-xs font-bold uppercase tracking-wider border-b-2 transition-all shrink-0 ${
                 settingsSubTab === 'festive'
                   ? 'border-brand-accent text-brand-accent bg-brand-beige/10'
                   : 'border-transparent text-brand-muted hover:text-brand-dark'
@@ -1347,7 +1446,7 @@ Falooda (1 Serving) | A delicious, cold traditional dessert drink featuring rose
             <button
               type="button"
               onClick={() => setSettingsSubTab('gallery')}
-              className={`px-4 py-2.5 font-mono text-xs font-bold uppercase tracking-wider border-b-2 transition-all ${
+              className={`px-4 py-2.5 font-mono text-xs font-bold uppercase tracking-wider border-b-2 transition-all shrink-0 ${
                 settingsSubTab === 'gallery'
                   ? 'border-brand-accent text-brand-accent bg-brand-beige/10'
                   : 'border-transparent text-brand-muted hover:text-brand-dark'
@@ -1938,7 +2037,7 @@ Falooda (1 Serving) | A delicious, cold traditional dessert drink featuring rose
                   />
                 </div>
 
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div className="space-y-1">
                     <label className="block font-mono text-[10px] text-brand-accent uppercase tracking-widest font-bold">
                       Email
@@ -1967,7 +2066,7 @@ Falooda (1 Serving) | A delicious, cold traditional dessert drink featuring rose
                   </div>
                 </div>
 
-                <div className="grid grid-cols-3 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <div className="space-y-1">
                     <label className="block font-mono text-[10px] text-brand-accent uppercase tracking-widest font-bold">
                       Date
@@ -1977,7 +2076,7 @@ Falooda (1 Serving) | A delicious, cold traditional dessert drink featuring rose
                       required
                       value={funcDate}
                       onChange={(e) => setFuncDate(e.target.value)}
-                      className="w-full border border-brand-dark/10 p-2.5 text-xs font-mono focus:border-brand-dark outline-none bg-white"
+                      className="w-full border border-brand-dark/10 p-2.5 text-xs font-mono focus:border-brand-dark outline-none bg-white animate-none"
                     />
                   </div>
                   <div className="space-y-1">
@@ -2009,7 +2108,7 @@ Falooda (1 Serving) | A delicious, cold traditional dessert drink featuring rose
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div className="space-y-1">
                     <label className="block font-mono text-[10px] text-brand-accent uppercase tracking-widest font-bold">
                       Dining Layout Area
