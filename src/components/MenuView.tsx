@@ -168,6 +168,7 @@ export const MenuView: React.FC = () => {
                     src={dishImages[`clay_oven_dish_image_${item.id}`]}
                     alt={item.name}
                     className="w-full h-full object-cover"
+                    loading="lazy"
                   />
                 </div>
               )}

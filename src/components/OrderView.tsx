@@ -393,7 +393,7 @@ export const OrderView: React.FC<OrderViewProps> = ({
           </div>
 
           <p className="text-sm text-brand-muted leading-relaxed font-normal">
-            We are now preparing your authentic dishes using traditional charcoal fires. Standard turnaround time is 35 mins. If you have immediate inquiries, phone our line at <span className="font-semibold text-brand-dark">061 703 636</span>.
+            We are now preparing your authentic dishes using traditional charcoal fires. Standard turnaround time is 35 mins. If you have immediate inquiries, phone our line at <span className="font-semibold text-brand-dark">086 020 3720</span>.
           </p>
 
           <button

@@ -33,7 +33,77 @@ const BrandLoader = () => (
 );
 
 export default function App() {
-  const [currentTab, setCurrentTab] = React.useState<string>('home');
+  const [currentTab, setCurrentTabInternal] = React.useState<string>(() => {
+    const path = window.location.pathname.replace(/^\/|\/$/g, '');
+    if (['home', 'menu', 'takeaway', 'booking', 'history', 'profile', 'admin'].includes(path)) {
+      return path;
+    }
+    return 'home';
+  });
+
+  const setCurrentTab = (tab: string) => {
+    setCurrentTabInternal(tab);
+    const targetPath = tab === 'home' ? '/' : `/${tab}`;
+    if (window.location.pathname !== targetPath) {
+      window.history.pushState(null, '', targetPath);
+    }
+  };
+
+  React.useEffect(() => {
+    const handlePopState = () => {
+      const path = window.location.pathname.replace(/^\/|\/$/g, '');
+      if (['home', 'menu', 'takeaway', 'booking', 'history', 'profile', 'admin'].includes(path)) {
+        setCurrentTabInternal(path);
+      } else if (path === '') {
+        setCurrentTabInternal('home');
+      }
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
+
+  React.useEffect(() => {
+    const metaTitles: Record<string, string> = {
+      home: 'The Royal Clay Oven | Authentic Pakistani Cuisine & Takeaway Shannon',
+      menu: 'Our Menu | The Royal Clay Oven | Authentic Pakistani Dishes',
+      takeaway: 'Order Takeaway Online | The Royal Clay Oven Shannon',
+      booking: 'Book a Table | The Royal Clay Oven Shannon',
+      history: 'Order History | The Royal Clay Oven',
+      profile: 'My Profile | The Royal Clay Oven',
+      admin: 'Admin Console | The Royal Clay Oven',
+    };
+
+    const metaDescriptions: Record<string, string> = {
+      home: 'Enjoy authentic Pakistani cuisine, charcoal-fired clay oven tandoori, fresh flame-grilled kebabs, and pizzas from The Royal Clay Oven in Shannon, Co. Clare.',
+      menu: 'Browse the menu booklet of The Royal Clay Oven. Choose from authentic biryanis, flame-grilled kebabs, tandoori clay oven specialties, and fresh pizzas.',
+      takeaway: 'Order fresh Halal Pakistani food and takeaway collection online directly from The Royal Clay Oven in Shannon.',
+      booking: 'Book your dining table online or reserve layouts for your events at The Royal Clay Oven in Shannon.',
+      history: 'View your local takeaway orders and history at The Royal Clay Oven.',
+      profile: 'Manage your user account profile and preferences at The Royal Clay Oven.',
+      admin: 'Administrative dashboard for managing store settings, menus, and orders at The Royal Clay Oven.',
+    };
+
+    const title = metaTitles[currentTab] || metaTitles.home;
+    const description = metaDescriptions[currentTab] || metaDescriptions.home;
+
+    document.title = title;
+
+    const metaDescTag = document.querySelector('meta[name="description"]');
+    if (metaDescTag) {
+      metaDescTag.setAttribute('content', description);
+    }
+
+    const ogTitleTag = document.querySelector('meta[property="og:title"]');
+    if (ogTitleTag) {
+      ogTitleTag.setAttribute('content', title);
+    }
+
+    const ogDescTag = document.querySelector('meta[property="og:description"]');
+    if (ogDescTag) {
+      ogDescTag.setAttribute('content', description);
+    }
+  }, [currentTab]);
+
   const [cart, setCart] = React.useState<CartItem[]>([]);
   const [isCartOpen, setIsCartOpen] = React.useState<boolean>(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = React.useState<boolean>(false);
@@ -414,7 +484,7 @@ export default function App() {
               </p>
             </a>
             <div className="flex flex-col text-sm text-brand-muted font-mono space-y-1.5 pt-1">
-              <span>Phone: <a href="tel:061703636" className="hover:text-brand-accent transition-colors">061 703 636</a></span>
+              <span>Phone: <a href="tel:0860203720" className="hover:text-brand-accent transition-colors">086 020 3720</a></span>
               <span>Mobile: <a href="tel:0894899950" className="hover:text-brand-accent transition-colors">089 489 9950</a></span>
               <span>Whatsapp: <a href="https://wa.me/353894899950" target="_blank" rel="noopener noreferrer" className="hover:text-brand-accent transition-colors font-bold underline decoration-brand-accent/30 decoration-2 underline-offset-4">089 489 9950 (Click to Chat)</a></span>
             </div>

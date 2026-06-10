@@ -394,7 +394,7 @@ The Royal Clay Oven`);
           <h1 className="font-serif text-2xl sm:text-4xl font-bold tracking-tight text-brand-dark">
             Book Table / Functions
           </h1>
-          <p className="text-xs sm:text-sm text-brand-muted leading-relaxed font-normal px-2 sm:px-0">
+          <p className="text-xs sm:text-sm text-brand-dark leading-relaxed font-normal px-2 sm:px-0">
             Enjoy in-house luxury dining. Double-capped private hall allows grand birthday layouts, corporate conferences, and outdoor barbecue buffet arrangements for up to 50 guests.
           </p>
         </div>
@@ -441,12 +441,12 @@ The Royal Clay Oven`);
             <h2 className="font-serif text-2xl font-bold text-brand-dark">
               We'll secure your table soon, {confirmationMessage.name}!
             </h2>
-            <span className="font-mono text-sm text-brand-muted uppercase block">
+            <span className="font-mono text-sm text-brand-dark uppercase block">
               Reference: <span className="font-bold text-brand-dark">{confirmationMessage.id}</span>
             </span>
           </div>
 
-          <div className="border-t border-b border-brand-dark/15 py-6 text-left space-y-2.5 font-mono text-sm text-brand-muted">
+          <div className="border-t border-b border-brand-dark/15 py-6 text-left space-y-2.5 font-mono text-sm text-brand-dark">
             <div className="flex justify-between">
               <span>Date Scheduled</span>
               <span className="text-brand-dark font-bold">{confirmationMessage.date}</span>
@@ -470,14 +470,14 @@ The Royal Clay Oven`);
               <span className="font-mono text-sm font-bold text-brand-accent uppercase block">
                 SPECIAL LARGE GROUP CATERING INFO
               </span>
-              <p className="text-[11px] text-brand-muted font-normal leading-relaxed">
+              <p className="text-[11px] text-brand-dark font-normal leading-relaxed">
                 Awesome! Because your party has 15 or more guests, our culinary captain will reach out via <span className="font-semibold text-brand-dark">{confirmationMessage.email}</span> within 12 hours to discuss our bespoke family-style buffet options.
               </p>
             </div>
           )}
 
-          <p className="text-sm text-brand-muted font-normal leading-relaxed">
-            A temporary confirmation card has been generated. If you prefer to modify your timings, feel free to telephone our direct line at <span className="font-semibold text-brand-dark">061 703 636</span>.
+          <p className="text-sm text-brand-dark font-normal leading-relaxed">
+            A temporary confirmation card has been generated. If you prefer to modify your timings, feel free to telephone our direct line at <span className="font-semibold text-brand-dark">086 020 3720</span>.
           </p>
 
           <button
@@ -563,7 +563,7 @@ The Royal Clay Oven`);
                   onChange={(e) => setPartySize(parseInt(e.target.value) || 2)}
                   className="w-full border border-brand-dark/10 p-3 text-sm font-mono bg-brand-beige/10 outline-none focus:border-brand-dark"
                 />
-                <span className="font-mono text-xs text-brand-muted italic block">
+                <span className="font-mono text-xs text-brand-dark italic block">
                   * Dynamic hall allows seating layouts up to 50 guests.
                 </span>
               </div>
@@ -669,7 +669,7 @@ The Royal Clay Oven`);
           <div className="lg:col-span-5 bg-white border border-brand-dark/10 p-6 space-y-6">
             <div className="space-y-1">
               <h3 className="font-serif text-lg font-bold text-brand-dark">Interactive Seating Grid</h3>
-              <p className="text-sm text-brand-muted font-normal leading-relaxed">
+              <p className="text-sm text-brand-dark font-normal leading-relaxed">
                 Click an available table (white square) matching your party size.
               </p>
             </div>
@@ -697,7 +697,7 @@ The Royal Clay Oven`);
                       <span className="font-mono text-sm font-bold">TABLE {tbl.num}</span>
                       <span className={`w-1.5 h-1.5 rounded-none inline-block ${tbl.isOccupied ? 'bg-red-400' : isSelected ? 'bg-brand-accent' : 'bg-emerald-400'}`}></span>
                     </div>
-                    <div className="font-mono text-sm text-brand-muted">
+                    <div className="font-mono text-sm text-brand-dark">
                       Cap: <span className="font-bold text-brand-dark">{tbl.size} Seats</span>
                     </div>
                     <div className="font-mono text-xs mt-1 uppercase text-brand-accent font-bold">
@@ -708,7 +708,7 @@ The Royal Clay Oven`);
               })}
             </div>
 
-            <div className="flex justify-between text-sm font-mono text-brand-muted pt-2 border-t border-brand-dark/5">
+            <div className="flex justify-between text-sm font-mono text-brand-dark pt-2 border-t border-brand-dark/5">
               <span className="flex items-center">
                 <span className="w-2.5 h-2.5 bg-emerald-400 mr-1.5 inline-block"></span> AVAILABLE
               </span>
@@ -720,7 +720,7 @@ The Royal Clay Oven`);
               </span>
             </div>
 
-            <div className="p-4 bg-brand-beige border border-brand-dark/5 text-sm text-brand-muted font-normal leading-relaxed">
+            <div className="p-4 bg-brand-beige border border-brand-dark/5 text-sm text-brand-dark font-normal leading-relaxed">
               * Seating allocation is subject to exact arrival timings. Tables are held for a maximum of 15 minutes past reservation hour.
             </div>
           </div>
@@ -737,7 +737,7 @@ The Royal Clay Oven`);
             <button
               type="button"
               onClick={() => setShowWarningModal(false)}
-              className="absolute top-4 right-4 p-1.5 text-brand-muted hover:text-brand-dark hover:bg-brand-dark/5 transition-colors border border-transparent hover:border-brand-dark/10"
+              className="absolute top-4 right-4 p-1.5 text-brand-dark hover:text-brand-dark hover:bg-brand-dark/5 transition-colors border border-transparent hover:border-brand-dark/10"
               aria-label="Close warning"
             >
               <X className="w-5 h-5" />
@@ -752,7 +752,7 @@ The Royal Clay Oven`);
                 Book Table / Functions Notice
               </h3>
               <div className="max-h-[35vh] overflow-y-auto pr-1 text-left scrollbar-thin border-y border-brand-dark/5 py-2">
-                <p className="font-sans text-xs sm:text-sm text-brand-muted leading-relaxed font-medium whitespace-pre-line">
+                <p className="font-sans text-xs sm:text-sm text-brand-dark leading-relaxed font-medium whitespace-pre-line">
                   {noticeText}
                 </p>
               </div>
@@ -792,7 +792,7 @@ The Royal Clay Oven`);
             <button
               type="button"
               onClick={() => setShowReservationsWarningModal(false)}
-              className="absolute top-4 right-4 p-1.5 text-brand-muted hover:text-brand-dark hover:bg-brand-dark/5 transition-colors border border-transparent hover:border-brand-dark/10"
+              className="absolute top-4 right-4 p-1.5 text-brand-dark hover:text-brand-dark hover:bg-brand-dark/5 transition-colors border border-transparent hover:border-brand-dark/10"
               aria-label="Close warning"
             >
               <X className="w-5 h-5" />
@@ -806,7 +806,7 @@ The Royal Clay Oven`);
               <h3 className="font-sans text-xl sm:text-2xl font-bold tracking-tight text-brand-dark">
                 Online Bookings Paused
               </h3>
-              <p className="font-sans text-sm sm:text-base text-brand-muted leading-relaxed font-medium text-center">
+              <p className="font-sans text-sm sm:text-base text-brand-dark leading-relaxed font-medium text-center">
                 {reservationsNoticeText}
               </p>
               <p className="font-sans text-xs text-brand-accent font-bold uppercase tracking-wider">

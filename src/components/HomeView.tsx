@@ -445,7 +445,7 @@ Falooda (1 Serving) | A delicious, cold traditional dessert drink featuring rose
                 <div className="flex items-start">
                   <Phone className="w-4 h-4 text-brand-accent mr-3 mt-1 shrink-0" />
                   <div className="flex flex-col text-sm text-brand-muted font-mono space-y-1.5">
-                    <span>Phone: <a href="tel:061703636" className="hover:text-brand-accent transition-colors">061 703 636</a></span>
+                    <span>Phone: <a href="tel:0860203720" className="hover:text-brand-accent transition-colors">086 020 3720</a></span>
                     <span>Mobile: <a href="tel:0894899950" className="hover:text-brand-accent transition-colors">089 489 9950</a></span>
                     <span>Whatsapp: <a href="https://wa.me/353894899950" target="_blank" rel="noopener noreferrer" className="hover:text-brand-accent transition-colors font-bold underline decoration-brand-accent/30 decoration-2 underline-offset-4">089 489 9950 (Click to Chat)</a></span>
                   </div>
