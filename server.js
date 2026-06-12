@@ -7,6 +7,7 @@ import { fileURLToPath } from 'url';
 import nodemailer from 'nodemailer';
 import fs from 'fs';
 import jwt from 'jsonwebtoken';
+import crypto from 'crypto';
 
 dotenv.config();
 
@@ -860,7 +861,7 @@ app.delete('/api/orders/:id', async (req, res) => {
 });
 
 // --- Admin Authentication Middleware ---
-const ADMIN_JWT_SECRET = process.env.ADMIN_JWT_SECRET || 'fallback-change-me-in-env';
+const ADMIN_JWT_SECRET = process.env.ADMIN_JWT_SECRET || crypto.randomBytes(32).toString('hex');
 
 const requireAdmin = (req, res, next) => {
   const authHeader = req.headers.authorization;
