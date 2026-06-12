@@ -1,7 +1,22 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Play, Check, X, ShieldAlert, ShoppingBag, Calendar, ListFilter, Search, RefreshCw, Volume2, ShieldCheck, Clock, Settings, Sparkles } from 'lucide-react';
+import { Play, Check, X, ShieldAlert, ShoppingBag, Calendar, ListFilter, Search, RefreshCw, Volume2, ShieldCheck, Clock, Settings, Sparkles, Mail, KeyRound, Loader2 } from 'lucide-react';
 import { Order, Reservation } from '../types';
 import { MENU_ITEMS, CATEGORIES } from '../data/menu';
+
+// Helper to get stored admin token
+const getAdminToken = (): string | null => localStorage.getItem('clay_oven_admin_token');
+const setAdminToken = (token: string) => localStorage.setItem('clay_oven_admin_token', token);
+const clearAdminToken = () => localStorage.removeItem('clay_oven_admin_token');
+
+// Helper to build auth headers for admin API calls
+const adminHeaders = (extra: Record<string, string> = {}): Record<string, string> => {
+  const token = getAdminToken();
+  return {
+    'Content-Type': 'application/json',
+    ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+    ...extra
+  };
+};
 
 const OPEN_TIME_OPTIONS = [
   '9:00 AM', '9:30 AM', '10:00 AM', '10:30 AM', '11:00 AM', '11:30 AM',
@@ -17,9 +32,14 @@ const CLOSE_TIME_OPTIONS = [
 
 export const AdminDashboard: React.FC = () => {
   // Authentication states
-  const [passcode, setPasscode] = useState('');
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [authError, setAuthError] = useState(false);
+  const [authStep, setAuthStep] = useState<'email' | 'otp'>('email');
+  const [authEmail, setAuthEmail] = useState('');
+  const [authOtp, setAuthOtp] = useState('');
+  const [authError, setAuthError] = useState('');
+  const [authLoading, setAuthLoading] = useState(false);
+  const [authMessage, setAuthMessage] = useState('');
+  const [authChecking, setAuthChecking] = useState(true); // checking existing token on mount
 
   // Console active sub-tabs
   const [adminTab, setAdminTab] = useState<'orders' | 'bookings' | 'functions' | 'catalog' | 'settings'>('orders');
@@ -106,6 +126,101 @@ Falooda (1 Serving) | A delicious, cold traditional dessert drink featuring rose
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [saveLoading, setSaveLoading] = useState(false);
 
+  // Handle 401 responses globally — clear token and force re-login
+  const handleUnauthorized = () => {
+    clearAdminToken();
+    setIsAuthenticated(false);
+    setAuthStep('email');
+    setAuthOtp('');
+    setAuthError('Session expired. Please log in again.');
+  };
+
+  // Auto-verify existing token on component mount
+  useEffect(() => {
+    const verifyExistingToken = async () => {
+      const token = getAdminToken();
+      if (!token) {
+        setAuthChecking(false);
+        return;
+      }
+      try {
+        const response = await fetch('/api/admin/verify', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (response.ok) {
+          const data = await response.json();
+          if (data.valid) {
+            setIsAuthenticated(true);
+            setAuthEmail(data.email);
+          } else {
+            clearAdminToken();
+          }
+        } else {
+          clearAdminToken();
+        }
+      } catch {
+        clearAdminToken();
+      } finally {
+        setAuthChecking(false);
+      }
+    };
+    verifyExistingToken();
+  }, []);
+
+  // Request OTP handler
+  const handleRequestOtp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setAuthError('');
+    setAuthMessage('');
+    setAuthLoading(true);
+    try {
+      const response = await fetch('/api/admin/request-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: authEmail.trim() })
+      });
+      const data = await response.json();
+      if (response.ok && data.success) {
+        setAuthStep('otp');
+        setAuthMessage(data.message || 'Access code sent to your email.');
+      } else {
+        setAuthError(data.error || 'Failed to send access code.');
+      }
+    } catch {
+      setAuthError('Network error. Please check your connection.');
+    } finally {
+      setAuthLoading(false);
+    }
+  };
+
+  // Verify OTP handler
+  const handleVerifyOtp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setAuthError('');
+    setAuthMessage('');
+    setAuthLoading(true);
+    try {
+      const response = await fetch('/api/admin/verify-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: authEmail.trim(), otp: authOtp.trim() })
+      });
+      const data = await response.json();
+      if (response.ok && data.success && data.token) {
+        setAdminToken(data.token);
+        setIsAuthenticated(true);
+        setAuthOtp('');
+        setAuthError('');
+      } else {
+        setAuthError(data.error || 'Verification failed.');
+      }
+    } catch {
+      setAuthError('Network error. Please check your connection.');
+    } finally {
+      setAuthLoading(false);
+    }
+  };
+
   const fetchSettings = async () => {
     try {
       const response = await fetch('/api/settings');
@@ -184,11 +299,10 @@ Falooda (1 Serving) | A delicious, cold traditional dessert drink featuring rose
     try {
       const response = await fetch('/api/settings', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
+        headers: adminHeaders(),
         body: JSON.stringify(settingsPayload)
       });
+      if (response.status === 401) { handleUnauthorized(); return; }
       if (response.ok) {
         setSaveSuccess(true);
         setTimeout(() => setSaveSuccess(false), 3000);
@@ -221,14 +335,13 @@ Falooda (1 Serving) | A delicious, cold traditional dessert drink featuring rose
       try {
         const response = await fetch('/api/admin/upload-image', {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
+          headers: adminHeaders(),
           body: JSON.stringify({
             imageType,
             imageBytes: base64Data
           })
         });
+        if (response.status === 401) { handleUnauthorized(); return; }
 
         if (response.ok) {
           const data = await response.json();
@@ -278,11 +391,10 @@ Falooda (1 Serving) | A delicious, cold traditional dessert drink featuring rose
     try {
       const response = await fetch('/api/bookings', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
+        headers: adminHeaders(),
         body: JSON.stringify(newFunctionBooking)
       });
+      if (response.status === 401) { handleUnauthorized(); return; }
       if (response.ok) {
         setFuncSuccess(true);
         setFuncName('');
@@ -325,31 +437,15 @@ Falooda (1 Serving) | A delicious, cold traditional dessert drink featuring rose
   // Keep track of order count to play audio alert on increment
   const prevOrderCountRef = useRef<number>(0);
 
-  // Handle Passcode Numeric Input
-  const handleKeypadPress = (num: string) => {
-    setAuthError(false);
-    if (passcode.length < 4) {
-      const nextCode = passcode + num;
-      setPasscode(nextCode);
-      
-      // Auto-validate once 4 digits are completed
-      if (nextCode === '4321') {
-        setTimeout(() => {
-          setIsAuthenticated(true);
-          setPasscode('');
-        }, 150);
-      } else if (nextCode.length === 4) {
-        setTimeout(() => {
-          setAuthError(true);
-          setPasscode('');
-        }, 200);
-      }
-    }
-  };
-
-  const handleClearKeypad = () => {
-    setPasscode('');
-    setAuthError(false);
+  // Logout handler — clear token and reset auth state
+  const handleLogout = () => {
+    clearAdminToken();
+    setIsAuthenticated(false);
+    setAuthStep('email');
+    setAuthEmail('');
+    setAuthOtp('');
+    setAuthError('');
+    setAuthMessage('');
   };
 
   // Synthesize dynamic clean notification chime using Web Audio API (zero external files required)
@@ -391,9 +487,15 @@ Falooda (1 Serving) | A delicious, cold traditional dessert drink featuring rose
     setLoading(true);
     try {
       const [ordersRes, bookingsRes] = await Promise.all([
-        fetch(`/api/admin/orders?t=${Date.now()}`),
-        fetch(`/api/admin/bookings?t=${Date.now()}`)
+        fetch(`/api/admin/orders?t=${Date.now()}`, { headers: adminHeaders() }),
+        fetch(`/api/admin/bookings?t=${Date.now()}`, { headers: adminHeaders() })
       ]);
+
+      // Handle 401 on either response
+      if (ordersRes.status === 401 || bookingsRes.status === 401) {
+        handleUnauthorized();
+        return;
+      }
 
       if (ordersRes.ok && bookingsRes.ok) {
         const ordersData: Order[] = await ordersRes.json();
@@ -434,11 +536,10 @@ Falooda (1 Serving) | A delicious, cold traditional dessert drink featuring rose
     try {
       const response = await fetch(`/api/admin/orders/${orderId}/status`, {
         method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json'
-        },
+        headers: adminHeaders(),
         body: JSON.stringify({ status: nextStatus })
       });
+      if (response.status === 401) { handleUnauthorized(); return; }
       if (response.ok) {
         // Optimistically update frontend state
         setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: nextStatus } : o));
@@ -453,11 +554,10 @@ Falooda (1 Serving) | A delicious, cold traditional dessert drink featuring rose
     try {
       const response = await fetch(`/api/bookings/${bookingId}/status`, {
         method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json'
-        },
+        headers: adminHeaders(),
         body: JSON.stringify({ status: nextStatus, sendEmail })
       });
+      if (response.status === 401) { handleUnauthorized(); return; }
       if (response.ok) {
         setBookings(prev => prev.map(b => b.id === bookingId ? { ...b, status: nextStatus } : b));
       }
@@ -556,74 +656,131 @@ Falooda (1 Serving) | A delicious, cold traditional dessert drink featuring rose
     );
   };
 
-  /* --- AUTHENTICATION PASSCODE keyPad LOCK SCREEN --- */
+  /* --- AUTHENTICATION: EMAIL OTP LOGIN SCREEN --- */
+  if (authChecking) {
+    return (
+      <div className="max-w-md mx-auto px-4 py-20 animate-fade-in flex flex-col items-center justify-center min-h-[70vh]">
+        <div className="w-full bg-white border border-brand-dark/15 p-8 text-center space-y-6 shadow-[0_8px_30px_rgba(44,38,33,0.04)]">
+          <Loader2 className="w-8 h-8 text-brand-accent animate-spin mx-auto" />
+          <p className="font-mono text-xs uppercase tracking-widest text-brand-muted">Verifying Session...</p>
+        </div>
+      </div>
+    );
+  }
+
   if (!isAuthenticated) {
     return (
       <div className="max-w-md mx-auto px-4 py-20 animate-fade-in flex flex-col items-center justify-center min-h-[70vh]">
         <div className="w-full bg-white border border-brand-dark/15 p-8 text-center space-y-6 shadow-[0_8px_30px_rgba(44,38,33,0.04)]">
-          <div className="w-14 h-14 bg-brand-accent/5 border border-brand-accent/35 text-brand-accent flex items-center justify-center rounded-none mx-auto animate-pulse">
-            <ShieldAlert className="w-6 h-6 stroke-[1.5]" />
+          <div className="w-14 h-14 bg-brand-accent/5 border border-brand-accent/35 text-brand-accent flex items-center justify-center rounded-none mx-auto">
+            {authStep === 'email' ? <ShieldAlert className="w-6 h-6 stroke-[1.5]" /> : <KeyRound className="w-6 h-6 stroke-[1.5]" />}
           </div>
           
           <div className="space-y-1">
             <h2 className="font-serif text-2xl font-bold text-brand-dark">Staff Portal Access</h2>
             <p className="font-mono text-xs uppercase tracking-widest text-brand-muted">
-              Enter 4-Digit Security Passcode
+              {authStep === 'email' ? 'Enter Your Authorized Email' : 'Enter Access Code From Email'}
             </p>
-          </div>
-
-          {/* Masked Dots Indicator */}
-          <div className="flex justify-center space-x-4 py-3">
-            {[0, 1, 2, 3].map((idx) => (
-              <div 
-                key={idx}
-                className={`w-3.5 h-3.5 border transition-all duration-200 ${
-                  authError 
-                    ? 'bg-red-600 border-red-600 animate-bounce' 
-                    : passcode.length > idx 
-                    ? 'bg-brand-dark border-brand-dark scale-110' 
-                    : 'bg-transparent border-brand-dark/20'
-                }`}
-                style={{ transitionDelay: `${idx * 20}ms` }}
-              />
-            ))}
           </div>
 
           {authError && (
-            <p className="text-xs font-mono text-red-600 font-bold uppercase tracking-wide animate-shake">
-              ★ Security Passcode Invalid
-            </p>
+            <div className="bg-red-50 border border-red-200 p-3 text-left">
+              <p className="text-xs font-mono text-red-600 font-bold">
+                ✕ {authError}
+              </p>
+            </div>
           )}
 
-          {/* Sharp Flat Numeric Grid Keypad */}
-          <div className="grid grid-cols-3 gap-3 max-w-[280px] mx-auto pt-2">
-            {['1', '2', '3', '4', '5', '6', '7', '8', '9'].map((num) => (
-              <button
-                type="button"
-                key={num}
-                onClick={() => handleKeypadPress(num)}
-                className="w-16 h-16 bg-brand-beige border border-brand-dark/10 hover:border-brand-dark font-mono text-xl text-brand-dark flex items-center justify-center font-semibold active:bg-brand-dark active:text-white transition-all rounded-none"
-              >
-                {num}
-              </button>
-            ))}
-            <button
-              type="button"
-              onClick={handleClearKeypad}
-              className="w-16 h-16 bg-red-50 border border-red-200 hover:border-red-600 font-mono text-xs text-red-600 font-bold flex items-center justify-center active:bg-red-600 active:text-white transition-all rounded-none"
-            >
-              CLEAR
-            </button>
-            <button
-              type="button"
-              onClick={() => handleKeypadPress('0')}
-              className="w-16 h-16 bg-brand-beige border border-brand-dark/10 hover:border-brand-dark font-mono text-xl text-brand-dark flex items-center justify-center font-semibold active:bg-brand-dark active:text-white transition-all rounded-none"
-            >
-              0
-            </button>
-            <div className="w-16 h-16 flex items-center justify-center border border-transparent">
-              <span className="text-[9px] font-mono text-brand-muted/40 uppercase">PIN: 4321</span>
+          {authMessage && (
+            <div className="bg-emerald-50 border border-emerald-200 p-3 text-left">
+              <p className="text-xs font-mono text-emerald-700 font-bold">
+                ✓ {authMessage}
+              </p>
             </div>
+          )}
+
+          {authStep === 'email' ? (
+            <form onSubmit={handleRequestOtp} className="space-y-4">
+              <div className="text-left space-y-1.5">
+                <label className="font-mono text-[10px] text-brand-dark uppercase font-bold tracking-wider block">Admin Email Address</label>
+                <div className="relative">
+                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-brand-muted" />
+                  <input
+                    type="email"
+                    value={authEmail}
+                    onChange={(e) => { setAuthEmail(e.target.value); setAuthError(''); }}
+                    placeholder="your@email.com"
+                    required
+                    autoFocus
+                    className="w-full border border-brand-dark/15 p-3 pl-10 text-sm font-mono focus:border-brand-dark outline-none bg-brand-beige/20 placeholder:text-brand-muted/40"
+                  />
+                </div>
+              </div>
+              <button
+                type="submit"
+                disabled={authLoading || !authEmail.trim()}
+                className="w-full bg-brand-dark text-white py-3 font-mono text-xs font-bold uppercase tracking-widest hover:bg-brand-dark/90 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              >
+                {authLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Mail className="w-4 h-4" />}
+                {authLoading ? 'SENDING CODE...' : 'SEND ACCESS CODE'}
+              </button>
+            </form>
+          ) : (
+            <form onSubmit={handleVerifyOtp} className="space-y-4">
+              <div className="text-left space-y-1">
+                <p className="font-mono text-[10px] text-brand-muted uppercase tracking-wider">
+                  Code sent to: <span className="text-brand-dark font-bold">{authEmail}</span>
+                </p>
+              </div>
+              <div className="text-left space-y-1.5">
+                <label className="font-mono text-[10px] text-brand-dark uppercase font-bold tracking-wider block">6-Digit Access Code</label>
+                <div className="relative">
+                  <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-brand-muted" />
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    maxLength={6}
+                    value={authOtp}
+                    onChange={(e) => { setAuthOtp(e.target.value.replace(/\D/g, '').slice(0, 6)); setAuthError(''); }}
+                    placeholder="000000"
+                    required
+                    autoFocus
+                    className="w-full border border-brand-dark/15 p-3 pl-10 text-lg font-mono tracking-[0.3em] text-center focus:border-brand-dark outline-none bg-brand-beige/20 placeholder:text-brand-muted/20"
+                  />
+                </div>
+              </div>
+              <button
+                type="submit"
+                disabled={authLoading || authOtp.length !== 6}
+                className="w-full bg-brand-accent text-white py-3 font-mono text-xs font-bold uppercase tracking-widest hover:bg-brand-accent/90 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              >
+                {authLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <ShieldCheck className="w-4 h-4" />}
+                {authLoading ? 'VERIFYING...' : 'VERIFY & LOGIN'}
+              </button>
+              <div className="flex items-center justify-between pt-1">
+                <button
+                  type="button"
+                  onClick={() => { setAuthStep('email'); setAuthOtp(''); setAuthError(''); setAuthMessage(''); }}
+                  className="font-mono text-[10px] text-brand-muted hover:text-brand-dark uppercase tracking-wider transition-colors"
+                >
+                  ← Change Email
+                </button>
+                <button
+                  type="button"
+                  onClick={handleRequestOtp}
+                  disabled={authLoading}
+                  className="font-mono text-[10px] text-brand-accent hover:text-brand-accent/80 uppercase tracking-wider font-bold transition-colors disabled:opacity-50"
+                >
+                  Resend Code
+                </button>
+              </div>
+            </form>
+          )}
+
+          <div className="pt-2 border-t border-brand-dark/5">
+            <p className="text-[10px] font-mono text-brand-muted/50 uppercase tracking-wider">
+              Authorized email accounts only • Access code expires in 1 hour
+            </p>
           </div>
         </div>
       </div>
@@ -685,7 +842,7 @@ Falooda (1 Serving) | A delicious, cold traditional dessert drink featuring rose
           </button>
           <button
             type="button"
-            onClick={() => setIsAuthenticated(false)}
+            onClick={handleLogout}
             className="border border-red-200 hover:border-red-600 text-red-600 px-4 py-2 font-mono text-xs font-bold uppercase tracking-wider rounded-none text-center transition-colors"
           >
             LOCK SESSION

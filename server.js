@@ -6,6 +6,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import nodemailer from 'nodemailer';
 import fs from 'fs';
+import jwt from 'jsonwebtoken';
 
 dotenv.config();
 
@@ -176,8 +177,8 @@ const pool = mysql.createPool({
         process.env.SMTP_HOST || 'smtp.hostinger.com',
         parseInt(process.env.SMTP_PORT || '465'),
         process.env.SMTP_SECURE || 'true',
-        process.env.SMTP_USER || 'customers@clayoven.ie',
-        process.env.SMTP_PASS || 'Tani@8877'
+        process.env.SMTP_USER || '',
+        process.env.SMTP_PASS || ''
       ]);
       console.log('Default SMTP configurations initialized inside database settings successfully.');
     }
@@ -258,6 +259,31 @@ Falooda (1 Serving) | A delicious, cold traditional dessert drink featuring rose
       `, [key, value]);
     }
     console.log('Global storefront settings verified and seeded in database successfully.');
+
+    // Auto-create admin authentication tables
+    await connection.query(`
+      CREATE TABLE IF NOT EXISTS admin_emails (
+        email VARCHAR(255) PRIMARY KEY
+      )
+    `);
+
+    await connection.query(`
+      CREATE TABLE IF NOT EXISTS admin_otps (
+        email VARCHAR(255) PRIMARY KEY,
+        otp VARCHAR(10) NOT NULL,
+        expires_at DATETIME NOT NULL
+      )
+    `);
+
+    // Seed authorized admin emails (insert only if not already present)
+    const adminEmails = ['tanveerfixit@gmail.com', 'customers@clayoven.ie'];
+    for (const adminEmail of adminEmails) {
+      await connection.query(
+        'INSERT IGNORE INTO admin_emails (email) VALUES (?)',
+        [adminEmail]
+      );
+    }
+    console.log('Admin authentication tables and authorized emails verified successfully.');
 
     // Ensure local uploads folder exists
     const uploadsDir = path.join(__dirname, 'uploads');
@@ -833,8 +859,152 @@ app.delete('/api/orders/:id', async (req, res) => {
   }
 });
 
-// 4. Admin API Endpoints
-app.get('/api/admin/orders', async (req, res) => {
+// --- Admin Authentication Middleware ---
+const ADMIN_JWT_SECRET = process.env.ADMIN_JWT_SECRET || 'fallback-change-me-in-env';
+
+const requireAdmin = (req, res, next) => {
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return res.status(401).json({ error: 'Unauthorized — admin authentication required' });
+  }
+
+  const token = authHeader.split(' ')[1];
+  try {
+    const decoded = jwt.verify(token, ADMIN_JWT_SECRET);
+    req.adminEmail = decoded.email;
+    next();
+  } catch (err) {
+    return res.status(401).json({ error: 'Unauthorized — session expired or invalid token' });
+  }
+};
+
+// --- Admin Authentication Endpoints ---
+
+// Request OTP — sends a 6-digit code to an authorized admin email
+app.post('/api/admin/request-otp', async (req, res) => {
+  const { email } = req.body;
+  if (!email) {
+    return res.status(400).json({ error: 'Email address is required' });
+  }
+
+  try {
+    // Check if this email is an authorized admin
+    const [adminRows] = await pool.query('SELECT * FROM admin_emails WHERE email = ?', [email.toLowerCase().trim()]);
+    if (adminRows.length === 0) {
+      return res.status(403).json({ error: 'This email address is not authorized for admin access' });
+    }
+
+    // Generate 6-digit OTP
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+
+    // Store OTP in database (upsert)
+    await pool.query(
+      `INSERT INTO admin_otps (email, otp, expires_at)
+       VALUES (?, ?, ?)
+       ON DUPLICATE KEY UPDATE otp = VALUES(otp), expires_at = VALUES(expires_at)`,
+      [email.toLowerCase().trim(), otp, expiresAt]
+    );
+
+    // Send OTP via email
+    const mailOptions = {
+      from: `"The Royal Clay Oven" <${process.env.SMTP_USER}>`,
+      to: email,
+      subject: 'Admin Console Access Code — The Royal Clay Oven',
+      html: `
+        <div style="font-family: sans-serif; padding: 24px; max-width: 600px; margin: auto; border: 1px solid #eee; text-align: center;">
+          <h2 style="color: #C85A32; font-family: serif; letter-spacing: 0.1em;">THE ROYAL CLAY OVEN</h2>
+          <p style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.15em; color: #777;">Admin Console Access Code</p>
+          <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;" />
+          <p style="font-size: 14px; line-height: 1.5; color: #333; text-align: left;">Hello,</p>
+          <p style="font-size: 14px; line-height: 1.5; color: #333; text-align: left;">A login request was made for the Admin Console. Use the following One-Time Access Code to authenticate:</p>
+          <div style="background-color: #FDFBF7; border: 1px dashed #C85A32; padding: 15px; font-size: 28px; font-weight: bold; letter-spacing: 0.3em; color: #2C2621; margin: 24px 0; display: inline-block;">
+            ${otp}
+          </div>
+          <ul style="font-size: 12px; color: #555; text-align: left; padding-left: 20px; line-height: 1.6;">
+            <li>This code is valid for <strong>1 hour</strong> from the time of generation.</li>
+            <li>If you did not request this code, you can safely ignore this email.</li>
+            <li>Do not share this code with anyone.</li>
+          </ul>
+          <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;" />
+          <p style="font-size: 11px; color: #999;">The Royal Clay Oven &bull; Ballycasey, Shannon, Co. Clare &bull; customers@clayoven.ie</p>
+        </div>
+      `
+    };
+
+    const activeTransporter = await getTransporter();
+    await activeTransporter.sendMail(mailOptions);
+    console.log(`Admin OTP dispatched to: ${email}`);
+    res.json({ success: true, message: 'Access code has been sent to your email address.' });
+  } catch (error) {
+    console.error('Admin OTP request error:', error);
+    res.status(500).json({ error: 'Failed to generate or send access code. Please try again.' });
+  }
+});
+
+// Verify OTP — validates the code and returns a signed JWT session token
+app.post('/api/admin/verify-otp', async (req, res) => {
+  const { email, otp } = req.body;
+  if (!email || !otp) {
+    return res.status(400).json({ error: 'Email and access code are required' });
+  }
+
+  try {
+    const [rows] = await pool.query(
+      'SELECT * FROM admin_otps WHERE email = ?',
+      [email.toLowerCase().trim()]
+    );
+
+    if (rows.length === 0) {
+      return res.status(400).json({ error: 'No active access code found for this email. Please request a new one.' });
+    }
+
+    const record = rows[0];
+    const expiresAt = new Date(record.expires_at);
+
+    if (record.otp !== otp.trim()) {
+      return res.status(400).json({ error: 'Incorrect access code. Please check your email and try again.' });
+    }
+
+    if (expiresAt.getTime() < Date.now()) {
+      return res.status(400).json({ error: 'Access code has expired. Please request a new one.' });
+    }
+
+    // OTP is valid — delete it so it can't be reused
+    await pool.query('DELETE FROM admin_otps WHERE email = ?', [email.toLowerCase().trim()]);
+
+    // Issue JWT token (valid for 1 hour)
+    const token = jwt.sign(
+      { email: email.toLowerCase().trim(), role: 'admin' },
+      ADMIN_JWT_SECRET,
+      { expiresIn: '1h' }
+    );
+
+    console.log(`Admin session authenticated for: ${email}`);
+    res.json({ success: true, token, message: 'Authentication successful.' });
+  } catch (error) {
+    console.error('Admin OTP verification error:', error);
+    res.status(500).json({ error: 'Failed to verify access code. Please try again.' });
+  }
+});
+
+// Verify existing token — used by frontend to auto-login on page refresh
+app.get('/api/admin/verify', (req, res) => {
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return res.status(401).json({ valid: false });
+  }
+
+  try {
+    const decoded = jwt.verify(authHeader.split(' ')[1], ADMIN_JWT_SECRET);
+    res.json({ valid: true, email: decoded.email });
+  } catch (err) {
+    res.status(401).json({ valid: false });
+  }
+});
+
+// 4. Admin API Endpoints (Protected)
+app.get('/api/admin/orders', requireAdmin, async (req, res) => {
   try {
     const [rows] = await pool.query(
       'SELECT * FROM orders ORDER BY createdAt DESC LIMIT 150'
@@ -876,7 +1046,7 @@ app.get('/api/admin/orders', async (req, res) => {
   }
 });
 
-app.put('/api/admin/orders/:id/status', async (req, res) => {
+app.put('/api/admin/orders/:id/status', requireAdmin, async (req, res) => {
   const { id } = req.params;
   const { status } = req.body;
   if (!status) {
@@ -900,7 +1070,7 @@ app.put('/api/admin/orders/:id/status', async (req, res) => {
   }
 });
 
-app.get('/api/admin/bookings', async (req, res) => {
+app.get('/api/admin/bookings', requireAdmin, async (req, res) => {
   try {
     const [rows] = await pool.query(
       'SELECT * FROM bookings ORDER BY date DESC, time DESC LIMIT 200'
@@ -927,7 +1097,7 @@ app.get('/api/settings', async (req, res) => {
   }
 });
 
-app.post('/api/settings', async (req, res) => {
+app.post('/api/settings', requireAdmin, async (req, res) => {
   const settings = req.body;
   if (!settings || typeof settings !== 'object') {
     return res.status(400).json({ error: 'Payload must be a key-value settings object' });
@@ -956,7 +1126,7 @@ app.post('/api/settings', async (req, res) => {
 });
 
 // 6. Gallery Image Upload API Endpoint
-app.post('/api/admin/upload-image', async (req, res) => {
+app.post('/api/admin/upload-image', requireAdmin, async (req, res) => {
   const { imageType, imageBytes } = req.body;
   if (!imageType || !imageBytes) {
     return res.status(400).json({ error: 'imageType and imageBytes (Base64 string) are required' });
