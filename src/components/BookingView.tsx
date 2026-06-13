@@ -36,6 +36,10 @@ The Royal Clay Oven`);
   const [showWarningModal, setShowWarningModal] = React.useState(false);
   const [showReservationsWarningModal, setShowReservationsWarningModal] = React.useState(false);
 
+  const [businessInfo, setBusinessInfo] = React.useState({
+    phone: '086 020 3720',
+  });
+
   const [timingSettings, setTimingSettings] = React.useState<Record<string, string>>({
     monday: localStorage.getItem('clay_oven_timing_monday') || '4:00 PM - 9:00 PM',
     tuesday: localStorage.getItem('clay_oven_timing_tuesday') || '4:00 PM - 9:00 PM',
@@ -49,6 +53,20 @@ The Royal Clay Oven`);
 
   // Sync settings with database on mount
   React.useEffect(() => {
+    const fetchBusinessInfo = async () => {
+      try {
+        const res = await fetch('/api/business-info');
+        if (res.ok) {
+          const data = await res.json();
+          setBusinessInfo({
+            phone: data.phone || '086 020 3720',
+          });
+        }
+      } catch (err) {
+        console.error('Failed to load business info in BookingView:', err);
+      }
+    };
+
     const loadSettings = async () => {
       try {
         const response = await fetch('/api/settings');
@@ -95,7 +113,14 @@ The Royal Clay Oven`);
         setShowReservationsWarningModal(!reservationsEnabled);
       }
     };
+
+    fetchBusinessInfo();
     loadSettings();
+
+    window.addEventListener('business_info_updated', fetchBusinessInfo);
+    return () => {
+      window.removeEventListener('business_info_updated', fetchBusinessInfo);
+    };
   }, []);
 
   // Booking inputs
@@ -477,7 +502,7 @@ The Royal Clay Oven`);
           )}
 
           <p className="text-sm text-brand-dark font-normal leading-relaxed">
-            A temporary confirmation card has been generated. If you prefer to modify your timings, feel free to telephone our direct line at <span className="font-semibold text-brand-dark">086 020 3720</span>.
+            A temporary confirmation card has been generated. If you prefer to modify your timings, feel free to telephone our direct line at <span className="font-semibold text-brand-dark">{businessInfo.phone}</span>.
           </p>
 
           <button

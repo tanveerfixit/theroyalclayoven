@@ -14,6 +14,7 @@ interface NavbarProps {
   cartCount: number;
   openCartDrawer: () => void;
   onOpenAuthModal: () => void;
+  businessName?: string;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -21,7 +22,8 @@ export const Navbar: React.FC<NavbarProps> = ({
   setCurrentTab,
   cartCount,
   openCartDrawer,
-  onOpenAuthModal
+  onOpenAuthModal,
+  businessName = 'THE ROYAL CLAY OVEN'
 }) => {
   const [isOpen, setIsOpen] = React.useState(false);
   const [user, setUser] = React.useState<UserProfile | null>(null);
@@ -113,7 +115,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               className="flex flex-col text-center lg:text-left focus:outline-none group"
             >
               <span className="font-serif text-lg sm:text-xl lg:text-2xl font-bold tracking-widest text-brand-dark group-hover:text-brand-accent transition-colors duration-200">
-                THE ROYAL CLAY OVEN
+                {businessName}
               </span>
               <span className="hidden sm:block font-mono text-[10px] lg:text-xs tracking-[0.25em] text-brand-muted uppercase mt-0.5">
                 Pakistani Cuisine & Outdoor Catering

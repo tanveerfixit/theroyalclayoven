@@ -192,6 +192,49 @@ const pool = mysql.createPool({
       )
     `);
 
+    // Auto-create business info table
+    await connection.query(`
+      CREATE TABLE IF NOT EXISTS business_info (
+        id INT PRIMARY KEY AUTO_INCREMENT,
+        business_name VARCHAR(255) NOT NULL,
+        address VARCHAR(500) NOT NULL,
+        maps_url VARCHAR(500) NOT NULL,
+        phone VARCHAR(50) NOT NULL,
+        mobile VARCHAR(50) NOT NULL,
+        whatsapp VARCHAR(50) NOT NULL,
+        email VARCHAR(255) NOT NULL
+      )
+    `);
+
+    // Seed default business info if table is empty
+    const [bizRows] = await connection.query('SELECT * FROM business_info LIMIT 1');
+    if (bizRows.length === 0) {
+      await connection.query(`
+        INSERT INTO business_info (business_name, address, maps_url, phone, mobile, whatsapp, email)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+      `, [
+        'THE ROYAL CLAY OVEN',
+        'Ballycasey Craft And Design Center, Shannon, County Clare V14 AW71',
+        'https://maps.google.com/?q=The+Royal+Clay+Oven+Ballycasey+Craft+And+Design+Center+Shannon+County+Clare+V14+AW71',
+        '061 703 513',
+        '086 020 3720',
+        '086 020 3720',
+        'sales@clayoven.ie'
+      ]);
+      console.log('Default business info initialized inside database successfully.');
+    } else {
+      // If table is not empty but contains old default numbers, update them automatically
+      const current = bizRows[0];
+      if (current.phone === '086 020 3720' && current.mobile === '089 489 9950') {
+        await connection.query(`
+          UPDATE business_info 
+          SET phone = ?, mobile = ?, whatsapp = ?
+          WHERE id = ?
+        `, ['061 703 513', '086 020 3720', '086 020 3720', current.id]);
+        console.log('Updated existing business info records with new default phone, mobile, and whatsapp in database.');
+      }
+    }
+
     // Upgrade column to LONGTEXT dynamically to support base64 images
     try {
       await connection.query('ALTER TABLE store_settings MODIFY COLUMN setting_value LONGTEXT NOT NULL');
@@ -1123,6 +1166,53 @@ app.post('/api/settings', requireAdmin, async (req, res) => {
     res.status(500).json({ error: 'Failed to update storefront settings in database' });
   } finally {
     connection.release();
+  }
+});
+
+// 5.5. Business Basic Information API Endpoints
+app.get('/api/business-info', async (req, res) => {
+  try {
+    const [rows] = await pool.query('SELECT * FROM business_info LIMIT 1');
+    if (rows.length > 0) {
+      res.json(rows[0]);
+    } else {
+      res.status(404).json({ error: 'Business basic information not found' });
+    }
+  } catch (error) {
+    console.error('Error fetching business info:', error);
+    res.status(500).json({ error: 'Failed to retrieve business basic information' });
+  }
+});
+
+app.post('/api/business-info', requireAdmin, async (req, res) => {
+  const { business_name, address, maps_url, phone, mobile, whatsapp, email } = req.body;
+  if (!business_name || !address || !maps_url || !phone || !mobile || !whatsapp || !email) {
+    return res.status(400).json({ error: 'All fields (business_name, address, maps_url, phone, mobile, whatsapp, email) are required' });
+  }
+
+  try {
+    // Check if there is an existing record
+    const [rows] = await pool.query('SELECT id FROM business_info LIMIT 1');
+    if (rows.length > 0) {
+      // Update existing record
+      await pool.query(
+        `UPDATE business_info 
+         SET business_name = ?, address = ?, maps_url = ?, phone = ?, mobile = ?, whatsapp = ?, email = ?
+         WHERE id = ?`,
+        [business_name, address, maps_url, phone, mobile, whatsapp, email, rows[0].id]
+      );
+    } else {
+      // Insert new record
+      await pool.query(
+        `INSERT INTO business_info (business_name, address, maps_url, phone, mobile, whatsapp, email)
+         VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        [business_name, address, maps_url, phone, mobile, whatsapp, email]
+      );
+    }
+    res.json({ success: true, message: 'Business basic information updated successfully' });
+  } catch (error) {
+    console.error('Error updating business info in database:', error);
+    res.status(500).json({ error: 'Failed to update business basic information in database' });
   }
 });
 

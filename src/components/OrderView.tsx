@@ -38,8 +38,26 @@ export const OrderView: React.FC<OrderViewProps> = ({
   const [takeawayNotice, setTakeawayNotice] = React.useState(localStorage.getItem('clay_oven_takeaway_notice') || 'We are temporarily not taking online orders. Please phone us to order directly!');
   const [showTakeawayWarningModal, setShowTakeawayWarningModal] = React.useState(false);
 
+  const [businessInfo, setBusinessInfo] = React.useState({
+    phone: '086 020 3720',
+  });
+
   // Sync settings with database on mount
   React.useEffect(() => {
+    const fetchBusinessInfo = async () => {
+      try {
+        const res = await fetch('/api/business-info');
+        if (res.ok) {
+          const data = await res.json();
+          setBusinessInfo({
+            phone: data.phone || '086 020 3720',
+          });
+        }
+      } catch (err) {
+        console.error('Failed to load business info in OrderView:', err);
+      }
+    };
+
     const loadSettings = async () => {
       try {
         const response = await fetch('/api/settings');
@@ -63,7 +81,14 @@ export const OrderView: React.FC<OrderViewProps> = ({
         setShowTakeawayWarningModal(!takeawayEnabled);
       }
     };
+
+    fetchBusinessInfo();
     loadSettings();
+
+    window.addEventListener('business_info_updated', fetchBusinessInfo);
+    return () => {
+      window.removeEventListener('business_info_updated', fetchBusinessInfo);
+    };
   }, []);
   
   // Checkout inputs
@@ -393,7 +418,7 @@ export const OrderView: React.FC<OrderViewProps> = ({
           </div>
 
           <p className="text-sm text-brand-muted leading-relaxed font-normal">
-            We are now preparing your authentic dishes using traditional charcoal fires. Standard turnaround time is 35 mins. If you have immediate inquiries, phone our line at <span className="font-semibold text-brand-dark">086 020 3720</span>.
+            We are now preparing your authentic dishes using traditional charcoal fires. Standard turnaround time is 35 mins. If you have immediate inquiries, phone our line at <span className="font-semibold text-brand-dark">{businessInfo.phone}</span>.
           </p>
 
           <button

@@ -100,13 +100,22 @@ The Royal Clay Oven`);
   const [reservationsEnabled, setReservationsEnabled] = useState(true);
   const [reservationsNoticeText, setReservationsNoticeText] = useState('Table reservations are temporarily closed. Please telephone us to book a table!');
 
-  // Notice Sub-tabs settings pane navigation: 'takeaway' | 'reservations' | 'announcements' | 'festive' | 'gallery'
-  const [settingsSubTab, setSettingsSubTab] = useState<'takeaway' | 'reservations' | 'announcements' | 'festive' | 'gallery'>('takeaway');
+  // Notice Sub-tabs settings pane navigation: 'takeaway' | 'reservations' | 'announcements' | 'festive' | 'gallery' | 'business'
+  const [settingsSubTab, setSettingsSubTab] = useState<'takeaway' | 'reservations' | 'announcements' | 'festive' | 'gallery' | 'business'>('takeaway');
 
   // Self-hosted Gallery Image States
   const [imageHeroBg, setImageHeroBg] = useState('https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=1600&q=80');
   const [imageHeritageLeft, setImageHeritageLeft] = useState('https://images.unsplash.com/photo-1627308595229-7830a5c91f9f?auto=format&fit=crop&w=600&q=80');
   const [imageHeritageRight, setImageHeritageRight] = useState('https://images.unsplash.com/photo-1603360946369-dc9bb6258143?auto=format&fit=crop&w=600&q=80');
+
+  // Business Basic Information States
+  const [businessName, setBusinessName] = useState('THE ROYAL CLAY OVEN');
+  const [businessAddress, setBusinessAddress] = useState('Ballycasey Craft And Design Center, Shannon, County Clare V14 AW71');
+  const [businessMapsUrl, setBusinessMapsUrl] = useState('https://maps.google.com/?q=The+Royal+Clay+Oven+Ballycasey+Craft+And+Design+Center+Shannon+County+Clare+V14+AW71');
+  const [businessPhone, setBusinessPhone] = useState('086 020 3720');
+  const [businessMobile, setBusinessMobile] = useState('089 489 9950');
+  const [businessWhatsapp, setBusinessWhatsapp] = useState('089 489 9950');
+  const [businessEmail, setBusinessEmail] = useState('sales@clayoven.ie');
 
   // Database settings raw data state
   const [settingsData, setSettingsData] = useState<any>({});
@@ -221,8 +230,27 @@ Falooda (1 Serving) | A delicious, cold traditional dessert drink featuring rose
     }
   };
 
+  const fetchBusinessInfo = async () => {
+    try {
+      const response = await fetch('/api/business-info');
+      if (response.ok) {
+        const data = await response.json();
+        if (data.business_name) setBusinessName(data.business_name);
+        if (data.address) setBusinessAddress(data.address);
+        if (data.maps_url) setBusinessMapsUrl(data.maps_url);
+        if (data.phone) setBusinessPhone(data.phone);
+        if (data.mobile) setBusinessMobile(data.mobile);
+        if (data.whatsapp) setBusinessWhatsapp(data.whatsapp);
+        if (data.email) setBusinessEmail(data.email);
+      }
+    } catch (err) {
+      console.error('Failed to retrieve business information:', err);
+    }
+  };
+
   const fetchSettings = async () => {
     try {
+      await fetchBusinessInfo();
       const response = await fetch('/api/settings');
       if (response.ok) {
         const data = await response.json();
@@ -296,6 +324,16 @@ Falooda (1 Serving) | A delicious, cold traditional dessert drink featuring rose
       'clay_oven_festive_items': festiveItems
     };
 
+    const businessPayload = {
+      business_name: businessName,
+      address: businessAddress,
+      maps_url: businessMapsUrl,
+      phone: businessPhone,
+      mobile: businessMobile,
+      whatsapp: businessWhatsapp,
+      email: businessEmail
+    };
+
     try {
       const response = await fetch('/api/settings', {
         method: 'POST',
@@ -303,8 +341,17 @@ Falooda (1 Serving) | A delicious, cold traditional dessert drink featuring rose
         body: JSON.stringify(settingsPayload)
       });
       if (response.status === 401) { handleUnauthorized(); return; }
-      if (response.ok) {
+
+      const bizResponse = await fetch('/api/business-info', {
+        method: 'POST',
+        headers: adminHeaders(),
+        body: JSON.stringify(businessPayload)
+      });
+      if (bizResponse.status === 401) { handleUnauthorized(); return; }
+
+      if (response.ok && bizResponse.ok) {
         setSaveSuccess(true);
+        window.dispatchEvent(new Event('business_info_updated'));
         setTimeout(() => setSaveSuccess(false), 3000);
       } else {
         throw new Error('Server responded with an error');
@@ -1611,6 +1658,17 @@ Falooda (1 Serving) | A delicious, cold traditional dessert drink featuring rose
             >
               5. Gallery Images
             </button>
+            <button
+              type="button"
+              onClick={() => setSettingsSubTab('business')}
+              className={`px-4 py-2.5 font-mono text-xs font-bold uppercase tracking-wider border-b-2 transition-all shrink-0 ${
+                settingsSubTab === 'business'
+                  ? 'border-brand-accent text-brand-accent bg-brand-beige/10'
+                  : 'border-transparent text-brand-muted hover:text-brand-dark'
+              }`}
+            >
+              6. Business Info
+            </button>
           </div>
 
           <form onSubmit={handleSaveSettings} className="space-y-8">
@@ -2121,6 +2179,127 @@ Falooda (1 Serving) | A delicious, cold traditional dessert drink featuring rose
                         * Ideal size: 600x600px (Square)
                       </p>
                     </div>
+                  </div>
+
+                </div>
+              </div>
+            )}
+            {/* SUBTAB 6: BUSINESS BASIC INFORMATION SETTINGS */}
+            {settingsSubTab === 'business' && (
+              <div className="space-y-6 animate-fade-in text-left">
+                <div className="space-y-2 border-b border-brand-dark/5 pb-4">
+                  <h3 className="font-serif text-lg font-bold text-brand-dark">
+                    Business Basic Information Settings
+                  </h3>
+                  <p className="font-sans text-xs text-brand-muted font-normal">
+                    Update the contact details, address, maps link, and emails shown in the footer and across the pages.
+                  </p>
+                </div>
+
+                <div className="max-w-3xl grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Business Name */}
+                  <div className="space-y-2">
+                    <label htmlFor="settings-business-name" className="block font-mono text-xs text-brand-accent uppercase tracking-widest font-bold">
+                      Business/Restaurant Name
+                    </label>
+                    <input
+                      type="text"
+                      id="settings-business-name"
+                      value={businessName}
+                      onChange={(e) => setBusinessName(e.target.value)}
+                      className="w-full bg-[#FDFBF7] border border-brand-dark/15 p-3 font-mono text-xs focus:outline-none focus:border-brand-accent"
+                      required
+                    />
+                  </div>
+
+                  {/* Contact Email */}
+                  <div className="space-y-2">
+                    <label htmlFor="settings-business-email" className="block font-mono text-xs text-brand-accent uppercase tracking-widest font-bold">
+                      Contact Email Address
+                    </label>
+                    <input
+                      type="email"
+                      id="settings-business-email"
+                      value={businessEmail}
+                      onChange={(e) => setBusinessEmail(e.target.value)}
+                      className="w-full bg-[#FDFBF7] border border-brand-dark/15 p-3 font-mono text-xs focus:outline-none focus:border-brand-accent"
+                      required
+                    />
+                  </div>
+
+                  {/* Phone */}
+                  <div className="space-y-2">
+                    <label htmlFor="settings-business-phone" className="block font-mono text-xs text-brand-accent uppercase tracking-widest font-bold">
+                      Telephone / Direct Line
+                    </label>
+                    <input
+                      type="text"
+                      id="settings-business-phone"
+                      value={businessPhone}
+                      onChange={(e) => setBusinessPhone(e.target.value)}
+                      className="w-full bg-[#FDFBF7] border border-brand-dark/15 p-3 font-mono text-xs focus:outline-none focus:border-brand-accent"
+                      required
+                    />
+                  </div>
+
+                  {/* Mobile */}
+                  <div className="space-y-2">
+                    <label htmlFor="settings-business-mobile" className="block font-mono text-xs text-brand-accent uppercase tracking-widest font-bold">
+                      Mobile Number
+                    </label>
+                    <input
+                      type="text"
+                      id="settings-business-mobile"
+                      value={businessMobile}
+                      onChange={(e) => setBusinessMobile(e.target.value)}
+                      className="w-full bg-[#FDFBF7] border border-brand-dark/15 p-3 font-mono text-xs focus:outline-none focus:border-brand-accent"
+                      required
+                    />
+                  </div>
+
+                  {/* WhatsApp */}
+                  <div className="space-y-2">
+                    <label htmlFor="settings-business-whatsapp" className="block font-mono text-xs text-brand-accent uppercase tracking-widest font-bold">
+                      WhatsApp Number
+                    </label>
+                    <input
+                      type="text"
+                      id="settings-business-whatsapp"
+                      value={businessWhatsapp}
+                      onChange={(e) => setBusinessWhatsapp(e.target.value)}
+                      className="w-full bg-[#FDFBF7] border border-brand-dark/15 p-3 font-mono text-xs focus:outline-none focus:border-brand-accent"
+                      required
+                    />
+                  </div>
+
+                  {/* Google Maps Embed/Query Link */}
+                  <div className="space-y-2 md:col-span-2">
+                    <label htmlFor="settings-business-maps-url" className="block font-mono text-xs text-brand-accent uppercase tracking-widest font-bold">
+                      Google Maps Location URL
+                    </label>
+                    <input
+                      type="url"
+                      id="settings-business-maps-url"
+                      value={businessMapsUrl}
+                      onChange={(e) => setBusinessMapsUrl(e.target.value)}
+                      className="w-full bg-[#FDFBF7] border border-brand-dark/15 p-3 font-mono text-xs focus:outline-none focus:border-brand-accent"
+                      required
+                    />
+                  </div>
+
+                  {/* Address Textarea */}
+                  <div className="space-y-2 md:col-span-2">
+                    <label htmlFor="settings-business-address" className="block font-mono text-xs text-brand-accent uppercase tracking-widest font-bold">
+                      Restaurant Address (Newlines allowed)
+                    </label>
+                    <textarea
+                      id="settings-business-address"
+                      value={businessAddress}
+                      onChange={(e) => setBusinessAddress(e.target.value)}
+                      rows={3}
+                      className="w-full bg-[#FDFBF7] border border-brand-dark/15 p-3 font-mono text-xs focus:outline-none focus:border-brand-accent"
+                      required
+                    />
                   </div>
 
                 </div>

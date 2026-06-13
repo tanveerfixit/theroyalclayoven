@@ -28,6 +28,16 @@ export const HomeView: React.FC<HomeViewProps> = ({ setCurrentTab }) => {
   const [noticePhone, setNoticePhone] = React.useState(localStorage.getItem('clay_oven_notice_phone') || '089 489 9950');
   const [noticeEnabled, setNoticeEnabled] = React.useState(localStorage.getItem('clay_oven_notice_enabled') !== 'false');
 
+  const [businessInfo, setBusinessInfo] = React.useState({
+    business_name: 'THE ROYAL CLAY OVEN',
+    address: 'Ballycasey Craft And Design Center, Shannon, County Clare V14 AW71',
+    maps_url: 'https://maps.google.com/?q=The+Royal+Clay+Oven+Ballycasey+Craft+And+Design+Center+Shannon+County+Clare+V14+AW71',
+    phone: '086 020 3720',
+    mobile: '089 489 9950',
+    whatsapp: '089 489 9950',
+    email: 'sales@clayoven.ie'
+  });
+
   const [showWarningModal, setShowWarningModal] = React.useState(false);
 
   // Dynamic Festive Offer State
@@ -49,6 +59,26 @@ Falooda (1 Serving) | A delicious, cold traditional dessert drink featuring rose
 
   // Effect to synchronize settings with server database
   React.useEffect(() => {
+    const fetchBusinessInfo = async () => {
+      try {
+        const res = await fetch('/api/business-info');
+        if (res.ok) {
+          const data = await res.json();
+          setBusinessInfo({
+            business_name: data.business_name || 'THE ROYAL CLAY OVEN',
+            address: data.address || 'Ballycasey Craft And Design Center, Shannon, County Clare V14 AW71',
+            maps_url: data.maps_url || 'https://maps.google.com/?q=The+Royal+Clay+Oven+Ballycasey+Craft+And+Design+Center+Shannon+County+Clare+V14+AW71',
+            phone: data.phone || '086 020 3720',
+            mobile: data.mobile || '089 489 9950',
+            whatsapp: data.whatsapp || '089 489 9950',
+            email: data.email || 'sales@clayoven.ie'
+          });
+        }
+      } catch (err) {
+        console.error('Failed to load business info in HomeView:', err);
+      }
+    };
+
     const loadSettings = async () => {
       try {
         const response = await fetch('/api/settings');
@@ -94,7 +124,14 @@ Falooda (1 Serving) | A delicious, cold traditional dessert drink featuring rose
         setShowWarningModal(noticeEnabled);
       }
     };
+
+    fetchBusinessInfo();
     loadSettings();
+
+    window.addEventListener('business_info_updated', fetchBusinessInfo);
+    return () => {
+      window.removeEventListener('business_info_updated', fetchBusinessInfo);
+    };
   }, []);
 
   const parsedFestiveItems = festiveItemsRaw
@@ -429,25 +466,24 @@ Falooda (1 Serving) | A delicious, cold traditional dessert drink featuring rose
               
               <div className="space-y-4 pt-2">
                 <a
-                  href="https://maps.google.com/?q=The+Royal+Clay+Oven+Ballycasey+Craft+And+Design+Center+Shannon+County+Clare+V14+AW71"
+                  href={businessInfo.maps_url}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex items-start group hover:text-brand-accent transition-colors"
                 >
                   <MapPin className="w-4 h-4 text-brand-accent mr-3 mt-1 shrink-0 group-hover:scale-110 transition-transform" />
-                  <span className="text-sm text-brand-muted leading-relaxed font-normal group-hover:text-brand-dark transition-colors">
-                    <strong className="text-brand-dark block font-semibold group-hover:text-brand-accent transition-colors">The Royal Clay Oven</strong>
-                    Ballycasey Craft And Design Center,<br />
-                    Shannon, County Clare V14 AW71
+                  <span className="text-sm text-brand-muted leading-relaxed font-normal group-hover:text-brand-dark transition-colors whitespace-pre-line">
+                    <strong className="text-brand-dark block font-semibold group-hover:text-brand-accent transition-colors">{businessInfo.business_name}</strong>
+                    {businessInfo.address}
                   </span>
                 </a>
 
                 <div className="flex items-start">
                   <Phone className="w-4 h-4 text-brand-accent mr-3 mt-1 shrink-0" />
                   <div className="flex flex-col text-sm text-brand-muted font-mono space-y-1.5">
-                    <span>Phone: <a href="tel:0860203720" className="hover:text-brand-accent transition-colors">086 020 3720</a></span>
-                    <span>Mobile: <a href="tel:0894899950" className="hover:text-brand-accent transition-colors">089 489 9950</a></span>
-                    <span>Whatsapp: <a href="https://wa.me/353894899950" target="_blank" rel="noopener noreferrer" className="hover:text-brand-accent transition-colors font-bold underline decoration-brand-accent/30 decoration-2 underline-offset-4">089 489 9950 (Click to Chat)</a></span>
+                    <span>Phone: <a href={`tel:${businessInfo.phone.replace(/\s+/g, '')}`} className="hover:text-brand-accent transition-colors">{businessInfo.phone}</a></span>
+                    <span>Mobile: <a href={`tel:${businessInfo.mobile.replace(/\s+/g, '')}`} className="hover:text-brand-accent transition-colors">{businessInfo.mobile}</a></span>
+                    <span>Whatsapp: <a href={businessInfo.whatsapp.replace(/\s+/g, '').startsWith('0') ? `https://wa.me/353${businessInfo.whatsapp.replace(/\s+/g, '').substring(1)}` : `https://wa.me/${businessInfo.whatsapp.replace(/\s+/g, '')}`} target="_blank" rel="noopener noreferrer" className="hover:text-brand-accent transition-colors font-bold underline decoration-brand-accent/30 decoration-2 underline-offset-4">{businessInfo.whatsapp.trim().startsWith('353') ? '0' + businessInfo.whatsapp.trim().substring(3).trim() : businessInfo.whatsapp.trim().startsWith('+353') ? '0' + businessInfo.whatsapp.trim().substring(4).trim() : businessInfo.whatsapp}</a></span>
                   </div>
                 </div>
               </div>

@@ -7,7 +7,7 @@ import React from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { Navbar } from './components/Navbar';
 import { CartItem, MenuItem } from './types';
-import { Plus, Minus, Trash2, X, ShoppingBag, Send, PhoneCall } from 'lucide-react';
+import { Plus, Minus, Trash2, X, ShoppingBag, Send, PhoneCall, MessageCircle } from 'lucide-react';
 
 // Static imports of views for instantaneous page transitions and zero load lag
 import { HomeView } from './components/HomeView';
@@ -33,6 +33,41 @@ const BrandLoader = () => (
 );
 
 export default function App() {
+  const [businessInfo, setBusinessInfo] = React.useState({
+    business_name: 'THE ROYAL CLAY OVEN',
+    address: 'Ballycasey Craft And Design Center, Shannon, County Clare V14 AW71',
+    maps_url: 'https://maps.google.com/?q=The+Royal+Clay+Oven+Ballycasey+Craft+And+Design+Center+Shannon+County+Clare+V14+AW71',
+    phone: '086 020 3720',
+    mobile: '089 489 9950',
+    whatsapp: '089 489 9950',
+    email: 'sales@clayoven.ie'
+  });
+
+  React.useEffect(() => {
+    const fetchBusinessInfo = async () => {
+      try {
+        const res = await fetch('/api/business-info');
+        if (res.ok) {
+          const data = await res.json();
+          setBusinessInfo({
+            business_name: data.business_name || 'THE ROYAL CLAY OVEN',
+            address: data.address || 'Ballycasey Craft And Design Center, Shannon, County Clare V14 AW71',
+            maps_url: data.maps_url || 'https://maps.google.com/?q=The+Royal+Clay+Oven+Ballycasey+Craft+And+Design+Center+Shannon+County+Clare+V14+AW71',
+            phone: data.phone || '086 020 3720',
+            mobile: data.mobile || '089 489 9950',
+            whatsapp: data.whatsapp || '089 489 9950',
+            email: data.email || 'sales@clayoven.ie'
+          });
+        }
+      } catch (err) {
+        console.error('Failed to load business information:', err);
+      }
+    };
+    fetchBusinessInfo();
+    window.addEventListener('business_info_updated', fetchBusinessInfo);
+    return () => window.removeEventListener('business_info_updated', fetchBusinessInfo);
+  }, []);
+
   const [currentTab, setCurrentTabInternal] = React.useState<string>(() => {
     const path = window.location.pathname.replace(/^\/|\/$/g, '');
     if (['home', 'menu', 'takeaway', 'booking', 'history', 'profile', 'admin'].includes(path)) {
@@ -202,6 +237,7 @@ export default function App() {
         cartCount={totalCartCount}
         openCartDrawer={() => setIsCartOpen(true)}
         onOpenAuthModal={() => setIsAuthModalOpen(true)}
+        businessName={businessInfo.business_name}
       />
 
       {/* Main Responsive Canvas */}
@@ -416,7 +452,7 @@ export default function App() {
           {/* Logo & Headline */}
           <div className="md:col-span-4 space-y-3 text-left">
             <span className="font-serif text-lg font-bold tracking-widest text-brand-dark block">
-              THE ROYAL CLAY OVEN
+              {businessInfo.business_name}
             </span>
             <p className="text-sm text-brand-muted leading-relaxed font-normal">
               Providing freshly prepared authentic Pakistani cuisine, kebabs, and pizzas meticulously flame-grilled. High-fire clay cooked under familial recipe care.
@@ -452,46 +488,48 @@ export default function App() {
                   Book Event Layout
                 </button>
               </li>
-              <li>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setCurrentTab('admin');
-                    window.scrollTo({ top: 0, behavior: 'instant' });
-                  }}
-                  className="text-brand-accent hover:text-brand-dark transition-colors font-bold uppercase"
-                >
-                  Admin Console
-                </button>
-              </li>
             </ul>
           </div>
 
           {/* Direct Address */}
           <div className="md:col-span-3 space-y-3 text-sm text-left">
             <span className="font-mono font-bold text-brand-dark tracking-wider block uppercase text-sm">
-              THE CLAY HOUSE
+              {businessInfo.business_name}
             </span>
             <a
-              href="https://maps.google.com/?q=The+Royal+Clay+Oven+Ballycasey+Craft+And+Design+Center+Shannon+County+Clare+V14+AW71"
+              href={businessInfo.maps_url}
               target="_blank"
               rel="noopener noreferrer"
               className="block group hover:text-brand-accent transition-colors"
             >
-              <p className="text-brand-muted leading-relaxed font-normal group-hover:text-brand-dark transition-colors">
-                Ballycasey Craft And Design Center,<br />
-                Shannon, County Clare V14 AW71
+              <p className="text-brand-muted leading-relaxed font-normal group-hover:text-brand-dark transition-colors whitespace-pre-line">
+                {businessInfo.address}
               </p>
             </a>
             <div className="flex flex-col text-sm text-brand-muted font-mono space-y-1.5 pt-1">
-              <span>Phone: <a href="tel:0860203720" className="hover:text-brand-accent transition-colors">086 020 3720</a></span>
-              <span>Mobile: <a href="tel:0894899950" className="hover:text-brand-accent transition-colors">089 489 9950</a></span>
-              <span>Whatsapp: <a href="https://wa.me/353894899950" target="_blank" rel="noopener noreferrer" className="hover:text-brand-accent transition-colors font-bold underline decoration-brand-accent/30 decoration-2 underline-offset-4">089 489 9950 (Click to Chat)</a></span>
+              <span>Phone: <a href={`tel:${businessInfo.phone.replace(/\s+/g, '')}`} className="hover:text-brand-accent transition-colors">{businessInfo.phone}</a></span>
+              <span>Mobile: <a href={`tel:${businessInfo.mobile.replace(/\s+/g, '')}`} className="hover:text-brand-accent transition-colors">{businessInfo.mobile}</a></span>
             </div>
           </div>
 
         </div>
       </footer>
+
+      {/* Dynamic Floating Messenger Button */}
+      {(currentTab === 'home' || currentTab === 'menu') && (
+        <a
+          href={businessInfo.whatsapp.replace(/\s+/g, '').startsWith('0') ? `https://wa.me/353${businessInfo.whatsapp.replace(/\s+/g, '').substring(1)}` : `https://wa.me/${businessInfo.whatsapp.replace(/\s+/g, '')}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="fixed bottom-6 right-6 z-40 bg-[#25D366] hover:bg-[#20ba5a] text-white p-3.5 rounded-full shadow-lg hover:scale-110 active:scale-95 transition-all duration-200 flex items-center justify-center group"
+          aria-label="Order on WhatsApp"
+        >
+          <MessageCircle className="w-6 h-6 text-white" />
+          <span className="absolute right-15 bg-brand-dark text-white text-[10px] font-mono font-bold tracking-wider py-1.5 px-3 rounded-none shadow-md opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap uppercase">
+            Order on WhatsApp
+          </span>
+        </a>
+      )}
 
       <React.Suspense fallback={null}>
         <AuthModal
