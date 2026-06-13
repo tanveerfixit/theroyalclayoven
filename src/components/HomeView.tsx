@@ -11,6 +11,23 @@ interface HomeViewProps {
   setCurrentTab: (tab: string) => void;
 }
 
+// Helper function to optimize Unsplash image query parameters for improved mobile page speed
+const optimizeUnsplashUrl = (url: string, width: number, quality: number = 70): string => {
+  if (!url || !url.includes('images.unsplash.com')) return url;
+  try {
+    const urlObj = new URL(url);
+    urlObj.searchParams.set('w', width.toString());
+    urlObj.searchParams.set('q', quality.toString());
+    urlObj.searchParams.set('fm', 'webp');
+    urlObj.searchParams.set('auto', 'format');
+    urlObj.searchParams.set('fit', 'crop');
+    return urlObj.toString();
+  } catch (e) {
+    return url;
+  }
+};
+
+
 export const HomeView: React.FC<HomeViewProps> = ({ setCurrentTab }) => {
   // Operational timings states
   const [weeklyTimings, setWeeklyTimings] = React.useState({
@@ -53,9 +70,9 @@ Complimentary Accompaniments | Includes fresh garden salad, traditional yogurt R
 Falooda (1 Serving) | A delicious, cold traditional dessert drink featuring rose syrup, basil seeds, vermicelli, and sweet milk.`);
 
   // Self-hosted Gallery Image States
-  const [imageHeroBg, setImageHeroBg] = React.useState(localStorage.getItem('clay_oven_image_hero_bg') || 'https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=1600&q=80');
-  const [imageHeritageLeft, setImageHeritageLeft] = React.useState(localStorage.getItem('clay_oven_image_heritage_left') || 'https://images.unsplash.com/photo-1627308595229-7830a5c91f9f?auto=format&fit=crop&w=600&q=80');
-  const [imageHeritageRight, setImageHeritageRight] = React.useState(localStorage.getItem('clay_oven_image_heritage_right') || 'https://images.unsplash.com/photo-1603360946369-dc9bb6258143?auto=format&fit=crop&w=600&q=80');
+  const [imageHeroBg, setImageHeroBg] = React.useState(localStorage.getItem('clay_oven_image_hero_bg') || 'https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=800&q=70&fm=webp');
+  const [imageHeritageLeft, setImageHeritageLeft] = React.useState(localStorage.getItem('clay_oven_image_heritage_left') || 'https://images.unsplash.com/photo-1627308595229-7830a5c91f9f?auto=format&fit=crop&w=500&q=70&fm=webp');
+  const [imageHeritageRight, setImageHeritageRight] = React.useState(localStorage.getItem('clay_oven_image_heritage_right') || 'https://images.unsplash.com/photo-1603360946369-dc9bb6258143?auto=format&fit=crop&w=500&q=70&fm=webp');
 
   // Effect to synchronize settings with server database
   React.useEffect(() => {
@@ -156,7 +173,7 @@ Falooda (1 Serving) | A delicious, cold traditional dessert drink featuring rose
       <section className="relative bg-brand-dark text-brand-beige border-b border-brand-dark px-4 py-16 sm:px-6 lg:px-8 lg:py-28 rounded-none">
         <div className="absolute inset-0 opacity-20 pointer-events-none mix-blend-overlay">
           <img 
-            src={imageHeroBg} 
+            src={optimizeUnsplashUrl(imageHeroBg, 800)} 
             alt="Smoky background" 
             className="w-full h-full object-cover"
             referrerPolicy="no-referrer"
@@ -353,7 +370,7 @@ Falooda (1 Serving) | A delicious, cold traditional dessert drink featuring rose
           <div className="space-y-3 sm:space-y-4">
             <div className="h-48 sm:h-64 border border-brand-dark/10 bg-white">
               <img 
-                src={imageHeritageLeft} 
+                src={optimizeUnsplashUrl(imageHeritageLeft, 500)} 
                 alt="Karahi cooking" 
                 className="w-full h-full object-cover"
                 referrerPolicy="no-referrer"
@@ -373,7 +390,7 @@ Falooda (1 Serving) | A delicious, cold traditional dessert drink featuring rose
             </div>
             <div className="h-48 sm:h-64 border border-brand-dark/10 bg-white">
               <img 
-                src={imageHeritageRight} 
+                src={optimizeUnsplashUrl(imageHeritageRight, 500)} 
                 alt="Skewers roasting" 
                 className="w-full h-full object-cover"
                 referrerPolicy="no-referrer"
