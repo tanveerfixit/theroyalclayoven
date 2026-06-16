@@ -88,7 +88,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   return (
     <nav ref={navRef} className="sticky top-0 z-50 bg-brand-beige border-b border-brand-dark/10">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-20">
+        <div className="flex items-center justify-between h-14 sm:h-20">
           
           {/* Mobile Left: Hamburger Menu */}
           <div className="flex items-center lg:hidden">
@@ -102,7 +102,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               {isOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
             </button>
           </div>
-
+          
           {/* Logo Brand Area (Centered on Mobile, Left on Desktop) */}
           <div className="flex-1 flex justify-center lg:justify-start lg:flex-none">
             <button 
@@ -122,7 +122,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               </span>
             </button>
           </div>
-
+          
           {/* Desktop Navigation (Center) */}
           <div className="hidden lg:flex flex-grow justify-center items-center lg:space-x-0.5 xl:space-x-1 px-2">
             {navItems.map((item) => {
@@ -149,7 +149,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               );
             })}
           </div>
-
+          
           {/* Right Accoutrements: Auth & Cart */}
           <div className="flex items-center justify-end space-x-1 lg:space-x-1">
             
@@ -171,7 +171,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                     />
                     <span className="hidden sm:inline font-mono text-[11px] font-bold text-brand-dark truncate max-w-[80px]">{user.name}</span>
                   </button>
-
+                  
                   {isDropdownOpen && (
                     <div 
                       className="absolute right-0 mt-3 w-56 bg-white border border-brand-dark/15 shadow-xl py-1.5 z-50 animate-fade-in rounded-none"
@@ -182,7 +182,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                         <p className="text-xs font-mono font-bold text-brand-dark truncate">{user.name}</p>
                         <p className="text-[10px] font-mono text-brand-muted truncate mt-0.5">{user.email}</p>
                       </div>
-
+                      
                       {/* Dropdown Options */}
                       <div className="py-1">
                         <button
@@ -221,7 +221,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                 </button>
               )}
             </div>
-
+            
             {/* Cart Indicator */}
             <button
               type="button"
@@ -237,15 +237,15 @@ export const Navbar: React.FC<NavbarProps> = ({
                 </span>
               )}
             </button>
-
+            
           </div>
-
+          
         </div>
       </div>
-
+      
       {/* Mobile Drawer (Accordion style) */}
       {isOpen && (
-        <div id="mobile-menu-drawer" className="lg:hidden bg-brand-beige border-b border-brand-dark/20 animate-fade-in absolute w-full left-0 shadow-2xl z-40 max-h-[calc(100vh-80px)] overflow-y-auto">
+        <div id="mobile-menu-drawer" className="lg:hidden bg-brand-beige border-b border-brand-dark/20 animate-fade-in absolute w-full left-0 shadow-2xl z-40 max-h-[calc(100vh-56px)] sm:max-h-[calc(100vh-80px)] overflow-y-auto">
           <div className="px-2 pt-2 pb-4 space-y-1">
             {navItems.map((item) => {
               const Icon = item.icon;

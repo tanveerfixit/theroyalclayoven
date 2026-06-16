@@ -122,15 +122,24 @@ The Royal Clay Oven`);
 
   // Festive Offer states
   const [festiveEnabled, setFestiveEnabled] = useState(true);
-  const [festiveHeader, setFestiveHeader] = useState('BANK HOLIDAY WEEKEND');
-  const [festiveSubheader, setFestiveSubheader] = useState('Running: Thursday — Friday — Monday');
-  const [festiveDescription, setFestiveDescription] = useState('Celebrate the festive weekend with our custom curated clay oven specialty platter. Crafted with premium Pakistani heritage recipes and fresh local ingredients.');
-  const [festivePrice, setFestivePrice] = useState('35.00');
-  const [festiveItems, setFestiveItems] = useState(`Beef Nihari | Slow-cooked, rich beef shank stew cooked to melt-in-mouth perfection, served with 1 fresh hot tandoori naan.
-Clay Oven BBQ Platter | A flame-roasted collection of 1 Beef Chapli Kebab, 1 tender Lamb Chop, and 1 Royal Kebab Skewer.
-Zeera Rice | Fragrant cumin-tempered basmati rice with aromatic herbs.
-Complimentary Accompaniments | Includes fresh garden salad, traditional yogurt Raita, and tangy herb chutney.
-Falooda (1 Serving) | A delicious, cold traditional dessert drink featuring rose syrup, basil seeds, vermicelli, and sweet milk.`);
+  const [festiveHeader, setFestiveHeader] = useState("FATHER'S DAY DINNER");
+  const [festiveSubheader, setFestiveSubheader] = useState('Sunday, 21st June');
+  const [festiveDescription, setFestiveDescription] = useState(`Hello to all our Royal customers!
+
+We are excited to announce our exclusive 4-Course Father’s Day Dinner Menu.
+
+From our signature Peri-Peri Chicken Strips and mouth-watering Smash Burgers to premium upgrades like Prime Sirloin Steak and a perfectly Pan-Seared Sea Bass, we have something spectacular for every dad.
+
+Top it all off with our delicious Milk Cake and freshly brewed tea or coffee.
+
+Booking is highly recommended. Spaces are filling up fast, so make sure you secure your table early to avoid disappointment.
+
+Please note a 10% service charge applies. Location: The Royal Clay Oven, V14 AW71. Call us now at 061 703 513 to book!`);
+  const [festivePrice, setFestivePrice] = useState('39.95');
+  const [festiveItems, setFestiveItems] = useState(`Starters | Peri-Peri Chicken Strips & Springrolls (Veg or Chicken)
+Mains | Grilled Peppercorn Chicken, Smash Burger, Sirloin Steak (+€5 supplement) & Pan-seared Fish (+€5 supplement)
+Dessert | Milk Cake
+Beverages | Tea or Coffee`);
 
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [saveLoading, setSaveLoading] = useState(false);

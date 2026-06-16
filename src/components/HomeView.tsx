@@ -59,15 +59,24 @@ export const HomeView: React.FC<HomeViewProps> = ({ setCurrentTab }) => {
 
   // Dynamic Festive Offer State
   const [festiveEnabled, setFestiveEnabled] = React.useState(localStorage.getItem('clay_oven_festive_enabled') !== 'false');
-  const [festiveHeader, setFestiveHeader] = React.useState(localStorage.getItem('clay_oven_festive_header') || 'BANK HOLIDAY WEEKEND');
-  const [festiveSubheader, setFestiveSubheader] = React.useState(localStorage.getItem('clay_oven_festive_subheader') || 'Running: Thursday — Friday — Monday');
-  const [festiveDescription, setFestiveDescription] = React.useState(localStorage.getItem('clay_oven_festive_description') || 'Celebrate the festive weekend with our custom curated clay oven specialty platter. Crafted with premium Pakistani heritage recipes and fresh local ingredients.');
-  const [festivePrice, setFestivePrice] = React.useState(localStorage.getItem('clay_oven_festive_price') || '35.00');
-  const [festiveItemsRaw, setFestiveItemsRaw] = React.useState(localStorage.getItem('clay_oven_festive_items') || `Beef Nihari | Slow-cooked, rich beef shank stew cooked to melt-in-mouth perfection, served with 1 fresh hot tandoori naan.
-Clay Oven BBQ Platter | A flame-roasted collection of 1 Beef Chapli Kebab, 1 tender Lamb Chop, and 1 Royal Kebab Skewer.
-Zeera Rice | Fragrant cumin-tempered basmati rice with aromatic herbs.
-Complimentary Accompaniments | Includes fresh garden salad, traditional yogurt Raita, and tangy herb chutney.
-Falooda (1 Serving) | A delicious, cold traditional dessert drink featuring rose syrup, basil seeds, vermicelli, and sweet milk.`);
+  const [festiveHeader, setFestiveHeader] = React.useState(localStorage.getItem('clay_oven_festive_header') || "FATHER'S DAY DINNER");
+  const [festiveSubheader, setFestiveSubheader] = React.useState(localStorage.getItem('clay_oven_festive_subheader') || 'Sunday, 21st June');
+  const [festiveDescription, setFestiveDescription] = React.useState(localStorage.getItem('clay_oven_festive_description') || `Hello to all our Royal customers!
+
+We are excited to announce our exclusive 4-Course Father’s Day Dinner Menu.
+
+From our signature Peri-Peri Chicken Strips and mouth-watering Smash Burgers to premium upgrades like Prime Sirloin Steak and a perfectly Pan-Seared Sea Bass, we have something spectacular for every dad.
+
+Top it all off with our delicious Milk Cake and freshly brewed tea or coffee.
+
+Booking is highly recommended. Spaces are filling up fast, so make sure you secure your table early to avoid disappointment.
+
+Please note a 10% service charge applies. Location: The Royal Clay Oven, V14 AW71. Call us now at 061 703 513 to book!`);
+  const [festivePrice, setFestivePrice] = React.useState(localStorage.getItem('clay_oven_festive_price') || '39.95');
+  const [festiveItemsRaw, setFestiveItemsRaw] = React.useState(localStorage.getItem('clay_oven_festive_items') || `Starters | Peri-Peri Chicken Strips & Springrolls (Veg or Chicken)
+Mains | Grilled Peppercorn Chicken, Smash Burger, Sirloin Steak (+€5 supplement) & Pan-seared Fish (+€5 supplement)
+Dessert | Milk Cake
+Beverages | Tea or Coffee`);
 
   // Self-hosted Gallery Image States
   const [imageHeroBg, setImageHeroBg] = React.useState(localStorage.getItem('clay_oven_image_hero_bg') || 'https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=800&q=70&fm=webp');
@@ -182,12 +191,7 @@ Falooda (1 Serving) | A delicious, cold traditional dessert drink featuring rose
         </div>
         
         <div className="max-w-4xl mx-auto text-center relative z-10 space-y-8">
-          <div className="inline-flex items-center space-x-2 border border-brand-accent/40 px-3 py-1 bg-brand-accent/10">
-            <span className="font-mono text-sm sm:text-sm tracking-widest text-brand-accent uppercase font-bold">
-              ESTABLISHED IN IRELAND &bull; PAKISTANI HERITAGE
-            </span>
-          </div>
-          
+
           <h1 className="font-serif text-4xl sm:text-6xl lg:text-7xl font-bold tracking-tight leading-none text-brand-beige">
             FLAME, CLAY AND <br />
             <span className="text-brand-accent italic font-normal">Authentic Heritage</span>
@@ -202,7 +206,7 @@ Falooda (1 Serving) | A delicious, cold traditional dessert drink featuring rose
               type="button"
               id="hero-order-btn"
               onClick={() => setCurrentTab('takeaway')}
-              className="w-full sm:w-auto bg-brand-accent text-white px-8 py-4 text-sm font-mono tracking-wider uppercase font-bold border border-transparent hover:bg-brand-beige hover:text-brand-dark hover:border-brand-dark transition-all duration-200 rounded-none flex items-center justify-center group"
+              className="w-max max-w-full bg-brand-accent text-white px-6 py-3 sm:px-8 sm:py-4 text-sm font-mono tracking-wider uppercase font-bold border border-transparent hover:bg-brand-beige hover:text-brand-dark hover:border-brand-dark transition-all duration-200 rounded-none flex items-center justify-center group"
             >
               Order Takeaway Now
               <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
@@ -211,7 +215,7 @@ Falooda (1 Serving) | A delicious, cold traditional dessert drink featuring rose
               type="button"
               id="hero-book-btn"
               onClick={() => setCurrentTab('booking')}
-              className="w-full sm:w-auto bg-transparent text-white px-8 py-4 text-sm font-mono tracking-wider uppercase font-bold border border-brand-beige/35 hover:border-white hover:bg-white/5 transition-all duration-200 rounded-none"
+              className="w-max max-w-full bg-transparent text-white px-6 py-3 sm:px-8 sm:py-4 text-sm font-mono tracking-wider uppercase font-bold border border-brand-beige/35 hover:border-white hover:bg-white/5 transition-all duration-200 rounded-none"
             >
               Reserve a Table
             </button>
@@ -584,48 +588,48 @@ Falooda (1 Serving) | A delicious, cold traditional dessert drink featuring rose
 
       {/* Custom Warning Modal Dialog */}
       {showWarningModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-brand-dark/70 backdrop-blur-sm animate-fade-in">
-          <div className="relative w-full max-w-md bg-white border border-brand-dark p-6 sm:p-8 space-y-6 shadow-[0_20px_50px_rgba(0,0,0,0.3)] animate-slide-up">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-brand-dark/70 backdrop-blur-sm animate-fade-in">
+          <div className="relative w-full max-w-sm sm:max-w-md bg-white border border-brand-dark p-5 sm:p-6 space-y-4 sm:space-y-5 shadow-[0_20px_50px_rgba(0,0,0,0.3)] animate-slide-up">
             
             {/* Close Button X */}
             <button
               type="button"
               onClick={() => setShowWarningModal(false)}
-              className="absolute top-4 right-4 p-1.5 text-brand-muted hover:text-brand-dark hover:bg-brand-dark/5 transition-colors border border-transparent hover:border-brand-dark/10"
+              className="absolute top-3 right-3 p-1 text-brand-muted hover:text-brand-dark hover:bg-brand-dark/5 transition-colors border border-transparent hover:border-brand-dark/10"
               aria-label="Close warning"
             >
-              <X className="w-5 h-5" />
+              <X className="w-4 h-4" />
             </button>
 
             {/* Warning Content */}
-            <div className="text-center space-y-4 pt-2">
-              <div className="w-12 h-12 bg-brand-accent/10 text-brand-accent flex items-center justify-center mx-auto">
-                <Sparkles className="w-6 h-6 animate-pulse" />
+            <div className="text-center space-y-3 pt-1">
+              <div className="w-10 h-10 bg-brand-accent/10 text-brand-accent flex items-center justify-center mx-auto">
+                <Sparkles className="w-5 h-5 animate-pulse" />
               </div>
-              <h3 className="font-sans text-xl sm:text-2xl font-bold tracking-tight text-brand-dark">
+              <h3 className="font-sans text-lg sm:text-xl font-bold tracking-tight text-brand-dark">
                 Online Ordering Notice
               </h3>
-              <p className="font-sans text-base text-brand-muted leading-relaxed font-medium text-center">
+              <p className="font-sans text-xs sm:text-sm text-brand-muted leading-relaxed font-medium text-center">
                 {noticeText}
               </p>
-              <p className="font-sans text-3xl font-extrabold text-brand-dark tracking-tight">
+              <p className="font-sans text-2xl sm:text-3xl font-extrabold text-brand-dark tracking-tight">
                 {noticePhone}
               </p>
             </div>
 
             {/* Action Buttons */}
-            <div className="flex flex-col sm:flex-row gap-3 pt-2">
+            <div className="flex flex-col sm:flex-row gap-2 pt-1">
               <a
                 href={`tel:${noticePhone.replace(/\s+/g, '')}`}
-                className="flex-1 bg-brand-accent hover:bg-brand-dark text-white py-3.5 text-sm font-sans font-bold uppercase tracking-wider text-center transition-colors flex items-center justify-center space-x-2"
+                className="flex-1 bg-brand-accent hover:bg-brand-dark text-white py-2.5 sm:py-3 text-xs sm:text-sm font-sans font-bold uppercase tracking-wider text-center transition-colors flex items-center justify-center space-x-2"
               >
-                <Phone className="w-4 h-4" />
+                <Phone className="w-3.5 h-3.5" />
                 <span>Call Now</span>
               </a>
               <button
                 type="button"
                 onClick={() => setShowWarningModal(false)}
-                className="flex-1 border border-brand-dark/15 hover:border-brand-dark text-brand-dark py-3.5 text-sm font-sans font-bold uppercase tracking-wider text-center transition-colors"
+                className="flex-1 border border-brand-dark/15 hover:border-brand-dark text-brand-dark py-2.5 sm:py-3 text-xs sm:text-sm font-sans font-bold uppercase tracking-wider text-center transition-colors"
               >
                 Dismiss
               </button>

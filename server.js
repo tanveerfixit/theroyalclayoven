@@ -281,15 +281,24 @@ The Royal Clay Oven`,
       'clay_oven_reservations_enabled': 'true',
       'clay_oven_reservations_notice': 'Table reservations are temporarily closed. Please telephone us to book a table!',
       'clay_oven_festive_enabled': 'true',
-      'clay_oven_festive_header': 'BANK HOLIDAY WEEKEND',
-      'clay_oven_festive_subheader': 'Running: Thursday — Friday — Monday',
-      'clay_oven_festive_description': 'Celebrate the festive weekend with our custom curated clay oven specialty platter. Crafted with premium Pakistani heritage recipes and fresh local ingredients.',
-      'clay_oven_festive_price': '35.00',
-      'clay_oven_festive_items': `Beef Nihari | Slow-cooked, rich beef shank stew cooked to melt-in-mouth perfection, served with 1 fresh hot tandoori naan.
-Clay Oven BBQ Platter | A flame-roasted collection of 1 Beef Chapli Kebab, 1 tender Lamb Chop, and 1 Royal Kebab Skewer.
-Zeera Rice | Fragrant cumin-tempered basmati rice with aromatic herbs.
-Complimentary Accompaniments | Includes fresh garden salad, traditional yogurt Raita, and tangy herb chutney.
-Falooda (1 Serving) | A delicious, cold traditional dessert drink featuring rose syrup, basil seeds, vermicelli, and sweet milk.`,
+      'clay_oven_festive_header': "FATHER'S DAY DINNER",
+      'clay_oven_festive_subheader': 'Sunday, 21st June',
+      'clay_oven_festive_description': `Hello to all our Royal customers!
+
+We are excited to announce our exclusive 4-Course Father’s Day Dinner Menu.
+
+From our signature Peri-Peri Chicken Strips and mouth-watering Smash Burgers to premium upgrades like Prime Sirloin Steak and a perfectly Pan-Seared Sea Bass, we have something spectacular for every dad.
+
+Top it all off with our delicious Milk Cake and freshly brewed tea or coffee.
+
+Booking is highly recommended. Spaces are filling up fast, so make sure you secure your table early to avoid disappointment.
+
+Please note a 10% service charge applies. Location: The Royal Clay Oven, V14 AW71. Call us now at 061 703 513 to book!`,
+      'clay_oven_festive_price': '39.95',
+      'clay_oven_festive_items': `Starters | Peri-Peri Chicken Strips & Springrolls (Veg or Chicken)
+Mains | Grilled Peppercorn Chicken, Smash Burger, Sirloin Steak (+€5 supplement) & Pan-seared Fish (+€5 supplement)
+Dessert | Milk Cake
+Beverages | Tea or Coffee`,
       'clay_oven_image_hero_bg': 'https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=1600&q=80',
       'clay_oven_image_heritage_left': 'https://images.unsplash.com/photo-1627308595229-7830a5c91f9f?auto=format&fit=crop&w=600&q=80',
       'clay_oven_image_heritage_right': 'https://images.unsplash.com/photo-1603360946369-dc9bb6258143?auto=format&fit=crop&w=600&q=80'
