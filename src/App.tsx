@@ -8,6 +8,8 @@ import { AnimatePresence, motion } from 'motion/react';
 import { Navbar } from './components/Navbar';
 import { CartItem, MenuItem } from './types';
 import { Plus, Minus, Trash2, X, ShoppingBag, Send, PhoneCall, MessageCircle } from 'lucide-react';
+import { useGoogleOneTapLogin } from '@react-oauth/google';
+import { jwtDecode } from 'jwt-decode';
 
 // Dynamic imports of views to improve mobile load speeds and reduce FCP bundle footprint
 const HomeView = React.lazy(() => import('./components/HomeView').then(m => ({ default: m.HomeView })));
@@ -33,6 +35,50 @@ const BrandLoader = () => (
 );
 
 export default function App() {
+  // Check if session exists to determine whether to disable One Tap auto-login
+  const hasUserSession = !!localStorage.getItem('clay_oven_google_user');
+
+  useGoogleOneTapLogin({
+    onSuccess: async (credentialResponse) => {
+      try {
+        const token = credentialResponse.credential;
+        if (!token) return;
+
+        const decoded: any = jwtDecode(token);
+        const user = {
+          name: decoded.name || '',
+          email: decoded.email || '',
+          picture: decoded.picture || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=120',
+          provider: 'google'
+        };
+
+        // Save user to localStorage
+        localStorage.setItem('clay_oven_google_user', JSON.stringify(user));
+
+        // Sync profile with database server
+        try {
+          await fetch('/api/users', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(user)
+          });
+        } catch (err) {
+          console.error('Failed to sync google auto-login profile with database:', err);
+        }
+
+        // Notify app components to re-load user state
+        window.dispatchEvent(new Event('profile_updated'));
+      } catch (err) {
+        console.error('Failed to parse Google One Tap credentials:', err);
+      }
+    },
+    onError: () => {
+      console.log('Google One Tap auto-login was closed or failed.');
+    },
+    disabled: hasUserSession,
+    auto_select: true
+  });
+
   const [businessInfo, setBusinessInfo] = React.useState({
     business_name: 'THE ROYAL CLAY OVEN',
     address: 'Ballycasey Craft And Design Center, Shannon, County Clare V14 AW71',
