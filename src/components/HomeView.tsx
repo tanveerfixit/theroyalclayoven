@@ -230,7 +230,7 @@ Beverages | Tea or Coffee`);
             {/* Decorative limited-time tag */}
             <div className="absolute top-0 right-0 animate-shimmer text-white font-mono text-[10px] sm:text-xs uppercase tracking-widest px-4 py-2 font-bold flex items-center gap-1.5 shadow-[0_4px_12px_rgba(200,90,50,0.2)]">
               <Sparkles className="w-3.5 h-3.5 animate-pulse" />
-              <span>Limited Time Festive Offer</span>
+              <span>Special Offer</span>
             </div>
             
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">

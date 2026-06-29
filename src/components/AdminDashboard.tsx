@@ -1674,7 +1674,7 @@ Beverages | Tea or Coffee`);
                   : 'border-transparent text-brand-muted hover:text-brand-dark'
               }`}
             >
-              4. Festive Offer
+              4. Special Offer
             </button>
             <button
               type="button"
@@ -1975,10 +1975,10 @@ Beverages | Tea or Coffee`);
                 <div className="space-y-2 border-b border-brand-dark/5 pb-4">
                   <h3 className="font-serif text-lg font-bold text-brand-dark flex items-center gap-2">
                     <Sparkles className="w-5 h-5 text-brand-accent" />
-                    Limited Time Festive Offer Editor
+                    Special Offer
                   </h3>
                   <p className="text-xs text-brand-muted leading-relaxed font-sans font-normal">
-                    Manage the Bank Holiday / Festive event platter section displayed prominently at the top of the landing page.
+                    Manage the Special Offer / Event Platter section displayed prominently at the top of the landing page.
                   </p>
                 </div>
 
@@ -1992,7 +1992,7 @@ Beverages | Tea or Coffee`);
                           DISPLAY ON LANDING PAGE
                         </span>
                         <span className="block text-[11px] text-brand-muted font-sans font-normal">
-                          Toggle to show or hide the festive promotion block on the main page.
+                          Toggle to show or hide the special offer block on the main page.
                         </span>
                       </div>
                       <button
@@ -2013,7 +2013,7 @@ Beverages | Tea or Coffee`);
                     {/* Festive Header / Title */}
                     <div className="space-y-1">
                       <label htmlFor="settings-festive-header" className="block font-mono text-xs text-brand-accent uppercase tracking-widest font-bold">
-                        Festive Header / Title
+                        Special Offer Header / Festival Name
                       </label>
                       <input
                         id="settings-festive-header"
@@ -2022,7 +2022,7 @@ Beverages | Tea or Coffee`);
                         value={festiveHeader}
                         onChange={(e) => setFestiveHeader(e.target.value)}
                         className="w-full border border-brand-dark/10 p-3 text-sm font-mono focus:border-brand-dark outline-none bg-brand-beige/10 rounded-none"
-                        placeholder="e.g. BANK HOLIDAY WEEKEND"
+                        placeholder="e.g. FATHER'S DAY DINNER"
                       />
                     </div>
 
