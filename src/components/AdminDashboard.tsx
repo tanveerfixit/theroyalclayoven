@@ -537,8 +537,8 @@ Beverages | Tea or Coffee`);
     }
   };
 
-  // Fetch admin orders & bookings data
-  const fetchData = async () => {
+  // Fetch dynamic orders & bookings data only
+  const fetchOrdersAndBookings = async () => {
     if (!isAuthenticated) return;
     setLoading(true);
     try {
@@ -568,9 +568,22 @@ Beverages | Tea or Coffee`);
         }
         prevOrderCountRef.current = activeNewOrders;
       }
-      
-      // Synchronize administrative storefront settings from the database
-      await fetchSettings();
+    } catch (err) {
+      console.error('Failed to sync orders & bookings', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Fetch admin orders & bookings data + storefront settings
+  const fetchData = async () => {
+    if (!isAuthenticated) return;
+    setLoading(true);
+    try {
+      await Promise.all([
+        fetchOrdersAndBookings(),
+        fetchSettings()
+      ]);
     } catch (err) {
       console.error('Failed to sync admin data', err);
     } finally {
@@ -578,11 +591,18 @@ Beverages | Tea or Coffee`);
     }
   };
 
+  // Fetch settings once when authenticated
+  useEffect(() => {
+    if (isAuthenticated) {
+      fetchSettings();
+    }
+  }, [isAuthenticated]);
+
   // Poll for data updates
   useEffect(() => {
     if (isAuthenticated) {
-      fetchData();
-      const interval = setInterval(fetchData, 12000); // Poll every 12s
+      fetchOrdersAndBookings();
+      const interval = setInterval(fetchOrdersAndBookings, 12000); // Poll every 12s
       return () => clearInterval(interval);
     }
   }, [isAuthenticated, muteSound]);
