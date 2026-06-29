@@ -338,6 +338,20 @@ Beverages | Tea or Coffee`,
     }
     console.log('Admin authentication tables and authorized emails verified successfully.');
 
+    // Auto-create order notification emails table
+    await connection.query(`
+      CREATE TABLE IF NOT EXISTS order_notification_emails (
+        email VARCHAR(255) PRIMARY KEY
+      )
+    `);
+
+    // Seed default notification email
+    await connection.query(
+      'INSERT IGNORE INTO order_notification_emails (email) VALUES (?)',
+      ['tanveerfixit@gmail.com']
+    );
+    console.log('Order notification email settings verified and seeded successfully.');
+
     // Ensure local uploads folder exists
     const uploadsDir = path.join(__dirname, 'uploads');
     if (!fs.existsSync(uploadsDir)) {
@@ -891,6 +905,144 @@ app.post('/api/orders', async (req, res) => {
         createdAt
       ]
     );
+    // Fetch active notification recipient email list
+    const [emailRows] = await pool.query('SELECT email FROM order_notification_emails');
+    const recipientEmails = emailRows.map(r => r.email);
+
+    if (recipientEmails.length > 0) {
+      const activeTransporter = await getTransporter();
+      
+      // Build items HTML table
+      let itemsHtml = `
+        <table style="width: 100%; border-collapse: collapse; margin-top: 15px; font-family: monospace; font-size: 13px;">
+          <thead>
+            <tr style="border-bottom: 2px solid #2C2621; text-align: left; font-weight: bold; background: #eee;">
+              <th style="padding: 8px;">Item</th>
+              <th style="padding: 8px;">Size</th>
+              <th style="padding: 8px; text-align: center;">Qty</th>
+              <th style="padding: 8px; text-align: right;">Price</th>
+            </tr>
+          </thead>
+          <tbody>
+      `;
+      for (const item of items) {
+        const itemPrice = item.price || item.menuItem?.price || 0;
+        itemsHtml += `
+          <tr style="border-bottom: 1px solid #eee;">
+            <td style="padding: 8px;">
+              <strong>${item.name || item.menuItem?.name || ''}</strong>
+              ${item.notes ? `<br/><span style="font-size: 11px; color: #C85A32; font-style: italic;">“${item.notes}”</span>` : ''}
+            </td>
+            <td style="padding: 8px;">${item.size || ''}</td>
+            <td style="padding: 8px; text-align: center;">${item.quantity}</td>
+            <td style="padding: 8px; text-align: right;">&euro;${(itemPrice * item.quantity).toFixed(2)}</td>
+          </tr>
+        `;
+      }
+      itemsHtml += `
+          </tbody>
+        </table>
+      `;
+
+      const mailOptions = {
+        from: `"The Royal Clay Oven Alert" <${process.env.SMTP_USER}>`,
+        to: recipientEmails.join(', '),
+        subject: `NEW ORDER RECEIVED: ${id} [${serviceType.toUpperCase()}]`,
+        html: `
+          <div style="font-family: sans-serif; padding: 24px; max-width: 600px; margin: auto; border: 1px solid #eee;">
+            <div style="text-align: center;">
+              <h2 style="color: #C85A32; font-family: serif; letter-spacing: 0.1em; margin-bottom: 4px;">THE ROYAL CLAY OVEN</h2>
+              <span style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.15em; color: #777; font-weight: bold;">New Incoming Order Alert</span>
+            </div>
+            <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;" />
+            
+            <table style="width: 100%; font-size: 14px; border-collapse: collapse; margin-bottom: 20px;">
+              <tr>
+                <td style="padding: 4px 0; color: #666; width: 120px;">Order ID:</td>
+                <td style="padding: 4px 0; font-weight: bold; color: #2C2621;">${id}</td>
+              </tr>
+              <tr>
+                <td style="padding: 4px 0; color: #666;">Fulfillment:</td>
+                <td style="padding: 4px 0; font-weight: bold; text-transform: uppercase; color: #C85A32;">${serviceType}</td>
+              </tr>
+              <tr>
+                <td style="padding: 4px 0; color: #666;">Time:</td>
+                <td style="padding: 4px 0; font-weight: bold;">${customerInfo.preferredTime || 'ASAP'}</td>
+              </tr>
+              <tr>
+                <td style="padding: 4px 0; color: #666;">Ordered At:</td>
+                <td style="padding: 4px 0;">${new Date(createdAt).toLocaleString('en-IE')}</td>
+              </tr>
+            </table>
+
+            <h3 style="color: #2C2621; border-bottom: 1px solid #eee; padding-bottom: 6px; font-size: 15px; margin-bottom: 10px;">Customer Details</h3>
+            <table style="width: 100%; font-size: 13px; border-collapse: collapse; margin-bottom: 20px;">
+              <tr>
+                <td style="padding: 4px 0; color: #666; width: 120px;">Name:</td>
+                <td style="padding: 4px 0; font-weight: bold;">${customerInfo.name}</td>
+              </tr>
+              <tr>
+                <td style="padding: 4px 0; color: #666;">Phone:</td>
+                <td style="padding: 4px 0; font-weight: bold;"><a href="tel:${customerInfo.phone.replace(/\s+/g, '')}">${customerInfo.phone}</a></td>
+              </tr>
+              <tr>
+                <td style="padding: 4px 0; color: #666;">Email:</td>
+                <td style="padding: 4px 0;">${customerInfo.email}</td>
+              </tr>
+              ${customerInfo.address ? `
+              <tr>
+                <td style="padding: 4px 0; color: #666; vertical-align: top;">Address:</td>
+                <td style="padding: 4px 0; font-weight: bold; line-height: 1.4;">${customerInfo.address}</td>
+              </tr>
+              ` : ''}
+              ${customerInfo.notes ? `
+              <tr>
+                <td style="padding: 4px 0; color: #C85A32; vertical-align: top;">Chef Notes:</td>
+                <td style="padding: 4px 0; font-style: italic; color: #C85A32; font-weight: bold;">“${customerInfo.notes}”</td>
+              </tr>
+              ` : ''}
+            </table>
+
+            <h3 style="color: #2C2621; border-bottom: 1px solid #eee; padding-bottom: 6px; font-size: 15px; margin-bottom: 10px;">Order Summary</h3>
+            ${itemsHtml}
+
+            <table style="width: 100%; border-collapse: collapse; margin-top: 15px; font-family: monospace; font-size: 13px; border-top: 2px solid #2C2621; pt-10px;">
+              <tr>
+                <td style="padding: 6px 8px; text-align: right; color: #666;">Subtotal:</td>
+                <td style="padding: 6px 8px; text-align: right; font-weight: bold; width: 100px;">&euro;${parseFloat(subtotal).toFixed(2)}</td>
+              </tr>
+              <tr>
+                <td style="padding: 6px 8px; text-align: right; color: #666;">Packaging:</td>
+                <td style="padding: 6px 8px; text-align: right; font-weight: bold;">&euro;${parseFloat(packagingFee).toFixed(2)}</td>
+              </tr>
+              ${parseFloat(total) - parseFloat(subtotal) - parseFloat(packagingFee) > 0.1 ? `
+              <tr>
+                <td style="padding: 6px 8px; text-align: right; color: #666;">Delivery Charge:</td>
+                <td style="padding: 6px 8px; text-align: right; font-weight: bold;">&euro;${(parseFloat(total) - parseFloat(subtotal) - parseFloat(packagingFee)).toFixed(2)}</td>
+              </tr>
+              ` : ''}
+              <tr style="font-size: 15px; background: #FDFBF7; border-top: 1px dashed #2C2621;">
+                <td style="padding: 8px; text-align: right; font-weight: bold; color: #C85A32;">GRAND TOTAL:</td>
+                <td style="padding: 8px; text-align: right; font-weight: bold; color: #C85A32; font-size: 16px;">&euro;${parseFloat(total).toFixed(2)}</td>
+              </tr>
+            </table>
+
+            <hr style="border: 0; border-top: 1px solid #eee; margin: 25px 0 20px 0;" />
+            <div style="text-align: center;">
+              <a href="https://www.clayoven.ie/admin" style="background-color: #2C2621; color: white; padding: 10px 20px; text-decoration: none; font-size: 12px; font-family: monospace; font-weight: bold; letter-spacing: 0.1em; display: inline-block;">OPEN KITCHEN CONSOLE</a>
+            </div>
+          </div>
+        `
+      };
+
+      try {
+        await activeTransporter.sendMail(mailOptions);
+        console.log(`Notification emails successfully sent for order ${id} to: ${recipientEmails.join(', ')}`);
+      } catch (mailErr) {
+        console.error('Failed to send order notification emails:', mailErr);
+      }
+    }
+
     res.status(201).json({ success: true, orderId: id });
   } catch (error) {
     console.error('Error inserting order:', error);
@@ -1263,6 +1415,48 @@ app.post('/api/admin/upload-image', requireAdmin, async (req, res) => {
   } catch (error) {
     console.error('Error saving uploaded image in database:', error);
     res.status(500).json({ error: 'Failed to process and save gallery image in database settings' });
+  }
+});
+
+// 7. Order Notification Email Settings API Endpoints
+app.get('/api/admin/notification-emails', requireAdmin, async (req, res) => {
+  try {
+    const [rows] = await pool.query('SELECT email FROM order_notification_emails');
+    const emails = rows.map(r => r.email);
+    res.json(emails);
+  } catch (error) {
+    console.error('Error fetching notification emails:', error);
+    res.status(500).json({ error: 'Failed to retrieve notification emails' });
+  }
+});
+
+app.post('/api/admin/notification-emails', requireAdmin, async (req, res) => {
+  const { email } = req.body;
+  if (!email || typeof email !== 'string') {
+    return res.status(400).json({ error: 'Valid email parameter is required' });
+  }
+
+  try {
+    await pool.query('INSERT IGNORE INTO order_notification_emails (email) VALUES (?)', [email]);
+    res.json({ success: true, message: 'Notification email successfully added' });
+  } catch (error) {
+    console.error('Error adding notification email:', error);
+    res.status(500).json({ error: 'Failed to add notification email' });
+  }
+});
+
+app.delete('/api/admin/notification-emails/:email', requireAdmin, async (req, res) => {
+  const { email } = req.params;
+  if (!email) {
+    return res.status(400).json({ error: 'Email parameter is required' });
+  }
+
+  try {
+    await pool.query('DELETE FROM order_notification_emails WHERE email = ?', [email]);
+    res.json({ success: true, message: 'Notification email successfully deleted' });
+  } catch (error) {
+    console.error('Error deleting notification email:', error);
+    res.status(500).json({ error: 'Failed to delete notification email' });
   }
 });
 

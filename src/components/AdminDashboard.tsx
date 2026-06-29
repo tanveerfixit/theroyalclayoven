@@ -100,8 +100,59 @@ The Royal Clay Oven`);
   const [reservationsEnabled, setReservationsEnabled] = useState(true);
   const [reservationsNoticeText, setReservationsNoticeText] = useState('Table reservations are temporarily closed. Please telephone us to book a table!');
 
-  // Notice Sub-tabs settings pane navigation: 'takeaway' | 'reservations' | 'announcements' | 'festive' | 'gallery' | 'business'
-  const [settingsSubTab, setSettingsSubTab] = useState<'takeaway' | 'reservations' | 'announcements' | 'festive' | 'gallery' | 'business'>('takeaway');
+  // Notice Sub-tabs settings pane navigation: 'takeaway' | 'reservations' | 'announcements' | 'festive' | 'gallery' | 'business' | 'notifications'
+  const [settingsSubTab, setSettingsSubTab] = useState<'takeaway' | 'reservations' | 'announcements' | 'festive' | 'gallery' | 'business' | 'notifications'>('takeaway');
+
+  // Order Notification Email States
+  const [notificationEmails, setNotificationEmails] = useState<string[]>([]);
+  const [newNotificationEmail, setNewNotificationEmail] = useState('');
+
+  const fetchNotificationEmails = async () => {
+    try {
+      const response = await fetch('/api/admin/notification-emails', { headers: adminHeaders() });
+      if (response.status === 401) { handleUnauthorized(); return; }
+      if (response.ok) {
+        const data = await response.json();
+        setNotificationEmails(data);
+      }
+    } catch (err) {
+      console.error('Failed to retrieve notification emails:', err);
+    }
+  };
+
+  const handleAddNotificationEmail = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newNotificationEmail.trim()) return;
+    try {
+      const response = await fetch('/api/admin/notification-emails', {
+        method: 'POST',
+        headers: { ...adminHeaders(), 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: newNotificationEmail.trim().toLowerCase() })
+      });
+      if (response.status === 401) { handleUnauthorized(); return; }
+      if (response.ok) {
+        setNewNotificationEmail('');
+        fetchNotificationEmails();
+      }
+    } catch (err) {
+      console.error('Failed to add notification email:', err);
+    }
+  };
+
+  const handleDeleteNotificationEmail = async (email: string) => {
+    try {
+      const response = await fetch(`/api/admin/notification-emails/${encodeURIComponent(email)}`, {
+        method: 'DELETE',
+        headers: adminHeaders()
+      });
+      if (response.status === 401) { handleUnauthorized(); return; }
+      if (response.ok) {
+        fetchNotificationEmails();
+      }
+    } catch (err) {
+      console.error('Failed to delete notification email:', err);
+    }
+  };
 
   // Self-hosted Gallery Image States
   const [imageHeroBg, setImageHeroBg] = useState('https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=1600&q=80');
@@ -595,6 +646,7 @@ Beverages | Tea or Coffee`);
   useEffect(() => {
     if (isAuthenticated) {
       fetchSettings();
+      fetchNotificationEmails();
     }
   }, [isAuthenticated]);
 
@@ -1698,6 +1750,17 @@ Beverages | Tea or Coffee`);
             >
               6. Business Info
             </button>
+            <button
+              type="button"
+              onClick={() => setSettingsSubTab('notifications')}
+              className={`px-4 py-2.5 font-mono text-xs font-bold uppercase tracking-wider border-b-2 transition-all shrink-0 ${
+                settingsSubTab === 'notifications'
+                  ? 'border-brand-accent text-brand-accent bg-brand-beige/10'
+                  : 'border-transparent text-brand-muted hover:text-brand-dark'
+              }`}
+            >
+              7. Email Alerts
+            </button>
           </div>
 
           <form onSubmit={handleSaveSettings} className="space-y-8">
@@ -2335,14 +2398,92 @@ Beverages | Tea or Coffee`);
               </div>
             )}
 
-            <div className="pt-6 border-t border-brand-dark/10 flex justify-end">
-              <button
-                type="submit"
-                className="bg-brand-accent text-white hover:bg-brand-dark px-8 py-3.5 text-sm font-mono font-bold uppercase tracking-wider transition-colors rounded-none"
-              >
-                SAVE CONFIGURATIONS &amp; UPDATE LANDING
-              </button>
-            </div>
+            {/* SUBTAB 7: ORDER NOTIFICATION EMAILS */}
+            {settingsSubTab === 'notifications' && (
+              <div className="space-y-6 animate-fade-in text-left">
+                <div className="space-y-2 border-b border-brand-dark/5 pb-4">
+                  <h3 className="font-serif text-lg font-bold text-brand-dark flex items-center gap-2">
+                    <Mail className="w-5 h-5 text-brand-accent" />
+                    Order Notification Email Alerts
+                  </h3>
+                  <p className="font-sans text-xs text-brand-muted font-normal">
+                    Manage the email addresses that receive complete order details automatically in real-time when new orders are placed.
+                  </p>
+                </div>
+
+                <div className="max-w-2xl space-y-6">
+                  {/* Add Email Form */}
+                  <div className="border border-brand-dark/10 p-5 bg-[#FDFBF7] space-y-4">
+                    <span className="block font-mono text-xs text-brand-dark font-bold uppercase tracking-wider">
+                      Add Recipient Email Address
+                    </span>
+                    <div className="flex gap-2">
+                      <input
+                        type="email"
+                        placeholder="e.g. personal@example.com"
+                        value={newNotificationEmail}
+                        onChange={(e) => setNewNotificationEmail(e.target.value)}
+                        className="flex-1 bg-white border border-brand-dark/15 p-3 font-mono text-xs focus:outline-none focus:border-brand-accent"
+                      />
+                      <button
+                        type="button"
+                        onClick={handleAddNotificationEmail}
+                        className="bg-brand-dark hover:bg-brand-accent text-white px-6 py-3 text-xs font-mono font-bold uppercase tracking-wider transition-colors rounded-none"
+                      >
+                        Add Email
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Emails List Table */}
+                  <div className="border border-brand-dark/10 overflow-hidden bg-white">
+                    <table className="w-full text-left font-sans text-xs border-collapse">
+                      <thead>
+                        <tr className="bg-brand-dark text-white font-mono uppercase tracking-wider text-[10px]">
+                          <th className="p-3">Notification Recipient Emails</th>
+                          <th className="p-3 text-right">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {notificationEmails.length === 0 ? (
+                          <tr>
+                            <td colSpan={2} className="p-5 text-center text-brand-muted font-mono italic">
+                              No notification emails configured.
+                            </td>
+                          </tr>
+                        ) : (
+                          notificationEmails.map((email) => (
+                            <tr key={email} className="border-b border-brand-dark/5 hover:bg-brand-beige/5">
+                              <td className="p-3 font-mono text-xs text-brand-dark font-medium">{email}</td>
+                              <td className="p-3 text-right">
+                                <button
+                                  type="button"
+                                  onClick={() => handleDeleteNotificationEmail(email)}
+                                  className="text-red-600 hover:text-red-800 font-mono text-[10px] font-bold uppercase tracking-wider"
+                                >
+                                  [DELETE]
+                                </button>
+                              </td>
+                            </tr>
+                          ))
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {settingsSubTab !== 'notifications' && (
+              <div className="pt-6 border-t border-brand-dark/10 flex justify-end">
+                <button
+                  type="submit"
+                  className="bg-brand-accent text-white hover:bg-brand-dark px-8 py-3.5 text-sm font-mono font-bold uppercase tracking-wider transition-colors rounded-none"
+                >
+                  SAVE CONFIGURATIONS &amp; UPDATE LANDING
+                </button>
+              </div>
+            )}
 
           </form>
         </div>
