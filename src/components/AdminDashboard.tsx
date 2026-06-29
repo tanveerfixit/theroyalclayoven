@@ -921,7 +921,7 @@ Beverages | Tea or Coffee`);
             onClick={handleLogout}
             className="border border-red-200 hover:border-red-600 text-red-600 px-4 py-2 font-mono text-xs font-bold uppercase tracking-wider rounded-none text-center transition-colors"
           >
-            LOCK SESSION
+            LOGOUT SESSION
           </button>
         </div>
       </div>
