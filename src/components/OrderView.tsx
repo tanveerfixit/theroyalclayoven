@@ -34,6 +34,7 @@ export const OrderView: React.FC<OrderViewProps> = ({
 
   const [noticeText, setNoticeText] = React.useState(localStorage.getItem('clay_oven_notice_text') || 'We are Still Working on Website, for online order please contact.');
   const [noticePhone, setNoticePhone] = React.useState(localStorage.getItem('clay_oven_notice_phone') || '089 489 9950');
+  const [noticeEnabled, setNoticeEnabled] = React.useState(localStorage.getItem('clay_oven_notice_enabled') === 'true');
   const [takeawayEnabled, setTakeawayEnabled] = React.useState(localStorage.getItem('clay_oven_takeaway_enabled') !== 'false');
   const [takeawayNotice, setTakeawayNotice] = React.useState(localStorage.getItem('clay_oven_takeaway_notice') || 'We are temporarily not taking online orders. Please phone us to order directly!');
   const [showTakeawayWarningModal, setShowTakeawayWarningModal] = React.useState(false);
@@ -63,16 +64,31 @@ export const OrderView: React.FC<OrderViewProps> = ({
         const response = await fetch('/api/settings');
         if (response.ok) {
           const data = await response.json();
-          if (data.clay_oven_notice_text) setNoticeText(data.clay_oven_notice_text);
-          if (data.clay_oven_notice_phone) setNoticePhone(data.clay_oven_notice_phone);
+          if (data.clay_oven_notice_text) {
+            setNoticeText(data.clay_oven_notice_text);
+            localStorage.setItem('clay_oven_notice_text', data.clay_oven_notice_text);
+          }
+          if (data.clay_oven_notice_phone) {
+            setNoticePhone(data.clay_oven_notice_phone);
+            localStorage.setItem('clay_oven_notice_phone', data.clay_oven_notice_phone);
+          }
+          if (data.clay_oven_notice_enabled !== undefined) {
+            const enabled = data.clay_oven_notice_enabled !== 'false';
+            setNoticeEnabled(enabled);
+            localStorage.setItem('clay_oven_notice_enabled', String(enabled));
+          }
           if (data.clay_oven_takeaway_enabled !== undefined) {
             const enabled = data.clay_oven_takeaway_enabled !== 'false';
             setTakeawayEnabled(enabled);
             setShowTakeawayWarningModal(!enabled);
+            localStorage.setItem('clay_oven_takeaway_enabled', String(enabled));
           } else {
             setShowTakeawayWarningModal(!takeawayEnabled);
           }
-          if (data.clay_oven_takeaway_notice) setTakeawayNotice(data.clay_oven_takeaway_notice);
+          if (data.clay_oven_takeaway_notice) {
+            setTakeawayNotice(data.clay_oven_takeaway_notice);
+            localStorage.setItem('clay_oven_takeaway_notice', data.clay_oven_takeaway_notice);
+          }
         } else {
           setShowTakeawayWarningModal(!takeawayEnabled);
         }
@@ -126,12 +142,12 @@ export const OrderView: React.FC<OrderViewProps> = ({
     };
   }, []);
 
-  // Alert customer that the site is under construction when entering checkout mode
+  // Alert customer that the site is under construction when entering checkout mode (only if notice is enabled)
   React.useEffect(() => {
-    if (isCheckoutMode) {
+    if (isCheckoutMode && noticeEnabled) {
       setShowWarningModal(true);
     }
-  }, [isCheckoutMode]);
+  }, [isCheckoutMode, noticeEnabled]);
   
   // Successful order indicator
   const [placedOrder, setPlacedOrder] = React.useState<Order | null>(null);

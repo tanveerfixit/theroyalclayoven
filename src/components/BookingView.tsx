@@ -28,7 +28,7 @@ Warmest regards,
 
 The Royal Clay Oven`);
   const [noticePhone, setNoticePhone] = React.useState(localStorage.getItem('clay_oven_notice_phone') || '089 489 9950');
-  const [noticeEnabled, setNoticeEnabled] = React.useState(localStorage.getItem('clay_oven_booking_notice_enabled') !== 'false');
+  const [noticeEnabled, setNoticeEnabled] = React.useState(localStorage.getItem('clay_oven_booking_notice_enabled') === 'true');
 
   const [reservationsEnabled, setReservationsEnabled] = React.useState(localStorage.getItem('clay_oven_reservations_enabled') !== 'false');
   const [reservationsNoticeText, setReservationsNoticeText] = React.useState(localStorage.getItem('clay_oven_reservations_notice') || 'Table reservations are temporarily closed. Please telephone us to book a table!');
@@ -83,13 +83,20 @@ The Royal Clay Oven`);
             offset: data.clay_oven_timing_offset || timingSettings.offset
           });
 
-          if (data.clay_oven_booking_notice_text) setNoticeText(data.clay_oven_booking_notice_text);
-          if (data.clay_oven_notice_phone) setNoticePhone(data.clay_oven_notice_phone);
+          if (data.clay_oven_booking_notice_text) {
+            setNoticeText(data.clay_oven_booking_notice_text);
+            localStorage.setItem('clay_oven_booking_notice_text', data.clay_oven_booking_notice_text);
+          }
+          if (data.clay_oven_notice_phone) {
+            setNoticePhone(data.clay_oven_notice_phone);
+            localStorage.setItem('clay_oven_notice_phone', data.clay_oven_notice_phone);
+          }
           
           if (data.clay_oven_booking_notice_enabled !== undefined) {
             const enabled = data.clay_oven_booking_notice_enabled !== 'false';
             setNoticeEnabled(enabled);
             setShowWarningModal(enabled);
+            localStorage.setItem('clay_oven_booking_notice_enabled', String(enabled));
           } else {
             setShowWarningModal(noticeEnabled);
           }
@@ -98,11 +105,15 @@ The Royal Clay Oven`);
             const enabled = data.clay_oven_reservations_enabled !== 'false';
             setReservationsEnabled(enabled);
             setShowReservationsWarningModal(!enabled);
+            localStorage.setItem('clay_oven_reservations_enabled', String(enabled));
           } else {
             setShowReservationsWarningModal(!reservationsEnabled);
           }
 
-          if (data.clay_oven_reservations_notice) setReservationsNoticeText(data.clay_oven_reservations_notice);
+          if (data.clay_oven_reservations_notice) {
+            setReservationsNoticeText(data.clay_oven_reservations_notice);
+            localStorage.setItem('clay_oven_reservations_notice', data.clay_oven_reservations_notice);
+          }
         } else {
           setShowWarningModal(noticeEnabled);
           setShowReservationsWarningModal(!reservationsEnabled);
