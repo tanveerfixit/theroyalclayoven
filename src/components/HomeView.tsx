@@ -43,7 +43,7 @@ export const HomeView: React.FC<HomeViewProps> = ({ setCurrentTab }) => {
 
   const [noticeText, setNoticeText] = React.useState(localStorage.getItem('clay_oven_notice_text') || 'We are Still Working on Website, for online order please contact.');
   const [noticePhone, setNoticePhone] = React.useState(localStorage.getItem('clay_oven_notice_phone') || '089 489 9950');
-  const [noticeEnabled, setNoticeEnabled] = React.useState(localStorage.getItem('clay_oven_notice_enabled') !== 'false');
+  const [noticeEnabled, setNoticeEnabled] = React.useState(localStorage.getItem('clay_oven_notice_enabled') === 'true');
 
   const [businessInfo, setBusinessInfo] = React.useState({
     business_name: 'THE ROYAL CLAY OVEN',
@@ -121,12 +121,19 @@ Beverages | Tea or Coffee`);
             offset: data.clay_oven_timing_offset || weeklyTimings.offset
           });
 
-          if (data.clay_oven_notice_text) setNoticeText(data.clay_oven_notice_text);
-          if (data.clay_oven_notice_phone) setNoticePhone(data.clay_oven_notice_phone);
+           if (data.clay_oven_notice_text) {
+            setNoticeText(data.clay_oven_notice_text);
+            localStorage.setItem('clay_oven_notice_text', data.clay_oven_notice_text);
+          }
+          if (data.clay_oven_notice_phone) {
+            setNoticePhone(data.clay_oven_notice_phone);
+            localStorage.setItem('clay_oven_notice_phone', data.clay_oven_notice_phone);
+          }
           if (data.clay_oven_notice_enabled !== undefined) {
             const enabled = data.clay_oven_notice_enabled !== 'false';
             setNoticeEnabled(enabled);
             setShowWarningModal(enabled);
+            localStorage.setItem('clay_oven_notice_enabled', String(enabled));
           } else {
             setShowWarningModal(noticeEnabled);
           }
