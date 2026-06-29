@@ -8,6 +8,10 @@ import nodemailer from 'nodemailer';
 import fs from 'fs';
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
+import helmet from 'helmet';
+import rateLimit from 'express-rate-limit';
+import compression from 'compression';
+import bcrypt from 'bcryptjs';
 
 dotenv.config();
 
@@ -55,11 +59,55 @@ async function getTransporter() {
   });
 }
 
-// Middleware
-app.use(cors());
+// Security utility: sanitize user input before injection into HTML email templates
+const escapeHtml = (str) => str?.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g, '&#39;') || '';
+
+// Middleware — Security & Compression
+app.use(helmet({
+  contentSecurityPolicy: false,  // Allow inline scripts for SPA
+  crossOriginEmbedderPolicy: false  // Allow external images (Unsplash)
+}));
+app.use(compression());
+app.use(cors({
+  origin: process.env.NODE_ENV === 'production'
+    ? ['https://www.clayoven.ie', 'https://clayoven.ie']
+    : true,  // Allow all origins in development
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  credentials: true
+}));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ limit: '10mb', extended: true }));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
+// Rate limiting for sensitive endpoints
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,  // 15 minutes
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many attempts. Please try again after 15 minutes.' }
+});
+const otpLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 5,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many OTP requests. Please try again after 15 minutes.' }
+});
+const orderLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,  // 1 hour
+  max: 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many order submissions. Please try again later.' }
+});
+const generalApiLimiter = rateLimit({
+  windowMs: 1 * 60 * 1000,  // 1 minute
+  max: 100,
+  standardHeaders: true,
+  legacyHeaders: false
+});
+app.use('/api', generalApiLimiter);
 
 // Anti-caching headers for API endpoints to prevent aggressive browser/CDN caching
 app.use('/api', (req, res, next) => {
@@ -385,34 +433,18 @@ app.get('/api/health', async (req, res) => {
 
     res.json({
       status: 'CONNECTED',
-      database: process.env.DB_DATABASE || 'NOT SET',
-      host: dbHost,
-      connectionType,
-      nodeEnv: process.env.NODE_ENV || 'NOT SET',
-      port: process.env.PORT || 'NOT SET',
       serverTime: new Date().toISOString(),
       distExists,
-      filesInDir,
-      dirname: __dirname,
-      message: `Database is connected via ${connectionType}`
+      message: 'Server is healthy and database is connected.'
     });
   } catch (error) {
     const distExists = fs.existsSync(path.join(__dirname, 'dist'));
-    const filesInDir = fs.readdirSync(__dirname).filter(f => !f.startsWith('.'));
 
     res.status(500).json({
       status: 'DISCONNECTED',
-      database: process.env.DB_DATABASE || 'NOT SET',
-      host: dbHost,
-      connectionType,
-      nodeEnv: process.env.NODE_ENV || 'NOT SET',
-      port: process.env.PORT || 'NOT SET',
       serverTime: new Date().toISOString(),
       distExists,
-      filesInDir,
-      dirname: __dirname,
-      error: error.message,
-      message: `Database connection FAILED via ${connectionType}`
+      message: 'Database connection failed.'
     });
   }
 });
@@ -474,6 +506,9 @@ app.post('/api/users', async (req, res) => {
 
     // Fetch the updated profile to return
     const [rows] = await pool.query('SELECT * FROM users WHERE email = ?', [email]);
+    if (rows.length > 0) {
+      delete rows[0].password;
+    }
     res.json(rows[0]);
   } catch (error) {
     res.status(500).json({ error: 'Database update failed' });
@@ -481,7 +516,7 @@ app.post('/api/users', async (req, res) => {
 });
 
 // 1.5. Authentication and OTP APIs
-app.post('/api/auth/register', async (req, res) => {
+app.post('/api/auth/register', authLimiter, async (req, res) => {
   const { email, password, name } = req.body;
   if (!email || !password || !name) {
     return res.status(400).json({ error: 'Email, password, and name are required' });
@@ -493,12 +528,16 @@ app.post('/api/auth/register', async (req, res) => {
       return res.status(400).json({ error: 'This email is already registered' });
     }
 
+    const hashedPassword = await bcrypt.hash(password, 12);
     await pool.query(
       'INSERT INTO users (email, name, password) VALUES (?, ?, ?)',
-      [email, name, password]
+      [email, name, hashedPassword]
     );
 
     const [rows] = await pool.query('SELECT * FROM users WHERE email = ?', [email]);
+    if (rows.length > 0) {
+      delete rows[0].password;
+    }
     res.json(rows[0]);
   } catch (error) {
     console.error('Registration failed:', error);
@@ -506,7 +545,7 @@ app.post('/api/auth/register', async (req, res) => {
   }
 });
 
-app.post('/api/auth/login', async (req, res) => {
+app.post('/api/auth/login', authLimiter, async (req, res) => {
   const { email, password } = req.body;
   if (!email || !password) {
     return res.status(400).json({ error: 'Email and password are required' });
@@ -514,18 +553,41 @@ app.post('/api/auth/login', async (req, res) => {
 
   try {
     const [rows] = await pool.query(
-      'SELECT * FROM users WHERE email = ? AND password = ?',
-      [email, password]
+      'SELECT * FROM users WHERE email = ?',
+      [email]
     );
 
     if (rows.length === 0) {
-      const [googleUser] = await pool.query('SELECT * FROM users WHERE email = ?', [email]);
-      if (googleUser.length > 0 && !googleUser[0].password) {
-        return res.status(400).json({ error: 'This account was authenticated via Google. Please log in with Google.' });
+      return res.status(400).json({ error: 'Invalid email or password' });
+    }
+
+    const user = rows[0];
+
+    // Check if this is a Google-only account
+    if (!user.password) {
+      return res.status(400).json({ error: 'This account was authenticated via Google. Please log in with Google.' });
+    }
+
+    // Compare password with bcrypt hash (also supports legacy plaintext for migration)
+    let isValidPassword = false;
+    if (user.password.startsWith('$2a$') || user.password.startsWith('$2b$')) {
+      isValidPassword = await bcrypt.compare(password, user.password);
+    } else {
+      // Legacy plaintext comparison — auto-upgrade to hashed
+      isValidPassword = (user.password === password);
+      if (isValidPassword) {
+        const hashedPassword = await bcrypt.hash(password, 12);
+        await pool.query('UPDATE users SET password = ? WHERE email = ?', [hashedPassword, email]);
       }
+    }
+
+    if (!isValidPassword) {
       return res.status(400).json({ error: 'Invalid email or password credentials' });
     }
 
+    if (rows.length > 0) {
+      delete rows[0].password;
+    }
     res.json(rows[0]);
   } catch (error) {
     console.error('Login failed:', error);
@@ -533,7 +595,7 @@ app.post('/api/auth/login', async (req, res) => {
   }
 });
 
-app.post('/api/auth/forgot-password', async (req, res) => {
+app.post('/api/auth/forgot-password', otpLimiter, async (req, res) => {
   const { email } = req.body;
   if (!email) {
     return res.status(400).json({ error: 'Email is required' });
@@ -617,9 +679,10 @@ app.post('/api/auth/reset-password', async (req, res) => {
       return res.status(400).json({ error: 'OTP passcode has expired (valid for 15 minutes). Please resend code.' });
     }
 
+    const hashedNewPassword = await bcrypt.hash(newPassword, 12);
     await pool.query(
       'UPDATE users SET password = ? WHERE email = ?',
-      [newPassword, email]
+      [hashedNewPassword, email]
     );
 
     await pool.query(
@@ -653,7 +716,7 @@ app.get('/api/bookings', async (req, res) => {
   }
 });
 
-app.post('/api/bookings', async (req, res) => {
+app.post('/api/bookings', orderLimiter, async (req, res) => {
   const { id, name, email, phone, partySize, date, time, diningArea, specialRequests, status, createdAt } = req.body;
   if (!id || !name || !email || !phone || !partySize || !date || !time || !diningArea || !status || !createdAt) {
     return res.status(400).json({ error: 'Missing required booking fields' });
@@ -678,7 +741,7 @@ app.post('/api/bookings', async (req, res) => {
             <p style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.2em; color: #777; margin: 5px 0 0 0;">Reservation Request Received</p>
           </div>
           <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;" />
-          <p style="font-size: 14px; line-height: 1.5; color: #333;">Dear ${name},</p>
+          <p style="font-size: 14px; line-height: 1.5; color: #333;">Dear ${escapeHtml(name)},</p>
           <p style="font-size: 14px; line-height: 1.5; color: #333;">Assalamu Alaikum! Thank you for submitting a table reservation request at <strong>The Royal Clay Oven</strong>.</p>
           <p style="font-size: 14px; line-height: 1.5; color: #333;">We have received your reservation request and our restaurant team is currently reviewing table availability. <strong>We will let you know and send you a final confirmation email shortly once your table is secured.</strong></p>
           
@@ -708,7 +771,7 @@ app.post('/api/bookings', async (req, res) => {
               ${specialRequests ? `
               <tr>
                 <td style="padding: 6px 0; font-weight: bold; vertical-align: top;">Requests / Package:</td>
-                <td style="padding: 6px 0; color: #777; font-family: sans-serif; font-style: italic;">${specialRequests}</td>
+                <td style="padding: 6px 0; color: #777; font-family: sans-serif; font-style: italic;">${escapeHtml(specialRequests)}</td>
               </tr>` : ''}
             </table>
           </div>
@@ -877,7 +940,7 @@ app.get('/api/orders', async (req, res) => {
   }
 });
 
-app.post('/api/orders', async (req, res) => {
+app.post('/api/orders', orderLimiter, async (req, res) => {
   const { id, items, packagingFee, subtotal, total, serviceType, customerInfo, status, createdAt } = req.body;
   if (!id || !items || packagingFee === undefined || !subtotal || !total || !serviceType || !customerInfo || !status || !createdAt) {
     return res.status(400).json({ error: 'Missing required order fields' });
@@ -930,10 +993,10 @@ app.post('/api/orders', async (req, res) => {
         itemsHtml += `
           <tr style="border-bottom: 1px solid #eee;">
             <td style="padding: 8px;">
-              <strong>${item.name || item.menuItem?.name || ''}</strong>
-              ${item.notes ? `<br/><span style="font-size: 11px; color: #C85A32; font-style: italic;">“${item.notes}”</span>` : ''}
+              <strong>${escapeHtml(item.name || item.menuItem?.name || '')}</strong>
+              ${item.notes ? `<br/><span style="font-size: 11px; color: #C85A32; font-style: italic;">"${escapeHtml(item.notes)}"</span>` : ''}
             </td>
-            <td style="padding: 8px;">${item.size || ''}</td>
+            <td style="padding: 8px;">${escapeHtml(item.size || '')}</td>
             <td style="padding: 8px; text-align: center;">${item.quantity}</td>
             <td style="padding: 8px; text-align: right;">&euro;${(itemPrice * item.quantity).toFixed(2)}</td>
           </tr>
@@ -959,19 +1022,19 @@ app.post('/api/orders', async (req, res) => {
             <table style="width: 100%; font-size: 14px; border-collapse: collapse; margin-bottom: 20px;">
               <tr>
                 <td style="padding: 4px 0; color: #666; width: 120px;">Order ID:</td>
-                <td style="padding: 4px 0; font-weight: bold; color: #2C2621;">${id}</td>
+                <td style="padding: 4px 0; font-weight: bold; color: #2C2621;">${escapeHtml(id)}</td>
               </tr>
               <tr>
                 <td style="padding: 4px 0; color: #666;">Fulfillment:</td>
-                <td style="padding: 4px 0; font-weight: bold; text-transform: uppercase; color: #C85A32;">${serviceType}</td>
+                <td style="padding: 4px 0; font-weight: bold; text-transform: uppercase; color: #C85A32;">${escapeHtml(serviceType)}</td>
               </tr>
               <tr>
                 <td style="padding: 4px 0; color: #666;">Time:</td>
-                <td style="padding: 4px 0; font-weight: bold;">${customerInfo.preferredTime || 'ASAP'}</td>
+                <td style="padding: 4px 0; font-weight: bold;">${escapeHtml(customerInfo.preferredTime || 'ASAP')}</td>
               </tr>
               <tr>
                 <td style="padding: 4px 0; color: #666;">Ordered At:</td>
-                <td style="padding: 4px 0;">${new Date(createdAt).toLocaleString('en-IE')}</td>
+                <td style="padding: 4px 0;">${escapeHtml(new Date(createdAt).toLocaleString('en-IE'))}</td>
               </tr>
             </table>
 
@@ -979,26 +1042,26 @@ app.post('/api/orders', async (req, res) => {
             <table style="width: 100%; font-size: 13px; border-collapse: collapse; margin-bottom: 20px;">
               <tr>
                 <td style="padding: 4px 0; color: #666; width: 120px;">Name:</td>
-                <td style="padding: 4px 0; font-weight: bold;">${customerInfo.name}</td>
+                <td style="padding: 4px 0; font-weight: bold;">${escapeHtml(customerInfo.name)}</td>
               </tr>
               <tr>
                 <td style="padding: 4px 0; color: #666;">Phone:</td>
-                <td style="padding: 4px 0; font-weight: bold;"><a href="tel:${customerInfo.phone.replace(/\s+/g, '')}">${customerInfo.phone}</a></td>
+                <td style="padding: 4px 0; font-weight: bold;"><a href="tel:${escapeHtml(customerInfo.phone.replace(/\s+/g, ''))}">${escapeHtml(customerInfo.phone)}</a></td>
               </tr>
               <tr>
                 <td style="padding: 4px 0; color: #666;">Email:</td>
-                <td style="padding: 4px 0;">${customerInfo.email}</td>
+                <td style="padding: 4px 0;">${escapeHtml(customerInfo.email)}</td>
               </tr>
               ${customerInfo.address ? `
               <tr>
                 <td style="padding: 4px 0; color: #666; vertical-align: top;">Address:</td>
-                <td style="padding: 4px 0; font-weight: bold; line-height: 1.4;">${customerInfo.address}</td>
+                <td style="padding: 4px 0; font-weight: bold; line-height: 1.4;">${escapeHtml(customerInfo.address)}</td>
               </tr>
               ` : ''}
               ${customerInfo.notes ? `
               <tr>
                 <td style="padding: 4px 0; color: #C85A32; vertical-align: top;">Chef Notes:</td>
-                <td style="padding: 4px 0; font-style: italic; color: #C85A32; font-weight: bold;">“${customerInfo.notes}”</td>
+                <td style="padding: 4px 0; font-style: italic; color: #C85A32; font-weight: bold;">"${escapeHtml(customerInfo.notes)}"</td>
               </tr>
               ` : ''}
             </table>
@@ -1086,7 +1149,7 @@ const requireAdmin = (req, res, next) => {
 // --- Admin Authentication Endpoints ---
 
 // Request OTP — sends a 6-digit code to an authorized admin email
-app.post('/api/admin/request-otp', async (req, res) => {
+app.post('/api/admin/request-otp', otpLimiter, async (req, res) => {
   const { email } = req.body;
   if (!email) {
     return res.status(400).json({ error: 'Email address is required' });

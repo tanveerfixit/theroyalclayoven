@@ -79,7 +79,7 @@ Dessert | Milk Cake
 Beverages | Tea or Coffee`);
 
   // Self-hosted Gallery Image States
-  const [imageHeroBg, setImageHeroBg] = React.useState(localStorage.getItem('clay_oven_image_hero_bg') || 'https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=800&q=70&fm=webp');
+  const [imageHeroBg, setImageHeroBg] = React.useState(localStorage.getItem('clay_oven_image_hero_bg') || '/hero-bg.webp');
   const [imageHeritageLeft, setImageHeritageLeft] = React.useState(localStorage.getItem('clay_oven_image_heritage_left') || 'https://images.unsplash.com/photo-1627308595229-7830a5c91f9f?auto=format&fit=crop&w=500&q=70&fm=webp');
   const [imageHeritageRight, setImageHeritageRight] = React.useState(localStorage.getItem('clay_oven_image_heritage_right') || 'https://images.unsplash.com/photo-1603360946369-dc9bb6258143?auto=format&fit=crop&w=500&q=70&fm=webp');
 

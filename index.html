@@ -12,18 +12,21 @@
     <meta name="keywords" content="The Royal Clay Oven, Pakistani Cuisine Shannon, Takeaway Shannon Clare, Halal Food Shannon, Tandoori Clay Oven, Kebabs Shannon, Pizza Delivery Shannon, Catering Shannon County Clare, Ballycasey Craft Center Food" />
     <meta name="author" content="The Royal Clay Oven" />
     <meta name="robots" content="index, follow" />
+    <link rel="canonical" href="https://www.clayoven.ie/" />
 
     <!-- Performance & Preloading optimizations -->
     <link rel="dns-prefetch" href="https://images.unsplash.com">
     
     <!-- Preload Hero Image for faster LCP (optimized format and width for mobile) -->
-    <link rel="preload" as="image" href="https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=800&q=70&fm=webp" fetchpriority="high">
+    <link rel="preload" as="image" href="/hero-bg.webp" fetchpriority="high">
     
     <!-- Open Graph (OG) / Social Media & LLM Crawler Metadata -->
     <meta property="og:title" content="The Royal Clay Oven | Authentic Pakistani Cuisine & Takeaway Shannon" />
     <meta property="og:description" content="Experience authentic flame-grilled Pakistani tandoori dishes, fresh kebabs, and pizzas cooked under familial recipe care. Order takeaway or book tables online." />
     <meta property="og:type" content="restaurant" />
-    <meta property="og:image" content="https://www.clayoven.ie/metadata.json" />
+    <meta property="og:image" content="https://www.clayoven.ie/og-image.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
     <meta property="og:url" content="https://www.clayoven.ie" />
     <meta property="og:site_name" content="The Royal Clay Oven" />
 
@@ -31,6 +34,7 @@
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="The Royal Clay Oven | Authentic Pakistani Cuisine Shannon" />
     <meta name="twitter:description" content="Order fresh, high-fire charcoal clay tandoori cooked dishes, kebabs, and pizzas from Shannon's premier Halal Pakistani takeaway." />
+    <meta name="twitter:image" content="https://www.clayoven.ie/og-image.png" />
     
     <!-- LLM Engine & Search Engine Restaurant Schema (JSON-LD) -->
     <script type="application/ld+json">
@@ -38,11 +42,13 @@
         "@context": "https://schema.org",
         "@type": "Restaurant",
         "name": "The Royal Clay Oven",
+        "image": "https://www.clayoven.ie/og-image.png",
         "url": "https://www.clayoven.ie",
         "telephone": "+353860203720",
         "priceRange": "$$",
         "servesCuisine": ["Pakistani", "Halal", "Kebab", "Pizza", "Tandoori"],
         "acceptsReservations": "True",
+        "hasMenu": "https://www.clayoven.ie/menu",
         "address": {
           "@type": "PostalAddress",
           "streetAddress": "Ballycasey Craft And Design Center",
@@ -51,6 +57,21 @@
           "postalCode": "V14 AW71",
           "addressCountry": "IE"
         },
+        "geo": {
+          "@type": "GeoCoordinates",
+          "latitude": 52.7029,
+          "longitude": -8.8817
+        },
+        "openingHoursSpecification": [
+          { "@type": "OpeningHoursSpecification", "dayOfWeek": "Monday", "opens": "16:00", "closes": "21:00" },
+          { "@type": "OpeningHoursSpecification", "dayOfWeek": "Tuesday", "opens": "16:00", "closes": "21:00" },
+          { "@type": "OpeningHoursSpecification", "dayOfWeek": "Wednesday", "opens": "16:00", "closes": "21:00" },
+          { "@type": "OpeningHoursSpecification", "dayOfWeek": "Thursday", "opens": "16:00", "closes": "21:00" },
+          { "@type": "OpeningHoursSpecification", "dayOfWeek": "Friday", "opens": "16:00", "closes": "22:00" },
+          { "@type": "OpeningHoursSpecification", "dayOfWeek": "Saturday", "opens": "16:00", "closes": "22:00" },
+          { "@type": "OpeningHoursSpecification", "dayOfWeek": "Sunday", "opens": "16:00", "closes": "21:00" }
+        ],
+        "sameAs": [],
         "description": "Authentic Pakistani tandoori cuisine, charcoal tandoor baked naans, fresh kebabs, and gourmet flame-grilled pizzas in Shannon, County Clare."
       }
     </script>
@@ -60,4 +81,3 @@
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
-

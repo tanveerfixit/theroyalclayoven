@@ -98,6 +98,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               onClick={() => setIsOpen(!isOpen)}
               className="p-2 text-brand-dark hover:bg-brand-dark/5 transition-all duration-200 rounded-none inline-flex items-center justify-center -ml-2"
               aria-expanded={isOpen}
+              aria-label="Toggle navigation menu"
             >
               {isOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
             </button>
@@ -216,6 +217,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                   onClick={onOpenAuthModal}
                   className="p-2 text-brand-dark hover:text-brand-accent transition-colors flex items-center justify-center"
                   title="Login / Signup"
+                  aria-label="Login or Signup"
                 >
                   <User className="w-5 h-5 stroke-[1.5]" />
                 </button>

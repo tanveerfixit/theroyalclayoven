@@ -272,6 +272,14 @@ export default function App() {
   return (
     <div className="min-h-screen bg-brand-beige flex flex-col justify-between overflow-x-hidden relative selection:bg-brand-dark selection:text-white">
       
+      {/* Accessibility: Skip to main content link */}
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-[9999] focus:bg-brand-dark focus:text-white focus:px-4 focus:py-2 focus:text-sm focus:font-bold focus:outline-none"
+      >
+        Skip to main content
+      </a>
+      
       {/* Top Navigation */}
       <Navbar
         currentTab={currentTab}
@@ -287,7 +295,7 @@ export default function App() {
       />
 
       {/* Main Responsive Canvas */}
-      <main className="flex-grow pt-0 font-sans">
+      <main id="main-content" className="flex-grow pt-0 font-sans">
         <AnimatePresence mode="wait">
           <motion.div
             key={currentTab}

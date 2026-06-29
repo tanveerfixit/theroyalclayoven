@@ -3,7 +3,8 @@ Allow: /
 Allow: /menu
 Allow: /takeaway
 Allow: /booking
-Allow: /profile
-Allow: /history
+Disallow: /admin
+Disallow: /profile
+Disallow: /history
 
 Sitemap: https://www.clayoven.ie/sitemap.xml
