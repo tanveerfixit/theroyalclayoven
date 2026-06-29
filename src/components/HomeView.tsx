@@ -171,6 +171,9 @@ Beverages | Tea or Coffee`);
       return { name, description };
     });
 
+  const parsedPrice = parseFloat(festivePrice);
+  const hasPrice = festivePrice && !isNaN(parsedPrice) && parsedPrice > 0;
+
   // Highlight some premium items
   const featuredIds = ['pk-butter-chicken', 'pk-bbq-platter', 'co-lamb-chops', 'bg-smash'];
   const featuredItems = MENU_ITEMS.filter((item) => featuredIds.includes(item.id));
@@ -252,13 +255,17 @@ Beverages | Tea or Coffee`);
                   {festiveDescription}
                 </p>
                 
-                <div className="pt-4 flex items-baseline space-x-2">
-                  <span className="text-xs font-mono text-brand-muted uppercase">PRICE FOR 1:</span>
-                  <span className="text-4xl font-serif font-black text-brand-dark">&euro;{parseFloat(festivePrice).toFixed(2)}</span>
-                </div>
-                <p className="text-[10px] font-mono text-brand-muted uppercase tracking-wider">
-                  * Service charge will apply
-                </p>
+                {hasPrice && (
+                  <>
+                    <div className="pt-4 flex items-baseline space-x-2">
+                      <span className="text-xs font-mono text-brand-muted uppercase">PRICE FOR 1:</span>
+                      <span className="text-4xl font-serif font-black text-brand-dark">&euro;{parsedPrice.toFixed(2)}</span>
+                    </div>
+                    <p className="text-[10px] font-mono text-brand-muted uppercase tracking-wider">
+                      * Service charge will apply
+                    </p>
+                  </>
+                )}
               </div>
 
               {/* Column 2: Platter Menu Card */}
