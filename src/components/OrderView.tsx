@@ -553,7 +553,7 @@ export const OrderView: React.FC<OrderViewProps> = ({
                   }`}
                 >
                   <ShoppingBag className="w-4 h-4" />
-                  <span>COLLECTION (FREE)</span>
+                  <span>Collection</span>
                 </button>
                 <button
                   type="button"
@@ -566,7 +566,7 @@ export const OrderView: React.FC<OrderViewProps> = ({
                   }`}
                 >
                   <MapPin className="w-4 h-4" />
-                  <span>DELIVERY (&euro;3.00)</span>
+                  <span>Delivery</span>
                 </button>
               </div>
             </div>
