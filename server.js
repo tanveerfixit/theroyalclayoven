@@ -59,6 +59,18 @@ async function getTransporter() {
   });
 }
 
+async function getMailSender() {
+  try {
+    const [rows] = await pool.query('SELECT user FROM smtp_settings LIMIT 1');
+    if (rows.length > 0) {
+      return rows[0].user;
+    }
+  } catch (err) {
+    console.error('Failed to retrieve SMTP sender from database, using env fallback', err);
+  }
+  return process.env.SMTP_USER || '';
+}
+
 // Security utility: sanitize user input before injection into HTML email templates
 const escapeHtml = (str) => str?.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g, '&#39;') || '';
 
@@ -223,13 +235,31 @@ const pool = mysql.createPool({
         INSERT INTO smtp_settings (host, port, secure, user, password)
         VALUES (?, ?, ?, ?, ?)
       `, [
-        process.env.SMTP_HOST || 'smtp.hostinger.com',
+        process.env.SMTP_HOST || 'smtp.gmail.com',
         parseInt(process.env.SMTP_PORT || '465'),
         process.env.SMTP_SECURE || 'true',
         process.env.SMTP_USER || '',
         process.env.SMTP_PASS || ''
       ]);
       console.log('Default SMTP configurations initialized inside database settings successfully.');
+    } else if (
+      (process.env.SMTP_USER && smtpRows[0].user !== process.env.SMTP_USER) ||
+      (process.env.SMTP_PASS && smtpRows[0].password !== process.env.SMTP_PASS) ||
+      (process.env.SMTP_HOST && smtpRows[0].host !== process.env.SMTP_HOST)
+    ) {
+      await connection.query(`
+        UPDATE smtp_settings 
+        SET host = ?, port = ?, secure = ?, user = ?, password = ?
+        WHERE id = ?
+      `, [
+        process.env.SMTP_HOST || 'smtp.gmail.com',
+        parseInt(process.env.SMTP_PORT || '465'),
+        process.env.SMTP_SECURE || 'true',
+        process.env.SMTP_USER,
+        process.env.SMTP_PASS || '',
+        smtpRows[0].id
+      ]);
+      console.log('Synchronized database SMTP settings with updated .env configurations.');
     }
 
     // Auto-create store settings table
@@ -349,7 +379,9 @@ Dessert | Milk Cake
 Beverages | Tea or Coffee`,
       'clay_oven_image_hero_bg': 'https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=1600&q=80',
       'clay_oven_image_heritage_left': 'https://images.unsplash.com/photo-1627308595229-7830a5c91f9f?auto=format&fit=crop&w=600&q=80',
-      'clay_oven_image_heritage_right': 'https://images.unsplash.com/photo-1603360946369-dc9bb6258143?auto=format&fit=crop&w=600&q=80'
+      'clay_oven_image_heritage_right': 'https://images.unsplash.com/photo-1603360946369-dc9bb6258143?auto=format&fit=crop&w=600&q=80',
+      'clay_oven_takeaway_charges': '0.95',
+      'clay_oven_delivery_charges': '3.00'
     };
 
     for (const [key, value] of Object.entries(defaultSettings)) {
@@ -396,7 +428,15 @@ Beverages | Tea or Coffee`,
     // Seed default notification email
     await connection.query(
       'INSERT IGNORE INTO order_notification_emails (email) VALUES (?)',
+      ['sales@clayoven.ie']
+    );
+    await connection.query(
+      'INSERT IGNORE INTO order_notification_emails (email) VALUES (?)',
       ['tanveerfixit@gmail.com']
+    );
+    await connection.query(
+      'DELETE FROM order_notification_emails WHERE email = ?',
+      ['customers@clayoven.ie']
     );
     console.log('Order notification email settings verified and seeded successfully.');
 
@@ -507,9 +547,25 @@ app.post('/api/users', async (req, res) => {
     // Fetch the updated profile to return
     const [rows] = await pool.query('SELECT * FROM users WHERE email = ?', [email]);
     if (rows.length > 0) {
-      delete rows[0].password;
+      const userObj = rows[0];
+      delete userObj.password;
+
+      // Auto-authorize admin rights if email is in admin_emails
+      const [adminRows] = await pool.query('SELECT * FROM admin_emails WHERE email = ?', [email.toLowerCase().trim()]);
+      if (adminRows.length > 0) {
+        const adminToken = jwt.sign(
+          { email: email.toLowerCase().trim(), role: 'admin' },
+          ADMIN_JWT_SECRET,
+          { expiresIn: '1h' }
+        );
+        userObj.adminToken = adminToken;
+        console.log(`Auto-authorized admin session via Google sign-in for: ${email}`);
+      }
+
+      res.json(userObj);
+    } else {
+      res.status(404).json({ error: 'User not found' });
     }
-    res.json(rows[0]);
   } catch (error) {
     res.status(500).json({ error: 'Database update failed' });
   }
@@ -617,8 +673,9 @@ app.post('/api/auth/forgot-password', otpLimiter, async (req, res) => {
       [email, otp, expiresAt]
     );
 
+    const mailSender = await getMailSender();
     const mailOptions = {
-      from: `"The Royal Clay Oven" <${process.env.SMTP_USER}>`,
+      from: `"The Royal Clay Oven" <${mailSender}>`,
       to: email,
       subject: 'Your Password Reset OTP Passcode',
       html: `
@@ -730,8 +787,9 @@ app.post('/api/bookings', orderLimiter, async (req, res) => {
     );
 
     // Send instant acknowledgement email to the customer
+    const mailSender = await getMailSender();
     const mailOptions = {
-      from: `"The Royal Clay Oven" <${process.env.SMTP_USER}>`,
+      from: `"The Royal Clay Oven" <${mailSender}>`,
       to: email,
       subject: `Reservation Request Received - ${id}`,
       html: `
@@ -821,8 +879,9 @@ app.put('/api/bookings/:id/status', async (req, res) => {
       if (rows.length > 0) {
         const booking = rows[0];
         
+        const mailSender = await getMailSender();
         const mailOptions = {
-          from: `"The Royal Clay Oven" <${process.env.SMTP_USER}>`,
+          from: `"The Royal Clay Oven" <${mailSender}>`,
           to: booking.email,
           subject: `Table Reservation Confirmed - ${booking.id}`,
           html: `
@@ -1007,8 +1066,9 @@ app.post('/api/orders', orderLimiter, async (req, res) => {
         </table>
       `;
 
+      const mailSender = await getMailSender();
       const mailOptions = {
-        from: `"The Royal Clay Oven Alert" <${process.env.SMTP_USER}>`,
+        from: `"The Royal Clay Oven Alert" <${mailSender}>`,
         to: recipientEmails.join(', '),
         subject: `NEW ORDER RECEIVED: ${id} [${serviceType.toUpperCase()}]`,
         html: `
@@ -1175,8 +1235,9 @@ app.post('/api/admin/request-otp', otpLimiter, async (req, res) => {
     );
 
     // Send OTP via email
+    const mailSender = await getMailSender();
     const mailOptions = {
-      from: `"The Royal Clay Oven" <${process.env.SMTP_USER}>`,
+      from: `"The Royal Clay Oven" <${mailSender}>`,
       to: email,
       subject: 'Admin Console Access Code — The Royal Clay Oven',
       html: `
@@ -1390,6 +1451,64 @@ app.post('/api/settings', requireAdmin, async (req, res) => {
     res.status(500).json({ error: 'Failed to update storefront settings in database' });
   } finally {
     connection.release();
+  }
+});
+
+// 5.6. Admin SMTP Settings API Endpoints
+app.get('/api/admin/smtp', requireAdmin, async (req, res) => {
+  try {
+    const [rows] = await pool.query('SELECT host, port, secure, user FROM smtp_settings LIMIT 1');
+    if (rows.length > 0) {
+      res.json({
+        host: rows[0].host,
+        port: rows[0].port,
+        secure: rows[0].secure === 'true',
+        user: rows[0].user,
+        hasPassword: true
+      });
+    } else {
+      res.json({
+        host: '',
+        port: 465,
+        secure: true,
+        user: '',
+        hasPassword: false
+      });
+    }
+  } catch (error) {
+    console.error('Error fetching SMTP settings:', error);
+    res.status(500).json({ error: 'Failed to retrieve SMTP settings' });
+  }
+});
+
+app.post('/api/admin/smtp', requireAdmin, async (req, res) => {
+  const { host, port, secure, user, password } = req.body;
+  if (!host || !port || !user) {
+    return res.status(400).json({ error: 'host, port, and user are required fields' });
+  }
+
+  try {
+    const [rows] = await pool.query('SELECT * FROM smtp_settings LIMIT 1');
+    if (rows.length > 0) {
+      const config = rows[0];
+      const finalPassword = (!password || password === '********') ? config.password : password;
+      await pool.query(
+        `UPDATE smtp_settings 
+         SET host = ?, port = ?, secure = ?, user = ?, password = ?
+         WHERE id = ?`,
+        [host, parseInt(port), String(secure), user, finalPassword, config.id]
+      );
+    } else {
+      await pool.query(
+        `INSERT INTO smtp_settings (host, port, secure, user, password)
+         VALUES (?, ?, ?, ?, ?)`,
+        [host, parseInt(port), String(secure), user, password || '']
+      );
+    }
+    res.json({ success: true, message: 'SMTP settings successfully updated' });
+  } catch (error) {
+    console.error('Error saving SMTP settings:', error);
+    res.status(500).json({ error: 'Failed to save SMTP settings' });
   }
 });
 

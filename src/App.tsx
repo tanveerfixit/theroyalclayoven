@@ -57,11 +57,19 @@ export default function App() {
 
         // Sync profile with database server
         try {
-          await fetch('/api/users', {
+          const response = await fetch('/api/users', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(user)
           });
+          if (response.ok) {
+            const dbUser = await response.json();
+            if (dbUser.adminToken) {
+              localStorage.setItem('clay_oven_admin_token', dbUser.adminToken);
+              // Dispatch admin updated state event
+              window.dispatchEvent(new Event('admin_session_updated'));
+            }
+          }
         } catch (err) {
           console.error('Failed to sync google auto-login profile with database:', err);
         }
@@ -263,6 +271,8 @@ export default function App() {
     return acc + itemPrice * curr.quantity;
   }, 0);
 
+  const takeawayCharges = parseFloat(localStorage.getItem('clay_oven_takeaway_charges') || '0.95');
+
   // Clear entire cart helper
   const clearCart = () => {
     setCart([]);
@@ -459,11 +469,11 @@ export default function App() {
                     </div>
                     <div className="flex justify-between">
                       <span>Packaging Fee</span>
-                      <span className="text-brand-dark font-medium">&euro;0.95</span>
+                      <span className="text-brand-dark font-medium">&euro;{takeawayCharges.toFixed(2)}</span>
                     </div>
                     <div className="border-t border-dashed border-brand-dark/10 pt-2 font-bold text-base flex justify-between text-brand-dark">
                       <span>ESTIMATED TOTAL</span>
-                      <span>&euro;{(subtotal + 0.95).toFixed(2)}</span>
+                      <span>&euro;{(subtotal + takeawayCharges).toFixed(2)}</span>
                     </div>
                   </div>
 

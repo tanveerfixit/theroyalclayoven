@@ -81,6 +81,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onLoginSu
 
           if (response.ok) {
             const dbUser = await response.json();
+            if (dbUser.adminToken) {
+              localStorage.setItem('clay_oven_admin_token', dbUser.adminToken);
+              window.dispatchEvent(new Event('admin_session_updated'));
+            }
             const finalProfile = {
               ...userProfile,
               phone: dbUser.phone || undefined,

@@ -95,17 +95,29 @@ The Royal Clay Oven`);
   // Takeaway Online Order Enable/Disable controls
   const [takeawayEnabled, setTakeawayEnabled] = useState(true);
   const [takeawayNoticeText, setTakeawayNoticeText] = useState('We are temporarily not taking online orders. Please phone us to order directly!');
+  const [takeawayCharges, setTakeawayCharges] = useState('0.95');
+  const [deliveryCharges, setDeliveryCharges] = useState('3.00');
 
   // Reservation Enable/Disable controls
   const [reservationsEnabled, setReservationsEnabled] = useState(true);
   const [reservationsNoticeText, setReservationsNoticeText] = useState('Table reservations are temporarily closed. Please telephone us to book a table!');
 
-  // Notice Sub-tabs settings pane navigation: 'takeaway' | 'reservations' | 'announcements' | 'festive' | 'gallery' | 'business' | 'notifications'
-  const [settingsSubTab, setSettingsSubTab] = useState<'takeaway' | 'reservations' | 'announcements' | 'festive' | 'gallery' | 'business' | 'notifications'>('takeaway');
+  // Notice Sub-tabs settings pane navigation: 'takeaway' | 'reservations' | 'announcements' | 'festive' | 'gallery' | 'business' | 'notifications' | 'smtp'
+  const [settingsSubTab, setSettingsSubTab] = useState<'takeaway' | 'reservations' | 'announcements' | 'festive' | 'gallery' | 'business' | 'notifications' | 'smtp'>('takeaway');
 
   // Order Notification Email States
   const [notificationEmails, setNotificationEmails] = useState<string[]>([]);
   const [newNotificationEmail, setNewNotificationEmail] = useState('');
+
+  // SMTP Settings States
+  const [smtpHost, setSmtpHost] = useState('');
+  const [smtpPort, setSmtpPort] = useState('465');
+  const [smtpSecure, setSmtpSecure] = useState(true);
+  const [smtpUser, setSmtpUser] = useState('');
+  const [smtpPassword, setSmtpPassword] = useState('');
+  const [smtpHasPassword, setSmtpHasPassword] = useState(false);
+  const [smtpLoading, setSmtpLoading] = useState(false);
+  const [smtpSuccess, setSmtpSuccess] = useState(false);
 
   const fetchNotificationEmails = async () => {
     try {
@@ -117,6 +129,67 @@ The Royal Clay Oven`);
       }
     } catch (err) {
       console.error('Failed to retrieve notification emails:', err);
+    }
+  };
+
+  const fetchSmtpSettings = async () => {
+    try {
+      const response = await fetch('/api/admin/smtp', { headers: adminHeaders() });
+      if (response.status === 401) { handleUnauthorized(); return; }
+      if (response.ok) {
+        const data = await response.json();
+        setSmtpHost(data.host || '');
+        setSmtpPort(String(data.port || '465'));
+        setSmtpSecure(data.secure !== false);
+        setSmtpUser(data.user || '');
+        setSmtpHasPassword(data.hasPassword === true);
+        if (data.hasPassword) {
+          setSmtpPassword('********');
+        } else {
+          setSmtpPassword('');
+        }
+      }
+    } catch (err) {
+      console.error('Failed to retrieve SMTP settings:', err);
+    }
+  };
+
+  const handleSaveSmtpSettings = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSmtpLoading(true);
+    setSmtpSuccess(false);
+
+    try {
+      const response = await fetch('/api/admin/smtp', {
+        method: 'POST',
+        headers: { ...adminHeaders(), 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          host: smtpHost,
+          port: parseInt(smtpPort),
+          secure: smtpSecure,
+          user: smtpUser,
+          password: smtpPassword
+        })
+      });
+
+      if (response.status === 401) {
+        handleUnauthorized();
+        return;
+      }
+
+      if (response.ok) {
+        setSmtpSuccess(true);
+        setTimeout(() => setSmtpSuccess(false), 5000);
+        await fetchSmtpSettings();
+      } else {
+        const data = await response.json();
+        alert(data.error || 'Failed to update SMTP settings');
+      }
+    } catch (err) {
+      console.error('Failed to update SMTP settings:', err);
+      alert('Network error while updating SMTP settings');
+    } finally {
+      setSmtpLoading(false);
     }
   };
 
@@ -210,6 +283,7 @@ Beverages | Tea or Coffee`);
       const token = getAdminToken();
       if (!token) {
         setAuthChecking(false);
+        setIsAuthenticated(false);
         return;
       }
       try {
@@ -223,17 +297,24 @@ Beverages | Tea or Coffee`);
             setAuthEmail(data.email);
           } else {
             clearAdminToken();
+            setIsAuthenticated(false);
           }
         } else {
           clearAdminToken();
+          setIsAuthenticated(false);
         }
       } catch {
         clearAdminToken();
+        setIsAuthenticated(false);
       } finally {
         setAuthChecking(false);
       }
     };
     verifyExistingToken();
+    window.addEventListener('admin_session_updated', verifyExistingToken);
+    return () => {
+      window.removeEventListener('admin_session_updated', verifyExistingToken);
+    };
   }, []);
 
   // Request OTP handler
@@ -332,6 +413,8 @@ Beverages | Tea or Coffee`);
 
         if (data.clay_oven_takeaway_enabled !== undefined) setTakeawayEnabled(data.clay_oven_takeaway_enabled !== 'false');
         if (data.clay_oven_takeaway_notice) setTakeawayNoticeText(data.clay_oven_takeaway_notice);
+        if (data.clay_oven_takeaway_charges !== undefined) setTakeawayCharges(data.clay_oven_takeaway_charges);
+        if (data.clay_oven_delivery_charges !== undefined) setDeliveryCharges(data.clay_oven_delivery_charges);
 
         if (data.clay_oven_reservations_enabled !== undefined) setReservationsEnabled(data.clay_oven_reservations_enabled !== 'false');
         if (data.clay_oven_reservations_notice) setReservationsNoticeText(data.clay_oven_reservations_notice);
@@ -374,6 +457,8 @@ Beverages | Tea or Coffee`);
       'clay_oven_booking_notice_enabled': String(bookingNoticeEnabled),
       'clay_oven_takeaway_enabled': String(takeawayEnabled),
       'clay_oven_takeaway_notice': takeawayNoticeText,
+      'clay_oven_takeaway_charges': takeawayCharges,
+      'clay_oven_delivery_charges': deliveryCharges,
       'clay_oven_reservations_enabled': String(reservationsEnabled),
       'clay_oven_reservations_notice': reservationsNoticeText,
       'clay_oven_festive_enabled': String(festiveEnabled),
@@ -647,6 +732,7 @@ Beverages | Tea or Coffee`);
     if (isAuthenticated) {
       fetchSettings();
       fetchNotificationEmails();
+      fetchSmtpSettings();
     }
   }, [isAuthenticated]);
 
@@ -1570,7 +1656,7 @@ Beverages | Tea or Coffee`);
                                   try {
                                     const response = await fetch('/api/settings', {
                                       method: 'POST',
-                                      headers: { 'Content-Type': 'application/json' },
+                                      headers: { ...adminHeaders(), 'Content-Type': 'application/json' },
                                       body: JSON.stringify({ [`clay_oven_dish_image_${item.id}`]: '' })
                                     });
                                     if (response.ok) {
@@ -1609,7 +1695,7 @@ Beverages | Tea or Coffee`);
                                   try {
                                     await fetch('/api/settings', {
                                       method: 'POST',
-                                      headers: { 'Content-Type': 'application/json' },
+                                      headers: { ...adminHeaders(), 'Content-Type': 'application/json' },
                                       body: JSON.stringify({ [`clay_oven_dish_image_${item.id}`]: newVal })
                                     });
                                   } catch (err) {
@@ -1634,7 +1720,7 @@ Beverages | Tea or Coffee`);
                                     try {
                                       const response = await fetch('/api/settings', {
                                         method: 'POST',
-                                        headers: { 'Content-Type': 'application/json' },
+                                        headers: { ...adminHeaders(), 'Content-Type': 'application/json' },
                                         body: JSON.stringify({ [`clay_oven_dish_image_${item.id}`]: base64Data })
                                       });
                                       if (response.ok) {
@@ -1761,6 +1847,17 @@ Beverages | Tea or Coffee`);
             >
               7. Email Alerts
             </button>
+            <button
+              type="button"
+              onClick={() => setSettingsSubTab('smtp')}
+              className={`px-4 py-2.5 font-mono text-xs font-bold uppercase tracking-wider border-b-2 transition-all shrink-0 ${
+                settingsSubTab === 'smtp'
+                  ? 'border-brand-accent text-brand-accent bg-brand-beige/10'
+                  : 'border-transparent text-brand-muted hover:text-brand-dark'
+              }`}
+            >
+              8. SMTP Server
+            </button>
           </div>
 
           <form onSubmit={handleSaveSettings} className="space-y-8">
@@ -1817,6 +1914,43 @@ Beverages | Tea or Coffee`);
                       className="w-full border border-brand-dark/10 p-4 text-xs font-mono focus:border-brand-dark outline-none bg-brand-beige/10 rounded-none resize-y"
                       placeholder="e.g. We are temporarily not taking online orders. Please phone us to order directly!"
                     />
+                  </div>
+
+                  {/* Takeaway & Delivery Charges settings */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-6 border-t border-brand-dark/10">
+                    <div className="space-y-2">
+                      <label htmlFor="settings-takeaway-charges" className="block font-mono text-xs text-brand-accent uppercase tracking-widest font-bold">
+                        TAKEAWAY / PACKAGING CHARGE (€)
+                      </label>
+                      <input
+                        id="settings-takeaway-charges"
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        required
+                        value={takeawayCharges}
+                        onChange={(e) => setTakeawayCharges(e.target.value)}
+                        className="w-full border border-brand-dark/10 p-3 text-xs font-mono focus:border-brand-dark outline-none bg-brand-beige/10 rounded-none"
+                        placeholder="e.g. 0.95"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <label htmlFor="settings-delivery-charges" className="block font-mono text-xs text-brand-accent uppercase tracking-widest font-bold">
+                        DELIVERY CHARGE (€)
+                      </label>
+                      <input
+                        id="settings-delivery-charges"
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        required
+                        value={deliveryCharges}
+                        onChange={(e) => setDeliveryCharges(e.target.value)}
+                        className="w-full border border-brand-dark/10 p-3 text-xs font-mono focus:border-brand-dark outline-none bg-brand-beige/10 rounded-none"
+                        placeholder="e.g. 3.00"
+                      />
+                    </div>
                   </div>
                 </div>
               </div>
@@ -2474,7 +2608,116 @@ Beverages | Tea or Coffee`);
               </div>
             )}
 
-            {settingsSubTab !== 'notifications' && (
+            {/* SUBTAB 8: SMTP SERVER SETTINGS */}
+            {settingsSubTab === 'smtp' && (
+              <div className="space-y-6 animate-fade-in text-left">
+                <div className="space-y-2 border-b border-brand-dark/5 pb-4 flex justify-between items-center">
+                  <div>
+                    <h3 className="font-serif text-lg font-bold text-brand-dark flex items-center gap-2">
+                      <Settings className="w-5 h-5 text-brand-accent" />
+                      SMTP Mail Server Configuration
+                    </h3>
+                    <p className="font-sans text-xs text-brand-muted font-normal">
+                      Configure your outgoing mail server parameters to dispatch confirmation emails and OTP access codes securely.
+                    </p>
+                  </div>
+                  {smtpSuccess && (
+                    <span className="font-mono text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-300/40 px-3 py-1">
+                      ✓ SMTP UPDATED
+                    </span>
+                  )}
+                </div>
+
+                <div className="max-w-2xl space-y-6">
+                  <div className="border border-brand-dark/10 p-5 bg-[#FDFBF7] space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div className="space-y-1.5 md:col-span-2">
+                        <label className="block font-mono text-[10px] text-brand-dark font-bold uppercase tracking-wider">
+                          SMTP HOST IP/DOMAIN
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          placeholder="e.g. smtp.gmail.com"
+                          value={smtpHost}
+                          onChange={(e) => setSmtpHost(e.target.value)}
+                          className="w-full bg-white border border-brand-dark/15 p-2.5 font-mono text-xs focus:outline-none focus:border-brand-accent"
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <label className="block font-mono text-[10px] text-brand-dark font-bold uppercase tracking-wider">
+                          PORT
+                        </label>
+                        <input
+                          type="number"
+                          required
+                          placeholder="e.g. 465"
+                          value={smtpPort}
+                          onChange={(e) => setSmtpPort(e.target.value)}
+                          className="w-full bg-white border border-brand-dark/15 p-2.5 font-mono text-xs focus:outline-none focus:border-brand-accent"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="flex items-center space-x-3 pt-2">
+                      <input
+                        type="checkbox"
+                        id="smtp-secure"
+                        checked={smtpSecure}
+                        onChange={(e) => setSmtpSecure(e.target.checked)}
+                        className="w-4 h-4 border-brand-dark/15 rounded-none accent-brand-accent"
+                      />
+                      <label htmlFor="smtp-secure" className="font-mono text-xs text-brand-dark uppercase font-bold cursor-pointer">
+                        Use SSL/TLS Connection (Secure port 465)
+                      </label>
+                    </div>
+
+                    <div className="space-y-1.5 pt-2 border-t border-brand-dark/10">
+                      <label className="block font-mono text-[10px] text-brand-dark font-bold uppercase tracking-wider">
+                        SMTP USERNAME (SENDER EMAIL)
+                      </label>
+                      <input
+                        type="email"
+                        required
+                        placeholder="e.g. accounts@clayoven.ie"
+                        value={smtpUser}
+                        onChange={(e) => setSmtpUser(e.target.value)}
+                        className="w-full bg-white border border-brand-dark/15 p-2.5 font-mono text-xs focus:outline-none focus:border-brand-accent"
+                      />
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <label className="block font-mono text-[10px] text-brand-dark font-bold uppercase tracking-wider">
+                        SMTP PASSWORD / GOOGLE APP PASSWORD
+                      </label>
+                      <input
+                        type="password"
+                        placeholder={smtpHasPassword ? "******** (unchanged)" : "Enter password..."}
+                        value={smtpPassword}
+                        onChange={(e) => setSmtpPassword(e.target.value)}
+                        className="w-full bg-white border border-brand-dark/15 p-2.5 font-mono text-xs focus:outline-none focus:border-brand-accent"
+                      />
+                      <p className="text-[10px] text-brand-muted font-sans leading-relaxed">
+                        ★ For security, passwords are encrypted. If using Google Workspace, enter your generated **Google App Password**.
+                      </p>
+                    </div>
+
+                    <div className="pt-2 flex justify-end">
+                      <button
+                        type="button"
+                        onClick={handleSaveSmtpSettings}
+                        disabled={smtpLoading}
+                        className="bg-brand-accent hover:bg-brand-dark text-white px-8 py-3 text-xs font-mono font-bold uppercase tracking-wider transition-colors rounded-none disabled:opacity-50"
+                      >
+                        {smtpLoading ? 'SAVING...' : 'SAVE SMTP CONFIGURATION'}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {settingsSubTab !== 'notifications' && settingsSubTab !== 'smtp' && (
               <div className="pt-6 border-t border-brand-dark/10 flex justify-end">
                 <button
                   type="submit"

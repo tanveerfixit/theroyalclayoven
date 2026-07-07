@@ -75,7 +75,9 @@ export const Navbar: React.FC<NavbarProps> = ({
     googleLogout();
     setUser(null);
     localStorage.removeItem('clay_oven_google_user');
+    localStorage.removeItem('clay_oven_admin_token');
     window.dispatchEvent(new Event('profile_updated'));
+    window.dispatchEvent(new Event('admin_session_updated'));
   };
 
   const navItems = [

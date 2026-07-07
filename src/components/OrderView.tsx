@@ -38,6 +38,8 @@ export const OrderView: React.FC<OrderViewProps> = ({
   const [takeawayEnabled, setTakeawayEnabled] = React.useState(localStorage.getItem('clay_oven_takeaway_enabled') !== 'false');
   const [takeawayNotice, setTakeawayNotice] = React.useState(localStorage.getItem('clay_oven_takeaway_notice') || 'We are temporarily not taking online orders. Please phone us to order directly!');
   const [showTakeawayWarningModal, setShowTakeawayWarningModal] = React.useState(false);
+  const [takeawayCharges, setTakeawayCharges] = React.useState(parseFloat(localStorage.getItem('clay_oven_takeaway_charges') || '0.95'));
+  const [deliveryChargesSetting, setDeliveryChargesSetting] = React.useState(parseFloat(localStorage.getItem('clay_oven_delivery_charges') || '3.00'));
 
   const [businessInfo, setBusinessInfo] = React.useState({
     phone: '086 020 3720',
@@ -88,6 +90,16 @@ export const OrderView: React.FC<OrderViewProps> = ({
           if (data.clay_oven_takeaway_notice) {
             setTakeawayNotice(data.clay_oven_takeaway_notice);
             localStorage.setItem('clay_oven_takeaway_notice', data.clay_oven_takeaway_notice);
+          }
+          if (data.clay_oven_takeaway_charges !== undefined) {
+            const charge = parseFloat(data.clay_oven_takeaway_charges);
+            setTakeawayCharges(isNaN(charge) ? 0.95 : charge);
+            localStorage.setItem('clay_oven_takeaway_charges', data.clay_oven_takeaway_charges);
+          }
+          if (data.clay_oven_delivery_charges !== undefined) {
+            const charge = parseFloat(data.clay_oven_delivery_charges);
+            setDeliveryChargesSetting(isNaN(charge) ? 3.00 : charge);
+            localStorage.setItem('clay_oven_delivery_charges', data.clay_oven_delivery_charges);
           }
         } else {
           setShowTakeawayWarningModal(!takeawayEnabled);
@@ -235,8 +247,8 @@ export const OrderView: React.FC<OrderViewProps> = ({
     return acc + pricePerItem * curr.quantity;
   }, 0);
   
-  const packagingFee = subtotal > 0 ? 0.95 : 0.00; // As explicitly mentioned in PDF
-  const deliveryCharges = serviceType === 'delivery' ? 3.00 : 0.00;
+  const packagingFee = subtotal > 0 ? takeawayCharges : 0.00;
+  const deliveryCharges = serviceType === 'delivery' ? deliveryChargesSetting : 0.00;
   const total = subtotal + packagingFee + deliveryCharges;
 
   // Checkout submission handler
@@ -466,7 +478,7 @@ export const OrderView: React.FC<OrderViewProps> = ({
             Order &amp; Takeaway Service
           </h1>
           <p className="text-xs sm:text-sm text-brand-muted leading-relaxed font-normal px-2 sm:px-0">
-            Enjoy the same high-grade clay oven flavor at home. Choose self-collection or speedy delivery inside our local radius. A statutory €0.95 packaging fee applies.
+            Enjoy the same high-grade clay oven flavor at home. Choose self-collection or speedy delivery inside our local radius. A statutory €{takeawayCharges.toFixed(2)} packaging fee applies.
           </p>
         </div>
       )}
