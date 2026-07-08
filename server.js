@@ -76,7 +76,46 @@ const escapeHtml = (str) => str?.replace(/&/g,'&amp;').replace(/</g,'&lt;').repl
 
 // Middleware — Security & Compression
 app.use(helmet({
-  contentSecurityPolicy: false,  // Allow inline scripts for SPA
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: [
+        "'self'",
+        "https://www.googletagmanager.com",
+        "https://accounts.google.com"
+      ],
+      styleSrc: [
+        "'self'",
+        "'unsafe-inline'" // Required for Vite dynamic styling
+      ],
+      imgSrc: [
+        "'self'",
+        "data:",
+        "https://images.unsplash.com",
+        "https://www.google-analytics.com",
+        "https://www.googletagmanager.com",
+        "https://lh3.googleusercontent.com"
+      ],
+      connectSrc: [
+        "'self'",
+        "https://www.google-analytics.com",
+        "https://analytics.google.com",
+        "https://stats.g.doubleclick.net",
+        "https://www.googletagmanager.com",
+        "https://accounts.google.com"
+      ],
+      frameSrc: [
+        "'self'",
+        "https://accounts.google.com"
+      ],
+      fontSrc: [
+        "'self'",
+        "data:"
+      ],
+      objectSrc: ["'none'"],
+      upgradeInsecureRequests: [],
+    },
+  },
   crossOriginEmbedderPolicy: false  // Allow external images (Unsplash)
 }));
 app.use(compression());
