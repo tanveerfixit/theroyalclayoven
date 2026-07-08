@@ -10,6 +10,7 @@ import { CartItem, MenuItem } from './types';
 import { Plus, Minus, Trash2, X, ShoppingBag, Send, PhoneCall, MessageCircle } from 'lucide-react';
 import { useGoogleOneTapLogin } from '@react-oauth/google';
 import { jwtDecode } from 'jwt-decode';
+import { CookieConsent } from './components/CookieConsent';
 
 // Dynamic imports of views to improve mobile load speeds and reduce FCP bundle footprint
 const HomeView = React.lazy(() => import('./components/HomeView').then(m => ({ default: m.HomeView })));
@@ -607,6 +608,7 @@ export default function App() {
         />
       </React.Suspense>
 
+      <CookieConsent />
     </div>
   );
 }

@@ -23,6 +23,27 @@ if (typeof window !== 'undefined') {
     window.dataLayer.push(args);
   };
   window.gtag('js', new Date());
+
+  // Determine initial consent state from localStorage
+  let hasConsent = { analytics: false, marketing: false };
+  try {
+    const saved = localStorage.getItem('clay_oven_cookie_consent');
+    if (saved) {
+      hasConsent = JSON.parse(saved);
+    }
+  } catch (err) {
+    console.error('Failed to read cookie consent from storage:', err);
+  }
+
+  // Configure Google Consent Mode v2 default states
+  window.gtag('consent', 'default', {
+    ad_storage: hasConsent.marketing ? 'granted' : 'denied',
+    ad_user_data: hasConsent.marketing ? 'granted' : 'denied',
+    ad_personalization: hasConsent.marketing ? 'granted' : 'denied',
+    analytics_storage: hasConsent.analytics ? 'granted' : 'denied',
+    wait_for_update: 500
+  });
+
   window.gtag('config', 'G-DDQKPQ4NSE');
 }
 
