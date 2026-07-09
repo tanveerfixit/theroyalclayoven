@@ -448,7 +448,7 @@ Beverages | Tea or Coffee`,
     `);
 
     // Seed authorized admin emails (insert only if not already present)
-    const adminEmails = ['tanveerfixit@gmail.com', 'customers@clayoven.ie'];
+    const adminEmails = ['tanveerfixit@gmail.com', 'accounts@clayoven.ie'];
     for (const adminEmail of adminEmails) {
       await connection.query(
         'INSERT IGNORE INTO admin_emails (email) VALUES (?)',
@@ -733,7 +733,7 @@ app.post('/api/auth/forgot-password', otpLimiter, async (req, res) => {
             <li>If you did not request a password reset, you can safely ignore this email.</li>
           </ul>
           <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;" />
-          <p style="font-size: 11px; color: #999;">The Royal Clay Oven &bull; Ballycasey, Shannon, Co. Clare &bull; customers@clayoven.ie</p>
+          <p style="font-size: 11px; color: #999;">The Royal Clay Oven &bull; Ballycasey, Shannon, Co. Clare &bull; accounts@clayoven.ie</p>
         </div>
       `
     };
@@ -878,7 +878,7 @@ app.post('/api/bookings', orderLimiter, async (req, res) => {
           </p>
 
           <hr style="border: 0; border-top: 1px solid #eee; margin: 24px 0;" />
-          <p style="font-size: 12px; color: #999; text-align: center; margin: 0;">The Royal Clay Oven &bull; Ballycasey Craft And Design Center, Shannon, Co. Clare &bull; customers@clayoven.ie</p>
+          <p style="font-size: 12px; color: #999; text-align: center; margin: 0;">The Royal Clay Oven &bull; Ballycasey Craft And Design Center, Shannon, Co. Clare &bull; accounts@clayoven.ie</p>
         </div>
       `
     };
@@ -971,7 +971,7 @@ app.put('/api/bookings/:id/status', async (req, res) => {
               <p style="font-size: 14px; line-height: 1.5; color: #333;">If you need to adjust your reservation details, feel free to contact us directly by replying to this email or calling our team at <a href="tel:061703636" style="color: #C85A32; font-weight: bold; text-decoration: none;">061 703 636</a> / <a href="tel:0894899950" style="color: #C85A32; font-weight: bold; text-decoration: none;">089 489 9950</a>.</p>
               
               <hr style="border: 0; border-top: 1px solid #eee; margin: 24px 0;" />
-              <p style="font-size: 12px; color: #999; text-align: center; margin: 0;">The Royal Clay Oven &bull; Ballycasey Craft And Design Center, Shannon, Co. Clare &bull; customers@clayoven.ie</p>
+              <p style="font-size: 12px; color: #999; text-align: center; margin: 0;">The Royal Clay Oven &bull; Ballycasey Craft And Design Center, Shannon, Co. Clare &bull; accounts@clayoven.ie</p>
             </div>
           `
         };
@@ -1295,7 +1295,7 @@ app.post('/api/admin/request-otp', otpLimiter, async (req, res) => {
             <li>Do not share this code with anyone.</li>
           </ul>
           <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;" />
-          <p style="font-size: 11px; color: #999;">The Royal Clay Oven &bull; Ballycasey, Shannon, Co. Clare &bull; customers@clayoven.ie</p>
+          <p style="font-size: 11px; color: #999;">The Royal Clay Oven &bull; Ballycasey, Shannon, Co. Clare &bull; accounts@clayoven.ie</p>
         </div>
       `
     };
