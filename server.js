@@ -464,15 +464,19 @@ Beverages | Tea or Coffee`,
       )
     `);
 
-    // Seed default notification email
-    await connection.query(
-      'INSERT IGNORE INTO order_notification_emails (email) VALUES (?)',
-      ['sales@clayoven.ie']
-    );
-    await connection.query(
-      'INSERT IGNORE INTO order_notification_emails (email) VALUES (?)',
-      ['tanveerfixit@gmail.com']
-    );
+    // Seed default notification email if none exist yet (prevents re-inserting deleted items on restart)
+    const [existingNotifs] = await connection.query('SELECT COUNT(*) as count FROM order_notification_emails');
+    if (existingNotifs[0].count === 0) {
+      await connection.query(
+        'INSERT INTO order_notification_emails (email) VALUES (?)',
+        ['sales@clayoven.ie']
+      );
+      await connection.query(
+        'INSERT INTO order_notification_emails (email) VALUES (?)',
+        ['tanveerfixit@gmail.com']
+      );
+      console.log('Seeded default order notification email addresses.');
+    }
     await connection.query(
       'DELETE FROM order_notification_emails WHERE email = ?',
       ['customers@clayoven.ie']

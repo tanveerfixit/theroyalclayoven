@@ -438,9 +438,21 @@ Beverages | Tea or Coffee`);
         if (data.clay_oven_festive_price) setFestivePrice(data.clay_oven_festive_price);
         if (data.clay_oven_festive_items) setFestiveItems(data.clay_oven_festive_items);
 
-        if (data.clay_oven_image_hero_bg) setImageHeroBg(data.clay_oven_image_hero_bg);
-        if (data.clay_oven_image_heritage_left) setImageHeritageLeft(data.clay_oven_image_heritage_left);
-        if (data.clay_oven_image_heritage_right) setImageHeritageRight(data.clay_oven_image_heritage_right);
+        // Fetch images individually as they are filtered out in server.js response for performance
+        const fetchImageHelper = async (key: string, setter: (val: string) => void) => {
+          try {
+            const imgRes = await fetch(`/api/settings/images/${key}`);
+            if (imgRes.ok) {
+              const imgData = await imgRes.ok ? await imgRes.json() : null;
+              if (imgData && imgData.value) setter(imgData.value);
+            }
+          } catch (e) {
+            console.error("Failed to load image " + key, e);
+          }
+        };
+        fetchImageHelper('clay_oven_image_hero_bg', setImageHeroBg);
+        fetchImageHelper('clay_oven_image_heritage_left', setImageHeritageLeft);
+        fetchImageHelper('clay_oven_image_heritage_right', setImageHeritageRight);
         
         setSettingsData(data);
       }
