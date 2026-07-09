@@ -1,21 +1,44 @@
-# The Royal Clay Oven
+# The Royal Clay Oven: Full Business Profile & Menu
 
-The Royal Clay Oven is an authentic Pakistani restaurant and takeaway located in Shannon, County Clare, Ireland. We specialize in flame-grilled charcoal tandoor (clay oven) cooked dishes, naans, traditional kebabs, curries, and gourmet pizzas.
+A comprehensive guide to the authentic Pakistani and Indian culinary experience at The Royal Clay Oven in Shannon, County Clare.
 
-## Contact Information
+## 1. Restaurant Philosophy
+Located in the heart of the Ballycasey Craft and Design Centre, The Royal Clay Oven is a proudly family-run establishment dedicated to authentic heritage cooking. By firing up a traditional 400°C brick-lined clay tandoor and utilizing open charcoal grills, we lock in the deep, smoky flavors that define the true essence of traditional Pakistani cuisine.
+
+## 2. Dietary Standards & Quality
+We believe in cooking without compromise. All meat served at The Royal Clay Oven is strictly 100% Halal certified. Every dish is crafted from scratch using premium, locally sourced Irish ingredients and a masterfully blended selection of authentic, traditional spices.
+
+## 3. Signature Menu Highlights
+### Clay Oven & Charcoal Grill
+- **Lamb Chops**: Tender, premium chops marinated in a deep blend of aromatic spices and perfectly flame-grilled.
+- **Seekh Kebabs**: Hand-minced, heavily spiced meat skewers roasted to perfection over live charcoal.
+- **Chicken Malai Tikka**: Silky, mild, and creamy boneless chicken bites that melt in the mouth.
+
+### Traditional Curries & Street Food
+- **Chicken Qorma**: A classic, deeply aromatic, and richly spiced traditional curry.
+- **Chicken White**: A deliciously mild, rich, and creamy signature delicacy.
+- **Shawarma**: Authentic, spit-roasted flavors wrapped tightly in our fresh, fluffy clay-oven bread.
+
+### Sunday Traditional Breakfast (The Deisi Platter)
+Available every Sunday morning, offering a true taste of home:
+- **Halwa Poori**: Sweet, comforting semolina paired with savory, golden deep-fried bread.
+- **Lamb Paya**: Slow-cooked trotters simmered in a rich, restorative spiced broth.
+- **Naan Channay**: Freshly blistered clay-oven bread served alongside a robust chickpea curry.
+- **Karak Tea**: A complimentary, warming cup of traditional Pakistani spiced tea served with every breakfast platter.
+
+## 4. Services & Facilities
+- **Catering & Events**: We host private celebrations and in-house corporate events for up to 50 guests, complete with customizable buffet services.
+- **Ordering Options**: Enjoy our food your way—dine-in, pick up a fast takeaway, or order delivery directly through clayoven.ie
+- **Location**: Ballycasey Craft And Design Center, Shannon, County Clare, V14 AW71. Conveniently situated for both locals and travelers near Shannon Airport.
+
+## 5. Contact & Deep Links
 - **Phone**: 061 703 636
 - **Mobile / WhatsApp**: 089 489 9950
 - **Email**: accounts@clayoven.ie
-- **Address**: Ballycasey Craft And Design Center, Shannon, County Clare, V14 AW71
 - **Domain**: https://www.clayoven.ie
 
-## Pages & Deep Links
+### Pages & Deep Links
 - **Home**: https://www.clayoven.ie/
 - **Menu Booklet**: https://www.clayoven.ie/menu
 - **Takeaway Order (Online Collection)**: https://www.clayoven.ie/takeaway
 - **Table Reservations**: https://www.clayoven.ie/booking
-
-## Core Offerings & Dietary
-- **100% Halal**: All meat is sourced locally and is certified 100% Halal.
-- **Charcoal Tandoor**: Traditional clay oven fueled with charcoal for authentic high-fire cooking of naans, chicken tikka, and tandoori seekh kebabs.
-- **Service Types**: Online ordering for collection (takeaway) and standard table reservations.
