@@ -1903,17 +1903,6 @@ Beverages | Tea or Coffee`);
             >
               8. SMTP Server
             </button>
-            <button
-              type="button"
-              onClick={() => setSettingsSubTab('sound')}
-              className={`px-4 py-2.5 font-mono text-xs font-bold uppercase tracking-wider border-b-2 transition-all shrink-0 ${
-                settingsSubTab === 'sound'
-                  ? 'border-brand-accent text-brand-accent bg-brand-beige/10'
-                  : 'border-transparent text-brand-muted hover:text-brand-dark'
-              }`}
-            >
-              9. Sound Alerts
-            </button>
           </div>
 
           <form onSubmit={handleSaveSettings} className="space-y-8">
@@ -2008,6 +1997,66 @@ Beverages | Tea or Coffee`);
                       />
                     </div>
                   </div>
+
+                  {/* New Order Alert & Sound Settings */}
+                  <div className="pt-6 border-t border-brand-dark/10 space-y-4">
+                    <div className="space-y-1">
+                      <span className="block font-mono text-xs text-brand-dark font-bold uppercase tracking-wider flex items-center gap-2">
+                        <Volume2 className="w-4 h-4 text-brand-accent animate-pulse" />
+                        New Order Notification &amp; Sound Settings
+                      </span>
+                      <span className="block text-[11px] text-brand-muted font-sans font-normal">
+                        Customize the kitchen alert tone played automatically when a new order is received.
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+                      {[
+                        { id: 'chime', name: 'Classic Chime', desc: 'Pleasant double-tone digital bell synthesizer sound.' },
+                        { id: 'melody', name: 'Ambient Melody', desc: 'Short triple-tone major melody chime.' },
+                        { id: 'alarm', name: 'Kitchen Alarm', desc: 'High attention dual buzzer wave tone pattern.' },
+                        { id: 'beep', name: 'Digital Beep', desc: 'Crisp, fast modern digital synth chirp sequence.' }
+                      ].map((tone) => (
+                        <button
+                          key={tone.id}
+                          type="button"
+                          onClick={() => {
+                            setNotificationTone(tone.id as any);
+                            playNewOrderChime(tone.id as any);
+                          }}
+                          className={`p-3 border text-left flex flex-col justify-between transition-all rounded-none active:scale-98 ${
+                            notificationTone === tone.id
+                              ? 'border-brand-accent bg-brand-accent/5 ring-1 ring-brand-accent/25'
+                              : 'border-brand-dark/10 hover:border-brand-dark/30 bg-white'
+                          }`}
+                        >
+                          <div className="flex justify-between items-center w-full mb-1">
+                            <span className="font-mono text-[10px] font-bold uppercase tracking-wider text-brand-dark">
+                              {tone.name}
+                            </span>
+                            {notificationTone === tone.id && (
+                              <span className="w-1.5 h-1.5 bg-brand-accent rounded-full"></span>
+                            )}
+                          </div>
+                          <span className="font-sans text-[10px] text-brand-muted leading-relaxed">
+                            {tone.desc}
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+
+                    <div className="pt-1 flex justify-start">
+                      <button
+                        type="button"
+                        onClick={() => playNewOrderChime()}
+                        className="bg-brand-dark hover:bg-brand-accent text-white px-5 py-2.5 text-xs font-mono font-bold uppercase tracking-wider transition-colors rounded-none flex items-center gap-1.5 active:scale-95"
+                      >
+                        <Play className="w-3 h-3 fill-current" />
+                        Play Selected Tone
+                      </button>
+                    </div>
+                  </div>
+
                 </div>
               </div>
             )}
@@ -2772,76 +2821,7 @@ Beverages | Tea or Coffee`);
                 </div>
               </div>
             )}
-            {/* SUBTAB 9: SOUND ALERTS SETTINGS */}
-            {settingsSubTab === 'sound' && (
-              <div className="space-y-6 animate-fade-in text-left">
-                <div className="space-y-2 border-b border-brand-dark/5 pb-4">
-                  <h3 className="font-serif text-lg font-bold text-brand-dark flex items-center gap-2">
-                    <Volume2 className="w-5 h-5 text-brand-accent" />
-                    Kitchen Console Sound Alerts
-                  </h3>
-                  <p className="font-sans text-xs text-brand-muted font-normal">
-                    Select and customize the notification sound played automatically when a new order is received by the admin dashboard.
-                  </p>
-                </div>
-
-                <div className="max-w-2xl space-y-6">
-                  {/* Select Tone Option */}
-                  <div className="border border-brand-dark/10 p-5 bg-[#FDFBF7] space-y-5">
-                    <span className="block font-mono text-xs text-brand-dark font-bold uppercase tracking-wider">
-                      Choose Notification Tone
-                    </span>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      {[
-                        { id: 'chime', name: 'Classic Chime', desc: 'Pleasant double-tone digital bell synthesizer sound.' },
-                        { id: 'melody', name: 'Ambient Melody', desc: 'Short triple-tone major melody chime.' },
-                        { id: 'alarm', name: 'Kitchen Alarm', desc: 'High attention dual buzzer wave tone pattern.' },
-                        { id: 'beep', name: 'Digital Beep', desc: 'Crisp, fast modern digital synth chirp sequence.' }
-                      ].map((tone) => (
-                        <button
-                          key={tone.id}
-                          type="button"
-                          onClick={() => {
-                            setNotificationTone(tone.id as any);
-                            playNewOrderChime(tone.id as any);
-                          }}
-                          className={`p-4 border text-left flex flex-col justify-between transition-all rounded-none active:scale-98 ${
-                            notificationTone === tone.id
-                              ? 'border-brand-accent bg-brand-accent/5 ring-1 ring-brand-accent/25'
-                              : 'border-brand-dark/10 hover:border-brand-dark/30 bg-white'
-                          }`}
-                        >
-                          <div className="flex justify-between items-center w-full mb-1">
-                            <span className="font-mono text-xs font-bold uppercase tracking-wider text-brand-dark">
-                              {tone.name}
-                            </span>
-                            {notificationTone === tone.id && (
-                              <span className="w-2 h-2 bg-brand-accent rounded-full"></span>
-                            )}
-                          </div>
-                          <span className="font-sans text-[11px] text-brand-muted leading-relaxed">
-                            {tone.desc}
-                          </span>
-                        </button>
-                      ))}
-                    </div>
-
-                    <div className="pt-2 flex justify-start gap-3">
-                      <button
-                        type="button"
-                        onClick={() => playNewOrderChime()}
-                        className="bg-brand-dark hover:bg-brand-accent text-white px-6 py-3 text-xs font-mono font-bold uppercase tracking-wider transition-colors rounded-none flex items-center gap-1.5 active:scale-95"
-                      >
-                        <Play className="w-3.5 h-3.5 fill-current" />
-                        Play Selected Tone
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {settingsSubTab !== 'notifications' && settingsSubTab !== 'smtp' && settingsSubTab !== 'sound' && (
+            {settingsSubTab !== 'notifications' && settingsSubTab !== 'smtp' && (
               <div className="pt-6 border-t border-brand-dark/10 flex justify-end">
                 <button
                   type="submit"
