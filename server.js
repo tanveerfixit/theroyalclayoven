@@ -1450,18 +1450,52 @@ app.get('/api/admin/bookings', requireAdmin, async (req, res) => {
   }
 });
 
+// In-memory cache for non-image settings to reduce DB hits
+let settingsCache = null;
+let settingsCacheTime = 0;
+const SETTINGS_CACHE_TTL = 60 * 1000; // 60 seconds
+
 // 5. Store Settings API Endpoints
 app.get('/api/settings', async (req, res) => {
   try {
+    const now = Date.now();
+    if (settingsCache && (now - settingsCacheTime) < SETTINGS_CACHE_TTL) {
+      return res.json(settingsCache);
+    }
     const [rows] = await pool.query('SELECT * FROM store_settings');
     const settingsObj = {};
     rows.forEach(row => {
-      settingsObj[row.setting_key] = row.setting_value;
+      // Exclude base64 image data from the settings response for performance
+      if (!row.setting_key.startsWith('clay_oven_image_') && !row.setting_key.startsWith('clay_oven_dish_image_')) {
+        settingsObj[row.setting_key] = row.setting_value;
+      }
     });
+    settingsCache = settingsObj;
+    settingsCacheTime = now;
     res.json(settingsObj);
   } catch (error) {
     console.error('Error fetching store settings:', error);
     res.status(500).json({ error: 'Failed to retrieve storefront settings' });
+  }
+});
+
+// Lightweight endpoint to fetch a single image setting by key
+app.get('/api/settings/images/:key', async (req, res) => {
+  const { key } = req.params;
+  // Only allow fetching image keys for security
+  if (!key.startsWith('clay_oven_image_') && !key.startsWith('clay_oven_dish_image_')) {
+    return res.status(400).json({ error: 'Only image setting keys are allowed' });
+  }
+  try {
+    const [rows] = await pool.query('SELECT setting_value FROM store_settings WHERE setting_key = ? LIMIT 1', [key]);
+    if (rows.length > 0 && rows[0].setting_value) {
+      res.json({ key, value: rows[0].setting_value });
+    } else {
+      res.status(404).json({ error: 'Image setting not found' });
+    }
+  } catch (error) {
+    console.error('Error fetching image setting:', error);
+    res.status(500).json({ error: 'Failed to retrieve image setting' });
   }
 });
 
@@ -1483,6 +1517,7 @@ app.post('/api/settings', requireAdmin, async (req, res) => {
       );
     }
     await connection.commit();
+    settingsCache = null;
     res.json({ success: true, message: 'Settings successfully synchronized with server database' });
   } catch (error) {
     await connection.rollback();
@@ -1627,6 +1662,7 @@ app.post('/api/admin/upload-image', requireAdmin, async (req, res) => {
     );
 
     console.log(`Successfully stored self-hosted image directly in database under key: ${settingKey}`);
+    settingsCache = null;
 
     res.json({
       success: true,
@@ -1690,11 +1726,22 @@ const distPath = path.join(__dirname, 'dist');
 if (fs.existsSync(distPath)) {
   console.log('Serving Vite build assets from dist/ folder...');
   
-  // Serve static files from Vite build output directory (dist)
-  app.use(express.static(distPath));
+  // Hashed assets (JS/CSS chunks) — cache aggressively for 1 year (immutable)
+  app.use('/assets', express.static(path.join(distPath, 'assets'), {
+    maxAge: '1y',
+    immutable: true
+  }));
+
+  // Non-hashed static files (images, etc.) — cache for 1 hour with ETag revalidation
+  app.use(express.static(distPath, {
+    maxAge: '1h',
+    etag: true
+  }));
   
   // Catch-all route to serve index.html for React client-side routing
+  // Use no-cache for index.html so users always get the latest version
   app.get('*', (req, res) => {
+    res.setHeader('Cache-Control', 'no-cache, must-revalidate');
     res.sendFile(path.join(distPath, 'index.html'));
   });
 }

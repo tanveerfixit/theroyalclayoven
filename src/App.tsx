@@ -97,6 +97,7 @@ export default function App() {
     whatsapp: '089 489 9950',
     email: 'sales@clayoven.ie'
   });
+  const [storeSettings, setStoreSettings] = React.useState<Record<string, string>>({});
 
   React.useEffect(() => {
     const fetchBusinessInfo = async () => {
@@ -118,9 +119,25 @@ export default function App() {
         console.error('Failed to load business information:', err);
       }
     };
+    const fetchSettings = async () => {
+      try {
+        const res = await fetch('/api/settings');
+        if (res.ok) {
+          const data = await res.json();
+          setStoreSettings(data);
+        }
+      } catch (err) {
+        console.error('Failed to load store settings:', err);
+      }
+    };
     fetchBusinessInfo();
+    fetchSettings();
     window.addEventListener('business_info_updated', fetchBusinessInfo);
-    return () => window.removeEventListener('business_info_updated', fetchBusinessInfo);
+    window.addEventListener('settings_updated', fetchSettings);
+    return () => {
+      window.removeEventListener('business_info_updated', fetchBusinessInfo);
+      window.removeEventListener('settings_updated', fetchSettings);
+    };
   }, []);
 
   const [currentTab, setCurrentTabInternal] = React.useState<string>(() => {
@@ -317,8 +334,8 @@ export default function App() {
             className="w-full"
           >
             <React.Suspense fallback={<BrandLoader />}>
-              {currentTab === 'home' && <HomeView setCurrentTab={setCurrentTab} />}
-              {currentTab === 'menu' && <MenuView />}
+              {currentTab === 'home' && <HomeView setCurrentTab={setCurrentTab} businessInfo={businessInfo} storeSettings={storeSettings} />}
+              {currentTab === 'menu' && <MenuView storeSettings={storeSettings} />}
               {currentTab === 'takeaway' && (
                 <OrderView
                   cart={cart}
@@ -326,9 +343,11 @@ export default function App() {
                   addToCart={addToCart}
                   removeFromCart={removeFromCart}
                   updateQuantity={updateQuantity}
+                  businessInfo={businessInfo}
+                  storeSettings={storeSettings}
                 />
               )}
-              {currentTab === 'booking' && <BookingView />}
+              {currentTab === 'booking' && <BookingView businessInfo={businessInfo} storeSettings={storeSettings} />}
               {currentTab === 'history' && <HistoryView />}
               {currentTab === 'profile' && <ProfileView />}
               {currentTab === 'admin' && <AdminDashboard />}

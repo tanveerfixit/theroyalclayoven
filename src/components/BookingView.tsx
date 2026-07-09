@@ -7,7 +7,20 @@ import React from 'react';
 import { Calendar, Users, Home, Compass, PhoneCall, HelpCircle, ShieldCheck, Mail, ArrowRight, Sparkles, X } from 'lucide-react';
 import { Reservation } from '../types';
 
-export const BookingView: React.FC = () => {
+interface BookingViewProps {
+  businessInfo: {
+    business_name: string;
+    address: string;
+    maps_url: string;
+    phone: string;
+    mobile: string;
+    whatsapp: string;
+    email: string;
+  };
+  storeSettings: Record<string, string>;
+}
+
+export const BookingView: React.FC<BookingViewProps> = ({ businessInfo: parentBusinessInfo, storeSettings }) => {
   const [noticeText, setNoticeText] = React.useState(localStorage.getItem('clay_oven_booking_notice_text') || `Assalamu Alaikum, dear friends and valued guests,
 
 We are incredibly grateful for the wonderful love and support you show us every single day!
@@ -37,8 +50,12 @@ The Royal Clay Oven`);
   const [showReservationsWarningModal, setShowReservationsWarningModal] = React.useState(false);
 
   const [businessInfo, setBusinessInfo] = React.useState({
-    phone: '086 020 3720',
+    phone: parentBusinessInfo.phone || '086 020 3720',
   });
+
+  React.useEffect(() => {
+    setBusinessInfo({ phone: parentBusinessInfo.phone });
+  }, [parentBusinessInfo]);
 
   const [timingSettings, setTimingSettings] = React.useState<Record<string, string>>({
     monday: localStorage.getItem('clay_oven_timing_monday') || '4:00 PM - 9:00 PM',
@@ -51,88 +68,53 @@ The Royal Clay Oven`);
     offset: localStorage.getItem('clay_oven_timing_offset') || 'KITCHEN CLOSES 15 MINS PRIOR'
   });
 
-  // Sync settings with database on mount
+  // Sync settings with props
   React.useEffect(() => {
-    const fetchBusinessInfo = async () => {
-      try {
-        const res = await fetch('/api/business-info');
-        if (res.ok) {
-          const data = await res.json();
-          setBusinessInfo({
-            phone: data.phone || '086 020 3720',
-          });
-        }
-      } catch (err) {
-        console.error('Failed to load business info in BookingView:', err);
-      }
-    };
+    if (!storeSettings || Object.keys(storeSettings).length === 0) return;
+    const data = storeSettings;
+    setTimingSettings({
+      monday: data.clay_oven_timing_monday || timingSettings.monday,
+      tuesday: data.clay_oven_timing_tuesday || timingSettings.tuesday,
+      wednesday: data.clay_oven_timing_wednesday || timingSettings.wednesday,
+      thursday: data.clay_oven_timing_thursday || timingSettings.thursday,
+      friday: data.clay_oven_timing_friday || timingSettings.friday,
+      saturday: data.clay_oven_timing_saturday || timingSettings.saturday,
+      sunday: data.clay_oven_timing_sunday || timingSettings.sunday,
+      offset: data.clay_oven_timing_offset || timingSettings.offset
+    });
 
-    const loadSettings = async () => {
-      try {
-        const response = await fetch('/api/settings');
-        if (response.ok) {
-          const data = await response.json();
-          setTimingSettings({
-            monday: data.clay_oven_timing_monday || timingSettings.monday,
-            tuesday: data.clay_oven_timing_tuesday || timingSettings.tuesday,
-            wednesday: data.clay_oven_timing_wednesday || timingSettings.wednesday,
-            thursday: data.clay_oven_timing_thursday || timingSettings.thursday,
-            friday: data.clay_oven_timing_friday || timingSettings.friday,
-            saturday: data.clay_oven_timing_saturday || timingSettings.saturday,
-            sunday: data.clay_oven_timing_sunday || timingSettings.sunday,
-            offset: data.clay_oven_timing_offset || timingSettings.offset
-          });
+    if (data.clay_oven_booking_notice_text) {
+      setNoticeText(data.clay_oven_booking_notice_text);
+      localStorage.setItem('clay_oven_booking_notice_text', data.clay_oven_booking_notice_text);
+    }
+    if (data.clay_oven_notice_phone) {
+      setNoticePhone(data.clay_oven_notice_phone);
+      localStorage.setItem('clay_oven_notice_phone', data.clay_oven_notice_phone);
+    }
+    
+    if (data.clay_oven_booking_notice_enabled !== undefined) {
+      const enabled = data.clay_oven_booking_notice_enabled !== 'false';
+      setNoticeEnabled(enabled);
+      setShowWarningModal(enabled);
+      localStorage.setItem('clay_oven_booking_notice_enabled', String(enabled));
+    } else {
+      setShowWarningModal(noticeEnabled);
+    }
 
-          if (data.clay_oven_booking_notice_text) {
-            setNoticeText(data.clay_oven_booking_notice_text);
-            localStorage.setItem('clay_oven_booking_notice_text', data.clay_oven_booking_notice_text);
-          }
-          if (data.clay_oven_notice_phone) {
-            setNoticePhone(data.clay_oven_notice_phone);
-            localStorage.setItem('clay_oven_notice_phone', data.clay_oven_notice_phone);
-          }
-          
-          if (data.clay_oven_booking_notice_enabled !== undefined) {
-            const enabled = data.clay_oven_booking_notice_enabled !== 'false';
-            setNoticeEnabled(enabled);
-            setShowWarningModal(enabled);
-            localStorage.setItem('clay_oven_booking_notice_enabled', String(enabled));
-          } else {
-            setShowWarningModal(noticeEnabled);
-          }
+    if (data.clay_oven_reservations_enabled !== undefined) {
+      const enabled = data.clay_oven_reservations_enabled !== 'false';
+      setReservationsEnabled(enabled);
+      setShowReservationsWarningModal(!enabled);
+      localStorage.setItem('clay_oven_reservations_enabled', String(enabled));
+    } else {
+      setShowReservationsWarningModal(!reservationsEnabled);
+    }
 
-          if (data.clay_oven_reservations_enabled !== undefined) {
-            const enabled = data.clay_oven_reservations_enabled !== 'false';
-            setReservationsEnabled(enabled);
-            setShowReservationsWarningModal(!enabled);
-            localStorage.setItem('clay_oven_reservations_enabled', String(enabled));
-          } else {
-            setShowReservationsWarningModal(!reservationsEnabled);
-          }
-
-          if (data.clay_oven_reservations_notice) {
-            setReservationsNoticeText(data.clay_oven_reservations_notice);
-            localStorage.setItem('clay_oven_reservations_notice', data.clay_oven_reservations_notice);
-          }
-        } else {
-          setShowWarningModal(noticeEnabled);
-          setShowReservationsWarningModal(!reservationsEnabled);
-        }
-      } catch (err) {
-        console.error('Failed to retrieve storefront settings:', err);
-        setShowWarningModal(noticeEnabled);
-        setShowReservationsWarningModal(!reservationsEnabled);
-      }
-    };
-
-    fetchBusinessInfo();
-    loadSettings();
-
-    window.addEventListener('business_info_updated', fetchBusinessInfo);
-    return () => {
-      window.removeEventListener('business_info_updated', fetchBusinessInfo);
-    };
-  }, []);
+    if (data.clay_oven_reservations_notice) {
+      setReservationsNoticeText(data.clay_oven_reservations_notice);
+      localStorage.setItem('clay_oven_reservations_notice', data.clay_oven_reservations_notice);
+    }
+  }, [storeSettings]);
 
   // Booking inputs
   const [partySize, setPartySize] = React.useState<number>(2);

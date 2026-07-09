@@ -7,7 +7,11 @@ import React from 'react';
 import { Search, Info, HelpCircle } from 'lucide-react';
 import { MENU_ITEMS, CATEGORIES, ALLERGENS } from '../data/menu';
 
-export const MenuView: React.FC = () => {
+interface MenuViewProps {
+  storeSettings: Record<string, string>;
+}
+
+export const MenuView: React.FC<MenuViewProps> = ({ storeSettings }) => {
   const [searchTerm, setSearchTerm] = React.useState('');
   const [selectedCategory, setSelectedCategory] = React.useState<string>('All');
   const [vegetarianFilter, setVegetarianFilter] = React.useState(false);
@@ -17,11 +21,22 @@ export const MenuView: React.FC = () => {
   React.useEffect(() => {
     const fetchDishImages = async () => {
       try {
-        const response = await fetch('/api/settings');
-        if (response.ok) {
-          const data = await response.json();
-          setDishImages(data);
-        }
+        // Build list of expected dish image keys from MENU_ITEMS
+        const imagePromises = MENU_ITEMS.map(async (item) => {
+          const key = `clay_oven_dish_image_${item.id}`;
+          try {
+            const res = await fetch(`/api/settings/images/${key}`);
+            if (res.ok) {
+              const data = await res.json();
+              return { key, value: data.value };
+            }
+          } catch {}
+          return null;
+        });
+        const results = await Promise.all(imagePromises);
+        const images: Record<string, string> = {};
+        results.forEach(r => { if (r) images[r.key] = r.value; });
+        setDishImages(images);
       } catch (err) {
         console.error(err);
       }

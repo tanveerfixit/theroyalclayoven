@@ -102,8 +102,20 @@ The Royal Clay Oven`);
   const [reservationsEnabled, setReservationsEnabled] = useState(true);
   const [reservationsNoticeText, setReservationsNoticeText] = useState('Table reservations are temporarily closed. Please telephone us to book a table!');
 
-  // Notice Sub-tabs settings pane navigation: 'takeaway' | 'reservations' | 'announcements' | 'festive' | 'gallery' | 'business' | 'notifications' | 'smtp'
-  const [settingsSubTab, setSettingsSubTab] = useState<'takeaway' | 'reservations' | 'announcements' | 'festive' | 'gallery' | 'business' | 'notifications' | 'smtp'>('takeaway');
+  // Notice Sub-tabs settings pane navigation: 'takeaway' | 'reservations' | 'announcements' | 'festive' | 'gallery' | 'business' | 'notifications' | 'smtp' | 'sound'
+  const [settingsSubTab, setSettingsSubTab] = useState<'takeaway' | 'reservations' | 'announcements' | 'festive' | 'gallery' | 'business' | 'notifications' | 'smtp' | 'sound'>('takeaway');
+
+  // Sound customizable states
+  const [notificationTone, setNotificationTone] = useState<'chime' | 'melody' | 'alarm' | 'beep'>(() => {
+    const saved = localStorage.getItem('admin_notification_tone');
+    return (saved as any) || 'chime';
+  });
+  const [activeNewOrderNotification, setActiveNewOrderNotification] = useState<Order | null>(null);
+
+  // Sync tone changes to localStorage
+  useEffect(() => {
+    localStorage.setItem('admin_notification_tone', notificationTone);
+  }, [notificationTone]);
 
   // Order Notification Email States
   const [notificationEmails, setNotificationEmails] = useState<string[]>([]);
@@ -641,18 +653,18 @@ Beverages | Tea or Coffee`);
   };
 
   // Synthesize dynamic clean notification chime using Web Audio API (zero external files required)
-  const playNewOrderChime = () => {
-    if (muteSound) return;
+  const playNewOrderChime = (toneOverride?: 'chime' | 'melody' | 'alarm' | 'beep') => {
+    if (muteSound && !toneOverride) return;
     try {
       const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
       if (!AudioCtx) return;
       const audioCtx = new AudioCtx();
       
-      const playTone = (frequency: number, startTime: number, duration: number) => {
+      const playTone = (frequency: number, startTime: number, duration: number, type: OscillatorType = 'sine') => {
         const osc = audioCtx.createOscillator();
         const gainNode = audioCtx.createGain();
         
-        osc.type = 'sine';
+        osc.type = type;
         osc.frequency.setValueAtTime(frequency, startTime);
         
         gainNode.gain.setValueAtTime(0.15, startTime);
@@ -665,9 +677,28 @@ Beverages | Tea or Coffee`);
         osc.stop(startTime + duration);
       };
       
-      // Pleasant double digital synthesizer chime (High pitch bell tone)
-      playTone(880, audioCtx.currentTime, 0.12);
-      playTone(1320, audioCtx.currentTime + 0.08, 0.3);
+      const selected = toneOverride || notificationTone;
+      
+      if (selected === 'chime') {
+        // Pleasant double digital synthesizer chime (High pitch bell tone)
+        playTone(880, audioCtx.currentTime, 0.12);
+        playTone(1320, audioCtx.currentTime + 0.08, 0.3);
+      } else if (selected === 'melody') {
+        // Triple-tone major melody
+        playTone(523.25, audioCtx.currentTime, 0.15); // C5
+        playTone(659.25, audioCtx.currentTime + 0.12, 0.15); // E5
+        playTone(783.99, audioCtx.currentTime + 0.24, 0.35); // G5
+      } else if (selected === 'alarm') {
+        // Double fast buzz/alarm using triangle wave
+        playTone(600, audioCtx.currentTime, 0.15, 'triangle');
+        playTone(600, audioCtx.currentTime + 0.20, 0.15, 'triangle');
+        playTone(600, audioCtx.currentTime + 0.40, 0.30, 'triangle');
+      } else if (selected === 'beep') {
+        // Short digital chirps
+        playTone(1000, audioCtx.currentTime, 0.08);
+        playTone(1500, audioCtx.currentTime + 0.06, 0.08);
+        playTone(2000, audioCtx.currentTime + 0.12, 0.18);
+      }
     } catch (e) {
       console.warn('Web Audio synthesis blocked or not supported by browser:', e);
     }
@@ -693,16 +724,25 @@ Beverages | Tea or Coffee`);
         const ordersData: Order[] = await ordersRes.json();
         const bookingsData: Reservation[] = await bookingsRes.json();
         
+        // Sound Notification Logic: If order count has increased, play alert chime & show popup!
+        const receivedOrders = ordersData.filter(o => o.status === 'Received');
+        const activeNewOrders = receivedOrders.length;
+        if (prevOrderCountRef.current !== undefined && activeNewOrders > prevOrderCountRef.current) {
+          playNewOrderChime();
+          // Find the new order by seeing which ones are not in our current state list
+          const existingIds = new Set(orders.map(o => o.id));
+          const brandNewOrders = receivedOrders.filter(o => !existingIds.has(o.id));
+          if (brandNewOrders.length > 0) {
+            setActiveNewOrderNotification(brandNewOrders[0]);
+          } else if (receivedOrders.length > 0) {
+            setActiveNewOrderNotification(receivedOrders[0]);
+          }
+        }
+        prevOrderCountRef.current = activeNewOrders;
+
         // Filter out fully completed orders to keep board focused
         setOrders(ordersData);
         setBookings(bookingsData);
-
-        // Sound Notification Logic: If order count has increased, play alert chime!
-        const activeNewOrders = ordersData.filter(o => o.status === 'Received').length;
-        if (prevOrderCountRef.current !== undefined && activeNewOrders > prevOrderCountRef.current) {
-          playNewOrderChime();
-        }
-        prevOrderCountRef.current = activeNewOrders;
       }
     } catch (err) {
       console.error('Failed to sync orders & bookings', err);
@@ -761,6 +801,11 @@ Beverages | Tea or Coffee`);
     } catch (err) {
       console.error('Failed to update order status', err);
     }
+  };
+
+  const handleAcceptOrder = async (orderId: string) => {
+    await handleUpdateOrderStatus(orderId, 'Preparing');
+    setActiveNewOrderNotification(null);
   };
 
   // Update Booking Status
@@ -1858,6 +1903,17 @@ Beverages | Tea or Coffee`);
             >
               8. SMTP Server
             </button>
+            <button
+              type="button"
+              onClick={() => setSettingsSubTab('sound')}
+              className={`px-4 py-2.5 font-mono text-xs font-bold uppercase tracking-wider border-b-2 transition-all shrink-0 ${
+                settingsSubTab === 'sound'
+                  ? 'border-brand-accent text-brand-accent bg-brand-beige/10'
+                  : 'border-transparent text-brand-muted hover:text-brand-dark'
+              }`}
+            >
+              9. Sound Alerts
+            </button>
           </div>
 
           <form onSubmit={handleSaveSettings} className="space-y-8">
@@ -2716,8 +2772,76 @@ Beverages | Tea or Coffee`);
                 </div>
               </div>
             )}
+            {/* SUBTAB 9: SOUND ALERTS SETTINGS */}
+            {settingsSubTab === 'sound' && (
+              <div className="space-y-6 animate-fade-in text-left">
+                <div className="space-y-2 border-b border-brand-dark/5 pb-4">
+                  <h3 className="font-serif text-lg font-bold text-brand-dark flex items-center gap-2">
+                    <Volume2 className="w-5 h-5 text-brand-accent" />
+                    Kitchen Console Sound Alerts
+                  </h3>
+                  <p className="font-sans text-xs text-brand-muted font-normal">
+                    Select and customize the notification sound played automatically when a new order is received by the admin dashboard.
+                  </p>
+                </div>
 
-            {settingsSubTab !== 'notifications' && settingsSubTab !== 'smtp' && (
+                <div className="max-w-2xl space-y-6">
+                  {/* Select Tone Option */}
+                  <div className="border border-brand-dark/10 p-5 bg-[#FDFBF7] space-y-5">
+                    <span className="block font-mono text-xs text-brand-dark font-bold uppercase tracking-wider">
+                      Choose Notification Tone
+                    </span>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      {[
+                        { id: 'chime', name: 'Classic Chime', desc: 'Pleasant double-tone digital bell synthesizer sound.' },
+                        { id: 'melody', name: 'Ambient Melody', desc: 'Short triple-tone major melody chime.' },
+                        { id: 'alarm', name: 'Kitchen Alarm', desc: 'High attention dual buzzer wave tone pattern.' },
+                        { id: 'beep', name: 'Digital Beep', desc: 'Crisp, fast modern digital synth chirp sequence.' }
+                      ].map((tone) => (
+                        <button
+                          key={tone.id}
+                          type="button"
+                          onClick={() => {
+                            setNotificationTone(tone.id as any);
+                            playNewOrderChime(tone.id as any);
+                          }}
+                          className={`p-4 border text-left flex flex-col justify-between transition-all rounded-none active:scale-98 ${
+                            notificationTone === tone.id
+                              ? 'border-brand-accent bg-brand-accent/5 ring-1 ring-brand-accent/25'
+                              : 'border-brand-dark/10 hover:border-brand-dark/30 bg-white'
+                          }`}
+                        >
+                          <div className="flex justify-between items-center w-full mb-1">
+                            <span className="font-mono text-xs font-bold uppercase tracking-wider text-brand-dark">
+                              {tone.name}
+                            </span>
+                            {notificationTone === tone.id && (
+                              <span className="w-2 h-2 bg-brand-accent rounded-full"></span>
+                            )}
+                          </div>
+                          <span className="font-sans text-[11px] text-brand-muted leading-relaxed">
+                            {tone.desc}
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+
+                    <div className="pt-2 flex justify-start gap-3">
+                      <button
+                        type="button"
+                        onClick={() => playNewOrderChime()}
+                        className="bg-brand-dark hover:bg-brand-accent text-white px-6 py-3 text-xs font-mono font-bold uppercase tracking-wider transition-colors rounded-none flex items-center gap-1.5 active:scale-95"
+                      >
+                        <Play className="w-3.5 h-3.5 fill-current" />
+                        Play Selected Tone
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {settingsSubTab !== 'notifications' && settingsSubTab !== 'smtp' && settingsSubTab !== 'sound' && (
               <div className="pt-6 border-t border-brand-dark/10 flex justify-end">
                 <button
                   type="submit"
@@ -3025,6 +3149,109 @@ Beverages | Tea or Coffee`);
           </div>
         );
       })()}
+
+      {activeNewOrderNotification && (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-fade-in">
+          <div className="bg-white border-2 border-brand-accent max-w-lg w-full shadow-2xl p-6 relative animate-scale-up space-y-4">
+            <div className="flex items-center justify-between border-b border-brand-dark/10 pb-3">
+              <span className="font-mono text-sm font-bold uppercase tracking-wider text-brand-accent flex items-center gap-2 animate-pulse">
+                <span className="w-2.5 h-2.5 bg-red-600 rounded-full inline-block animate-ping"></span>
+                🚨 NEW ORDER RECEIVED
+              </span>
+              <button
+                type="button"
+                onClick={() => setActiveNewOrderNotification(null)}
+                className="text-brand-muted hover:text-brand-dark transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-3 max-h-[60vh] overflow-y-auto pr-2">
+              <div className="bg-brand-beige/10 border border-brand-dark/5 p-4 space-y-2">
+                <div className="flex justify-between text-xs font-mono text-brand-dark">
+                  <span><strong>ORDER ID:</strong> #{activeNewOrderNotification.id.slice(-6).toUpperCase()}</span>
+                  <span className="uppercase font-bold text-brand-accent px-2 py-0.5 bg-brand-accent/10 border border-brand-accent/20">
+                    {activeNewOrderNotification.serviceType}
+                  </span>
+                </div>
+                <div className="grid grid-cols-2 gap-2 text-xs font-sans text-brand-muted pt-1">
+                  <div>
+                    <strong>Customer:</strong> {activeNewOrderNotification.customerInfo.name}
+                  </div>
+                  <div>
+                    <strong>Phone:</strong> {activeNewOrderNotification.customerInfo.phone}
+                  </div>
+                  {activeNewOrderNotification.serviceType === 'delivery' && (
+                    <div className="col-span-2">
+                      <strong>Address:</strong> {activeNewOrderNotification.customerInfo.address}
+                    </div>
+                  )}
+                  <div className="col-span-2">
+                    <strong>Time:</strong> {activeNewOrderNotification.customerInfo.preferredTime}
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <span className="block font-mono text-[10px] text-brand-dark font-bold uppercase tracking-wider border-b border-brand-dark/5 pb-1">
+                  Order Items
+                </span>
+                <div className="space-y-2">
+                  {activeNewOrderNotification.items.map((item, idx) => (
+                    <div key={idx} className="flex justify-between items-start text-xs font-sans text-brand-dark">
+                      <div className="flex-1 pr-4">
+                        <span className="font-bold font-mono text-[11px] text-brand-accent mr-1">
+                          {item.quantity}x
+                        </span>
+                        <span>{item.name}</span>
+                        {item.size && (
+                          <span className="text-[10px] text-brand-muted block font-mono">
+                            Size: {item.size}
+                          </span>
+                        )}
+                        {item.notes && (
+                          <span className="text-[10px] text-amber-700 block italic leading-tight">
+                            ★ "{item.notes}"
+                          </span>
+                        )}
+                      </div>
+                      <span className="font-mono font-bold text-brand-muted">
+                        €{(item.price * item.quantity).toFixed(2)}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="border-t border-brand-dark/10 pt-3 flex justify-between font-mono text-xs font-bold text-brand-dark">
+                <span>Total Amount:</span>
+                <span className="text-sm text-brand-accent">
+                  €{activeNewOrderNotification.total.toFixed(2)}
+                </span>
+              </div>
+            </div>
+
+            <div className="pt-4 border-t border-brand-dark/10 flex gap-3">
+              <button
+                type="button"
+                onClick={() => setActiveNewOrderNotification(null)}
+                className="flex-1 border border-brand-dark/15 hover:border-brand-dark text-brand-dark py-3 font-mono text-xs font-bold uppercase tracking-wider rounded-none active:scale-95 transition-all text-center"
+              >
+                Dismiss
+              </button>
+              <button
+                type="button"
+                onClick={() => handleAcceptOrder(activeNewOrderNotification.id)}
+                className="flex-1 bg-brand-accent hover:bg-brand-dark text-white py-3 font-mono text-xs font-bold uppercase tracking-wider rounded-none active:scale-95 transition-all text-center flex items-center justify-center gap-1.5 shadow-md shadow-brand-accent/15"
+              >
+                <Check className="w-4 h-4" />
+                Accept Order
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );

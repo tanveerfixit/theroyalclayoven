@@ -9,6 +9,16 @@ import { MENU_ITEMS } from '../data/menu';
 
 interface HomeViewProps {
   setCurrentTab: (tab: string) => void;
+  businessInfo: {
+    business_name: string;
+    address: string;
+    maps_url: string;
+    phone: string;
+    mobile: string;
+    whatsapp: string;
+    email: string;
+  };
+  storeSettings: Record<string, string>;
 }
 
 // Helper function to optimize Unsplash image query parameters for improved mobile page speed
@@ -28,7 +38,7 @@ const optimizeUnsplashUrl = (url: string, width: number, quality: number = 70): 
 };
 
 
-export const HomeView: React.FC<HomeViewProps> = ({ setCurrentTab }) => {
+export const HomeView: React.FC<HomeViewProps> = ({ setCurrentTab, businessInfo: parentBusinessInfo, storeSettings }) => {
   // Operational timings states
   const [weeklyTimings, setWeeklyTimings] = React.useState({
     monday: localStorage.getItem('clay_oven_timing_monday') || '4:00 PM - 9:00 PM',
@@ -45,15 +55,11 @@ export const HomeView: React.FC<HomeViewProps> = ({ setCurrentTab }) => {
   const [noticePhone, setNoticePhone] = React.useState(localStorage.getItem('clay_oven_notice_phone') || '089 489 9950');
   const [noticeEnabled, setNoticeEnabled] = React.useState(localStorage.getItem('clay_oven_notice_enabled') === 'true');
 
-  const [businessInfo, setBusinessInfo] = React.useState({
-    business_name: 'THE ROYAL CLAY OVEN',
-    address: 'Ballycasey Craft And Design Center, Shannon, County Clare V14 AW71',
-    maps_url: 'https://maps.google.com/?q=The+Royal+Clay+Oven+Ballycasey+Craft+And+Design+Center+Shannon+County+Clare+V14+AW71',
-    phone: '086 020 3720',
-    mobile: '089 489 9950',
-    whatsapp: '089 489 9950',
-    email: 'sales@clayoven.ie'
-  });
+  const [businessInfo, setBusinessInfo] = React.useState(parentBusinessInfo);
+
+  React.useEffect(() => {
+    setBusinessInfo(parentBusinessInfo);
+  }, [parentBusinessInfo]);
 
   const [showWarningModal, setShowWarningModal] = React.useState(false);
 
@@ -83,9 +89,68 @@ Beverages | Tea or Coffee`);
   const [imageHeritageLeft, setImageHeritageLeft] = React.useState(localStorage.getItem('clay_oven_image_heritage_left') || 'https://images.unsplash.com/photo-1627308595229-7830a5c91f9f?auto=format&fit=crop&w=500&q=70&fm=webp');
   const [imageHeritageRight, setImageHeritageRight] = React.useState(localStorage.getItem('clay_oven_image_heritage_right') || 'https://images.unsplash.com/photo-1603360946369-dc9bb6258143?auto=format&fit=crop&w=500&q=70&fm=webp');
 
-  // Effect to synchronize settings with server database
+  // Load settings from props
   React.useEffect(() => {
-    const fetchBusinessInfo = async () => {
+    if (!storeSettings || Object.keys(storeSettings).length === 0) return;
+    const data = storeSettings;
+    setWeeklyTimings({
+      monday: data.clay_oven_timing_monday || weeklyTimings.monday,
+      tuesday: data.clay_oven_timing_tuesday || weeklyTimings.tuesday,
+      wednesday: data.clay_oven_timing_wednesday || weeklyTimings.wednesday,
+      thursday: data.clay_oven_timing_thursday || weeklyTimings.thursday,
+      friday: data.clay_oven_timing_friday || weeklyTimings.friday,
+      saturday: data.clay_oven_timing_saturday || weeklyTimings.saturday,
+      sunday: data.clay_oven_timing_sunday || weeklyTimings.sunday,
+      offset: data.clay_oven_timing_offset || weeklyTimings.offset
+    });
+
+    if (data.clay_oven_notice_text) {
+      setNoticeText(data.clay_oven_notice_text);
+      localStorage.setItem('clay_oven_notice_text', data.clay_oven_notice_text);
+    }
+    if (data.clay_oven_notice_phone) {
+      setNoticePhone(data.clay_oven_notice_phone);
+      localStorage.setItem('clay_oven_notice_phone', data.clay_oven_notice_phone);
+    }
+    if (data.clay_oven_notice_enabled !== undefined) {
+      const enabled = data.clay_oven_notice_enabled !== 'false';
+      setNoticeEnabled(enabled);
+      setShowWarningModal(enabled);
+      localStorage.setItem('clay_oven_notice_enabled', String(enabled));
+    } else {
+      setShowWarningModal(noticeEnabled);
+    }
+
+    if (data.clay_oven_festive_enabled !== undefined) setFestiveEnabled(data.clay_oven_festive_enabled !== 'false');
+    if (data.clay_oven_festive_header) setFestiveHeader(data.clay_oven_festive_header);
+    if (data.clay_oven_festive_subheader) setFestiveSubheader(data.clay_oven_festive_subheader);
+    if (data.clay_oven_festive_description) setFestiveDescription(data.clay_oven_festive_description);
+    if (data.clay_oven_festive_price) setFestivePrice(data.clay_oven_festive_price);
+    if (data.clay_oven_festive_items) setFestiveItemsRaw(data.clay_oven_festive_items);
+  }, [storeSettings]);
+
+  // Load images individually
+  React.useEffect(() => {
+    const fetchImage = async (key: string, setter: (val: string) => void) => {
+      try {
+        const res = await fetch(`/api/settings/images/${key}`);
+        if (res.ok) {
+          const data = await res.json();
+          setter(data.value);
+          localStorage.setItem(key, data.value);
+        }
+      } catch (err) {
+        // Silently use localStorage/fallback
+      }
+    };
+    fetchImage('clay_oven_image_hero_bg', setImageHeroBg);
+    fetchImage('clay_oven_image_heritage_left', setImageHeritageLeft);
+    fetchImage('clay_oven_image_heritage_right', setImageHeritageRight);
+  }, []);
+
+  // Listen to business info updates
+  React.useEffect(() => {
+    const handler = async () => {
       try {
         const res = await fetch('/api/business-info');
         if (res.ok) {
@@ -101,70 +166,11 @@ Beverages | Tea or Coffee`);
           });
         }
       } catch (err) {
-        console.error('Failed to load business info in HomeView:', err);
+        console.error('Failed to reload business info:', err);
       }
     };
-
-    const loadSettings = async () => {
-      try {
-        const response = await fetch('/api/settings');
-        if (response.ok) {
-          const data = await response.json();
-          setWeeklyTimings({
-            monday: data.clay_oven_timing_monday || weeklyTimings.monday,
-            tuesday: data.clay_oven_timing_tuesday || weeklyTimings.tuesday,
-            wednesday: data.clay_oven_timing_wednesday || weeklyTimings.wednesday,
-            thursday: data.clay_oven_timing_thursday || weeklyTimings.thursday,
-            friday: data.clay_oven_timing_friday || weeklyTimings.friday,
-            saturday: data.clay_oven_timing_saturday || weeklyTimings.saturday,
-            sunday: data.clay_oven_timing_sunday || weeklyTimings.sunday,
-            offset: data.clay_oven_timing_offset || weeklyTimings.offset
-          });
-
-           if (data.clay_oven_notice_text) {
-            setNoticeText(data.clay_oven_notice_text);
-            localStorage.setItem('clay_oven_notice_text', data.clay_oven_notice_text);
-          }
-          if (data.clay_oven_notice_phone) {
-            setNoticePhone(data.clay_oven_notice_phone);
-            localStorage.setItem('clay_oven_notice_phone', data.clay_oven_notice_phone);
-          }
-          if (data.clay_oven_notice_enabled !== undefined) {
-            const enabled = data.clay_oven_notice_enabled !== 'false';
-            setNoticeEnabled(enabled);
-            setShowWarningModal(enabled);
-            localStorage.setItem('clay_oven_notice_enabled', String(enabled));
-          } else {
-            setShowWarningModal(noticeEnabled);
-          }
-
-          if (data.clay_oven_festive_enabled !== undefined) setFestiveEnabled(data.clay_oven_festive_enabled !== 'false');
-          if (data.clay_oven_festive_header) setFestiveHeader(data.clay_oven_festive_header);
-          if (data.clay_oven_festive_subheader) setFestiveSubheader(data.clay_oven_festive_subheader);
-          if (data.clay_oven_festive_description) setFestiveDescription(data.clay_oven_festive_description);
-          if (data.clay_oven_festive_price) setFestivePrice(data.clay_oven_festive_price);
-          if (data.clay_oven_festive_items) setFestiveItemsRaw(data.clay_oven_festive_items);
-
-          if (data.clay_oven_image_hero_bg) setImageHeroBg(data.clay_oven_image_hero_bg);
-          if (data.clay_oven_image_heritage_left) setImageHeritageLeft(data.clay_oven_image_heritage_left);
-          if (data.clay_oven_image_heritage_right) setImageHeritageRight(data.clay_oven_image_heritage_right);
-        } else {
-          // Keep showing warning modal using local notice status if fetch failed
-          setShowWarningModal(noticeEnabled);
-        }
-      } catch (err) {
-        console.error('Failed to retrieve storefront settings:', err);
-        setShowWarningModal(noticeEnabled);
-      }
-    };
-
-    fetchBusinessInfo();
-    loadSettings();
-
-    window.addEventListener('business_info_updated', fetchBusinessInfo);
-    return () => {
-      window.removeEventListener('business_info_updated', fetchBusinessInfo);
-    };
+    window.addEventListener('business_info_updated', handler);
+    return () => window.removeEventListener('business_info_updated', handler);
   }, []);
 
   const parsedFestiveItems = festiveItemsRaw

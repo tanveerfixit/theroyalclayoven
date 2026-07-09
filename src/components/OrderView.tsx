@@ -14,6 +14,16 @@ interface OrderViewProps {
   addToCart: (item: MenuItem, size?: { name: string; price: number }, notes?: string) => void;
   removeFromCart: (cartItemId: string) => void;
   updateQuantity: (cartItemId: string, delta: number) => void;
+  businessInfo: {
+    business_name: string;
+    address: string;
+    maps_url: string;
+    phone: string;
+    mobile: string;
+    whatsapp: string;
+    email: string;
+  };
+  storeSettings: Record<string, string>;
 }
 
 export const OrderView: React.FC<OrderViewProps> = ({
@@ -21,7 +31,9 @@ export const OrderView: React.FC<OrderViewProps> = ({
   setCart,
   addToCart,
   removeFromCart,
-  updateQuantity
+  updateQuantity,
+  businessInfo: parentBusinessInfo,
+  storeSettings
 }) => {
   const [selectedCategory, setSelectedCategory] = React.useState<string>('Pakistani Cuisine');
   const [customNotes, setCustomNotes] = React.useState<{ [itemId: string]: string }>({});
@@ -42,82 +54,53 @@ export const OrderView: React.FC<OrderViewProps> = ({
   const [deliveryChargesSetting, setDeliveryChargesSetting] = React.useState(parseFloat(localStorage.getItem('clay_oven_delivery_charges') || '3.00'));
 
   const [businessInfo, setBusinessInfo] = React.useState({
-    phone: '086 020 3720',
+    phone: parentBusinessInfo.phone || '086 020 3720',
   });
 
-  // Sync settings with database on mount
   React.useEffect(() => {
-    const fetchBusinessInfo = async () => {
-      try {
-        const res = await fetch('/api/business-info');
-        if (res.ok) {
-          const data = await res.json();
-          setBusinessInfo({
-            phone: data.phone || '086 020 3720',
-          });
-        }
-      } catch (err) {
-        console.error('Failed to load business info in OrderView:', err);
-      }
-    };
+    setBusinessInfo({ phone: parentBusinessInfo.phone });
+  }, [parentBusinessInfo]);
 
-    const loadSettings = async () => {
-      try {
-        const response = await fetch('/api/settings');
-        if (response.ok) {
-          const data = await response.json();
-          if (data.clay_oven_notice_text) {
-            setNoticeText(data.clay_oven_notice_text);
-            localStorage.setItem('clay_oven_notice_text', data.clay_oven_notice_text);
-          }
-          if (data.clay_oven_notice_phone) {
-            setNoticePhone(data.clay_oven_notice_phone);
-            localStorage.setItem('clay_oven_notice_phone', data.clay_oven_notice_phone);
-          }
-          if (data.clay_oven_notice_enabled !== undefined) {
-            const enabled = data.clay_oven_notice_enabled !== 'false';
-            setNoticeEnabled(enabled);
-            localStorage.setItem('clay_oven_notice_enabled', String(enabled));
-          }
-          if (data.clay_oven_takeaway_enabled !== undefined) {
-            const enabled = data.clay_oven_takeaway_enabled !== 'false';
-            setTakeawayEnabled(enabled);
-            setShowTakeawayWarningModal(!enabled);
-            localStorage.setItem('clay_oven_takeaway_enabled', String(enabled));
-          } else {
-            setShowTakeawayWarningModal(!takeawayEnabled);
-          }
-          if (data.clay_oven_takeaway_notice) {
-            setTakeawayNotice(data.clay_oven_takeaway_notice);
-            localStorage.setItem('clay_oven_takeaway_notice', data.clay_oven_takeaway_notice);
-          }
-          if (data.clay_oven_takeaway_charges !== undefined) {
-            const charge = parseFloat(data.clay_oven_takeaway_charges);
-            setTakeawayCharges(isNaN(charge) ? 0.95 : charge);
-            localStorage.setItem('clay_oven_takeaway_charges', data.clay_oven_takeaway_charges);
-          }
-          if (data.clay_oven_delivery_charges !== undefined) {
-            const charge = parseFloat(data.clay_oven_delivery_charges);
-            setDeliveryChargesSetting(isNaN(charge) ? 3.00 : charge);
-            localStorage.setItem('clay_oven_delivery_charges', data.clay_oven_delivery_charges);
-          }
-        } else {
-          setShowTakeawayWarningModal(!takeawayEnabled);
-        }
-      } catch (err) {
-        console.error('Failed to retrieve storefront settings:', err);
-        setShowTakeawayWarningModal(!takeawayEnabled);
-      }
-    };
-
-    fetchBusinessInfo();
-    loadSettings();
-
-    window.addEventListener('business_info_updated', fetchBusinessInfo);
-    return () => {
-      window.removeEventListener('business_info_updated', fetchBusinessInfo);
-    };
-  }, []);
+  // Sync settings with props
+  React.useEffect(() => {
+    if (!storeSettings || Object.keys(storeSettings).length === 0) return;
+    const data = storeSettings;
+    if (data.clay_oven_notice_text) {
+      setNoticeText(data.clay_oven_notice_text);
+      localStorage.setItem('clay_oven_notice_text', data.clay_oven_notice_text);
+    }
+    if (data.clay_oven_notice_phone) {
+      setNoticePhone(data.clay_oven_notice_phone);
+      localStorage.setItem('clay_oven_notice_phone', data.clay_oven_notice_phone);
+    }
+    if (data.clay_oven_notice_enabled !== undefined) {
+      const enabled = data.clay_oven_notice_enabled !== 'false';
+      setNoticeEnabled(enabled);
+      localStorage.setItem('clay_oven_notice_enabled', String(enabled));
+    }
+    if (data.clay_oven_takeaway_enabled !== undefined) {
+      const enabled = data.clay_oven_takeaway_enabled !== 'false';
+      setTakeawayEnabled(enabled);
+      setShowTakeawayWarningModal(!enabled);
+      localStorage.setItem('clay_oven_takeaway_enabled', String(enabled));
+    } else {
+      setShowTakeawayWarningModal(!takeawayEnabled);
+    }
+    if (data.clay_oven_takeaway_notice) {
+      setTakeawayNotice(data.clay_oven_takeaway_notice);
+      localStorage.setItem('clay_oven_takeaway_notice', data.clay_oven_takeaway_notice);
+    }
+    if (data.clay_oven_takeaway_charges !== undefined) {
+      const charge = parseFloat(data.clay_oven_takeaway_charges);
+      setTakeawayCharges(isNaN(charge) ? 0.95 : charge);
+      localStorage.setItem('clay_oven_takeaway_charges', data.clay_oven_takeaway_charges);
+    }
+    if (data.clay_oven_delivery_charges !== undefined) {
+      const charge = parseFloat(data.clay_oven_delivery_charges);
+      setDeliveryChargesSetting(isNaN(charge) ? 3.00 : charge);
+      localStorage.setItem('clay_oven_delivery_charges', data.clay_oven_delivery_charges);
+    }
+  }, [storeSettings]);
   
   // Checkout inputs
   const [customerName, setCustomerName] = React.useState('');
