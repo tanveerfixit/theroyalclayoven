@@ -595,7 +595,7 @@ app.post('/api/users', async (req, res) => {
         const adminToken = jwt.sign(
           { email: email.toLowerCase().trim(), role: 'admin' },
           ADMIN_JWT_SECRET,
-          { expiresIn: '1h' }
+          { expiresIn: '24h' }
         );
         userObj.adminToken = adminToken;
         console.log(`Auto-authorized admin session via Google sign-in for: ${email}`);
@@ -1341,11 +1341,11 @@ app.post('/api/admin/verify-otp', async (req, res) => {
     // OTP is valid — delete it so it can't be reused
     await pool.query('DELETE FROM admin_otps WHERE email = ?', [email.toLowerCase().trim()]);
 
-    // Issue JWT token (valid for 1 hour)
+    // Issue JWT token (valid for 24 hours)
     const token = jwt.sign(
       { email: email.toLowerCase().trim(), role: 'admin' },
       ADMIN_JWT_SECRET,
-      { expiresIn: '1h' }
+      { expiresIn: '24h' }
     );
 
     console.log(`Admin session authenticated for: ${email}`);
