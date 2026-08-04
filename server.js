@@ -398,9 +398,9 @@ The Royal Clay Oven`,
       'clay_oven_reservations_enabled': 'true',
       'clay_oven_reservations_notice': 'Table reservations are temporarily closed. Please telephone us to book a table!',
       'clay_oven_festive_enabled': 'true',
-      'clay_oven_festive_header': 'Pakistan day platter',
-      'clay_oven_festive_subheader': 'The actual platter',
-      'clay_oven_festive_description': 'We are celebrating Pakistan Day',
+      'clay_oven_festive_header': 'Pakistan Day',
+      'clay_oven_festive_subheader': 'Pakistan day platter',
+      'clay_oven_festive_description': 'The actual platter',
       'clay_oven_festive_price': '60.00',
       'clay_oven_festive_items': `green chicken Karhai | Pakistani Specialty
 green tikka boti | Grilled Boneless Chicken
@@ -428,19 +428,19 @@ Complimentary green tea | Beverage`,
       UPDATE store_settings
       SET setting_value = ?
       WHERE setting_key = 'clay_oven_festive_header'
-    `, ['Pakistan day platter']);
+    `, ['Pakistan Day']);
 
     await connection.query(`
       UPDATE store_settings
       SET setting_value = ?
       WHERE setting_key = 'clay_oven_festive_subheader'
-    `, ['The actual platter']);
+    `, ['Pakistan day platter']);
 
     await connection.query(`
       UPDATE store_settings
       SET setting_value = ?
       WHERE setting_key = 'clay_oven_festive_description'
-    `, ['We are celebrating Pakistan Day']);
+    `, ['The actual platter']);
 
     await connection.query(`
       UPDATE store_settings
