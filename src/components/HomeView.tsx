@@ -79,6 +79,7 @@ Booking is highly recommended. Spaces are filling up fast, so make sure you secu
 
 Please note a 10% service charge applies. Location: The Royal Clay Oven, V14 AW71. Call us now at 061 703 513 to book!`);
   const [festivePrice, setFestivePrice] = React.useState(localStorage.getItem('clay_oven_festive_price') || '39.95');
+  const [festivePriceLabel, setFestivePriceLabel] = React.useState(localStorage.getItem('clay_oven_festive_price_label') || 'FOR 2 PEOPLE:');
   const [festiveItemsRaw, setFestiveItemsRaw] = React.useState(localStorage.getItem('clay_oven_festive_items') || `Starters | Peri-Peri Chicken Strips & Springrolls (Veg or Chicken)
 Mains | Grilled Peppercorn Chicken, Smash Burger, Sirloin Steak (+€5 supplement) & Pan-seared Fish (+€5 supplement)
 Dessert | Milk Cake
@@ -126,6 +127,7 @@ Beverages | Tea or Coffee`);
     if (data.clay_oven_festive_subheader) setFestiveSubheader(data.clay_oven_festive_subheader);
     if (data.clay_oven_festive_description) setFestiveDescription(data.clay_oven_festive_description);
     if (data.clay_oven_festive_price) setFestivePrice(data.clay_oven_festive_price);
+    if (data.clay_oven_festive_price_label) setFestivePriceLabel(data.clay_oven_festive_price_label);
     if (data.clay_oven_festive_items) setFestiveItemsRaw(data.clay_oven_festive_items);
   }, [storeSettings]);
 
@@ -271,7 +273,7 @@ Beverages | Tea or Coffee`);
                 {hasPrice && (
                   <>
                     <div className="pt-4 flex items-baseline space-x-2">
-                      <span className="text-xs font-mono text-emerald-300 uppercase">FOR 2 PEOPLE:</span>
+                      <span className="text-xs font-mono text-emerald-300 uppercase">{festivePriceLabel}</span>
                       <span className="text-4xl font-serif font-black text-white">&euro;{parsedPrice.toFixed(2)}</span>
                     </div>
                     <p className="text-[10px] font-mono text-emerald-300 uppercase tracking-wider">

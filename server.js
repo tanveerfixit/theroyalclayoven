@@ -402,6 +402,7 @@ The Royal Clay Oven`,
       'clay_oven_festive_subheader': 'Pakistan day platter',
       'clay_oven_festive_description': 'The actual platter',
       'clay_oven_festive_price': '60.00',
+      'clay_oven_festive_price_label': 'FOR 2 PEOPLE:',
       'clay_oven_festive_items': `green chicken Karhai | Pakistani Specialty
 green tikka boti | Grilled Boneless Chicken
 Coriander naan | Tandoor Baked Flatbread
@@ -458,6 +459,12 @@ Coriander naan | Tandoor Baked Flatbread
 lamb Biryani | Fragrant Basmati Rice Dish
 Pista falooda | Traditional Dessert
 Complimentary green tea | Beverage`]);
+
+    await connection.query(`
+      UPDATE store_settings
+      SET setting_value = ?
+      WHERE setting_key = 'clay_oven_festive_price_label'
+    `, ['FOR 2 PEOPLE:']);
     
     console.log('Global storefront settings verified and seeded in database successfully.');
 

@@ -272,6 +272,7 @@ Booking is highly recommended. Spaces are filling up fast, so make sure you secu
 
 Please note a 10% service charge applies. Location: The Royal Clay Oven, V14 AW71. Call us now at 061 703 513 to book!`);
   const [festivePrice, setFestivePrice] = useState('39.95');
+  const [festivePriceLabel, setFestivePriceLabel] = useState('FOR 2 PEOPLE:');
   const [festiveItems, setFestiveItems] = useState(`Starters | Peri-Peri Chicken Strips & Springrolls (Veg or Chicken)
 Mains | Grilled Peppercorn Chicken, Smash Burger, Sirloin Steak (+€5 supplement) & Pan-seared Fish (+€5 supplement)
 Dessert | Milk Cake
@@ -436,6 +437,7 @@ Beverages | Tea or Coffee`);
         if (data.clay_oven_festive_subheader) setFestiveSubheader(data.clay_oven_festive_subheader);
         if (data.clay_oven_festive_description) setFestiveDescription(data.clay_oven_festive_description);
         if (data.clay_oven_festive_price) setFestivePrice(data.clay_oven_festive_price);
+        if (data.clay_oven_festive_price_label) setFestivePriceLabel(data.clay_oven_festive_price_label);
         if (data.clay_oven_festive_items) setFestiveItems(data.clay_oven_festive_items);
 
         // Fetch images individually as they are filtered out in server.js response for performance
@@ -490,6 +492,7 @@ Beverages | Tea or Coffee`);
       'clay_oven_festive_subheader': festiveSubheader,
       'clay_oven_festive_description': festiveDescription,
       'clay_oven_festive_price': festivePrice,
+      'clay_oven_festive_price_label': festivePriceLabel,
       'clay_oven_festive_items': festiveItems
     };
 
@@ -2369,6 +2372,22 @@ Beverages | Tea or Coffee`);
                         onChange={(e) => setFestivePrice(e.target.value)}
                         className="w-full border border-brand-dark/10 p-3 text-sm font-mono focus:border-brand-dark outline-none bg-brand-beige/10 rounded-none"
                         placeholder="e.g. 35.00"
+                      />
+                    </div>
+
+                    {/* Price Label */}
+                    <div className="space-y-1">
+                      <label htmlFor="settings-festive-price-label" className="block font-mono text-xs text-brand-accent uppercase tracking-widest font-bold">
+                        Price Label (e.g. FOR 2 PEOPLE:)
+                      </label>
+                      <input
+                        id="settings-festive-price-label"
+                        type="text"
+                        required
+                        value={festivePriceLabel}
+                        onChange={(e) => setFestivePriceLabel(e.target.value)}
+                        className="w-full border border-brand-dark/10 p-3 text-sm font-mono focus:border-brand-dark outline-none bg-brand-beige/10 rounded-none"
+                        placeholder="e.g. FOR 2 PEOPLE:"
                       />
                     </div>
                   </div>
