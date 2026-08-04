@@ -3,7 +3,7 @@ build/
 coverage/
 .DS_Store
 *.log
-# .env*
+.env*
 !.env.example
 uploads/
 environmental.env
