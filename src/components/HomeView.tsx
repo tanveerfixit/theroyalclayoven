@@ -242,7 +242,7 @@ Beverages | Tea or Coffee`);
       {/* Dynamic Festive Offer Section */}
       {festiveEnabled && (
         <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-12 sm:mt-16">
-          <div className="border-2 border-brand-accent bg-brand-beige p-8 sm:p-12 relative overflow-hidden rounded-none">
+          <div className="border-2 border-emerald-600 bg-emerald-950 p-8 sm:p-12 relative overflow-hidden rounded-none">
             {/* Decorative limited-time tag */}
             <div className="absolute top-0 right-0 animate-shimmer text-white font-mono text-[10px] sm:text-xs uppercase tracking-widest px-4 py-2 font-bold flex items-center gap-1.5 shadow-[0_4px_12px_rgba(200,90,50,0.2)]">
               <Sparkles className="w-3.5 h-3.5 animate-pulse" />
@@ -253,28 +253,28 @@ Beverages | Tea or Coffee`);
               
               {/* Column 1: Promo Detail Banner */}
               <div className="lg:col-span-5 space-y-4">
-                <span className="font-mono text-sm tracking-widest text-brand-accent uppercase font-bold block">
+                <span className="font-mono text-sm tracking-widest text-emerald-400 uppercase font-bold block">
                   SPECIAL EVENT
                 </span>
-                <h2 className="font-serif text-3xl sm:text-4xl lg:text-5xl font-extrabold text-brand-dark tracking-tight leading-none uppercase whitespace-pre-line">
+                <h2 className="font-serif text-3xl sm:text-4xl lg:text-5xl font-extrabold text-white tracking-tight leading-none uppercase whitespace-pre-line">
                   {festiveHeader}
                 </h2>
-                <div className="inline-block bg-brand-accent/10 border border-brand-accent/20 px-3 py-1">
-                  <p className="font-mono text-[11px] text-brand-accent tracking-widest uppercase font-bold">
+                <div className="inline-block bg-emerald-900/50 border border-emerald-700 px-3 py-1">
+                  <p className="font-mono text-[11px] text-emerald-300 tracking-widest uppercase font-bold">
                     {festiveSubheader}
                   </p>
                 </div>
-                <p className="text-sm text-brand-muted leading-relaxed font-normal whitespace-pre-line">
+                <p className="text-sm text-emerald-100 leading-relaxed font-normal whitespace-pre-line">
                   {festiveDescription}
                 </p>
                 
                 {hasPrice && (
                   <>
                     <div className="pt-4 flex items-baseline space-x-2">
-                      <span className="text-xs font-mono text-brand-muted uppercase">PRICE FOR 1:</span>
-                      <span className="text-4xl font-serif font-black text-brand-dark">&euro;{parsedPrice.toFixed(2)}</span>
+                      <span className="text-xs font-mono text-emerald-300 uppercase">PRICE FOR 1:</span>
+                      <span className="text-4xl font-serif font-black text-white">&euro;{parsedPrice.toFixed(2)}</span>
                     </div>
-                    <p className="text-[10px] font-mono text-brand-muted uppercase tracking-wider">
+                    <p className="text-[10px] font-mono text-emerald-300 uppercase tracking-wider">
                       * Service charge will apply
                     </p>
                   </>
@@ -282,37 +282,37 @@ Beverages | Tea or Coffee`);
               </div>
 
               {/* Column 2: Platter Menu Card */}
-              <div className="lg:col-span-7 bg-white border border-brand-dark/10 p-6 sm:p-8 space-y-6 shadow-sm">
-                <h3 className="font-serif text-xl font-bold tracking-tight text-brand-dark uppercase border-b border-brand-dark/10 pb-3 flex items-center justify-between">
+              <div className="lg:col-span-7 bg-emerald-900/30 border border-emerald-800 p-6 sm:p-8 space-y-6 shadow-sm">
+                <h3 className="font-serif text-xl font-bold tracking-tight text-white uppercase border-b border-emerald-800 pb-3 flex items-center justify-between">
                   <span>SPECIAL MENU PLATTER</span>
-                  <Sparkles className="w-5 h-5 text-brand-accent" />
+                  <Sparkles className="w-5 h-5 text-emerald-400" />
                 </h3>
 
-                <ul className="space-y-4 text-sm font-sans text-brand-dark">
+                <ul className="space-y-4 text-sm font-sans text-emerald-100">
                   {parsedFestiveItems.map((item, idx) => (
                     <li key={idx} className="flex items-start">
-                      <span className="w-2 h-2 bg-brand-accent mt-2 mr-3 shrink-0"></span>
+                      <span className="w-2 h-2 bg-emerald-400 mt-2 mr-3 shrink-0"></span>
                       <div>
-                        <strong className="font-bold block text-sm">{item.name}</strong>
-                        {item.description && <p className="text-xs text-brand-muted">{item.description}</p>}
+                        <strong className="font-bold block text-sm text-white">{item.name}</strong>
+                        {item.description && <p className="text-xs text-emerald-300">{item.description}</p>}
                       </div>
                     </li>
                   ))}
                 </ul>
 
                 {/* Dynamic CTA buttons */}
-                <div className="pt-4 border-t border-brand-dark/10 flex flex-col sm:flex-row gap-3">
+                <div className="pt-4 border-t border-emerald-800 flex flex-col sm:flex-row gap-3">
                   <button
                     type="button"
                     onClick={() => setCurrentTab('takeaway')}
-                    className="flex-1 bg-brand-accent hover:bg-brand-dark text-white py-3.5 px-6 text-xs font-mono tracking-widest font-bold uppercase transition-all duration-200 text-center rounded-none"
+                    className="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white py-3.5 px-6 text-xs font-mono tracking-widest font-bold uppercase transition-all duration-200 text-center rounded-none cursor-pointer"
                   >
                     Order Platter Online
                   </button>
                   <button
                     type="button"
                     onClick={() => setCurrentTab('booking')}
-                    className="flex-1 border border-brand-dark/20 hover:border-brand-dark text-brand-dark py-3.5 px-6 text-xs font-mono tracking-widest font-bold uppercase transition-all duration-200 text-center rounded-none"
+                    className="flex-1 border border-emerald-700 hover:border-emerald-600 text-emerald-200 hover:bg-emerald-900/40 py-3.5 px-6 text-xs font-mono tracking-widest font-bold uppercase transition-all duration-200 text-center rounded-none cursor-pointer"
                   >
                     Reserve a Table
                   </button>

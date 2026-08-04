@@ -400,17 +400,7 @@ The Royal Clay Oven`,
       'clay_oven_festive_enabled': 'true',
       'clay_oven_festive_header': "FATHER'S DAY DINNER",
       'clay_oven_festive_subheader': 'Sunday, 21st June',
-      'clay_oven_festive_description': `Hello to all our Royal customers!
-
-We are excited to announce our exclusive 4-Course Father’s Day Dinner Menu.
-
-From our signature Peri-Peri Chicken Strips and mouth-watering Smash Burgers to premium upgrades like Prime Sirloin Steak and a perfectly Pan-Seared Sea Bass, we have something spectacular for every dad.
-
-Top it all off with our delicious Milk Cake and freshly brewed tea or coffee.
-
-Booking is highly recommended. Spaces are filling up fast, so make sure you secure your table early to avoid disappointment.
-
-Please note a 10% service charge applies. Location: The Royal Clay Oven, V14 AW71. Call us now at 061 703 513 to book!`,
+      'clay_oven_festive_description': `We are celebrating Pakistan Day`,
       'clay_oven_festive_price': '39.95',
       'clay_oven_festive_items': `Starters | Peri-Peri Chicken Strips & Springrolls (Veg or Chicken)
 Mains | Grilled Peppercorn Chicken, Smash Burger, Sirloin Steak (+€5 supplement) & Pan-seared Fish (+€5 supplement)
@@ -430,6 +420,14 @@ Beverages | Tea or Coffee`,
         ON DUPLICATE KEY UPDATE setting_value = setting_value
       `, [key, value]);
     }
+    
+    // Explicitly update the festive offer description for Pakistan Day
+    await connection.query(`
+      UPDATE store_settings
+      SET setting_value = 'We are celebrating Pakistan Day'
+      WHERE setting_key = 'clay_oven_festive_description'
+    `);
+    
     console.log('Global storefront settings verified and seeded in database successfully.');
 
     // Auto-create admin authentication tables
