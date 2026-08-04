@@ -271,7 +271,7 @@ Beverages | Tea or Coffee`);
                 {hasPrice && (
                   <>
                     <div className="pt-4 flex items-baseline space-x-2">
-                      <span className="text-xs font-mono text-emerald-300 uppercase">PRICE FOR 1:</span>
+                      <span className="text-xs font-mono text-emerald-300 uppercase">FOR 2 PEOPLE:</span>
                       <span className="text-4xl font-serif font-black text-white">&euro;{parsedPrice.toFixed(2)}</span>
                     </div>
                     <p className="text-[10px] font-mono text-emerald-300 uppercase tracking-wider">

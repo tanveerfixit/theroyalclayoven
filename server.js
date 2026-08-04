@@ -398,14 +398,16 @@ The Royal Clay Oven`,
       'clay_oven_reservations_enabled': 'true',
       'clay_oven_reservations_notice': 'Table reservations are temporarily closed. Please telephone us to book a table!',
       'clay_oven_festive_enabled': 'true',
-      'clay_oven_festive_header': "FATHER'S DAY DINNER",
-      'clay_oven_festive_subheader': 'Sunday, 21st June',
-      'clay_oven_festive_description': `We are celebrating Pakistan Day`,
-      'clay_oven_festive_price': '39.95',
-      'clay_oven_festive_items': `Starters | Peri-Peri Chicken Strips & Springrolls (Veg or Chicken)
-Mains | Grilled Peppercorn Chicken, Smash Burger, Sirloin Steak (+€5 supplement) & Pan-seared Fish (+€5 supplement)
-Dessert | Milk Cake
-Beverages | Tea or Coffee`,
+      'clay_oven_festive_header': 'Pakistan day platter',
+      'clay_oven_festive_subheader': 'The actual platter',
+      'clay_oven_festive_description': 'We are celebrating Pakistan Day',
+      'clay_oven_festive_price': '60.00',
+      'clay_oven_festive_items': `green chicken Karhai | Pakistani Specialty
+green tikka boti | Grilled Boneless Chicken
+Coriander naan | Tandoor Baked Flatbread
+lamb Biryani | Fragrant Basmati Rice Dish
+Pista falooda | Traditional Dessert
+Complimentary green tea | Beverage`,
       'clay_oven_image_hero_bg': 'https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=1600&q=80',
       'clay_oven_image_heritage_left': 'https://images.unsplash.com/photo-1627308595229-7830a5c91f9f?auto=format&fit=crop&w=600&q=80',
       'clay_oven_image_heritage_right': 'https://images.unsplash.com/photo-1603360946369-dc9bb6258143?auto=format&fit=crop&w=600&q=80',
@@ -421,12 +423,41 @@ Beverages | Tea or Coffee`,
       `, [key, value]);
     }
     
-    // Explicitly update the festive offer description for Pakistan Day
+    // Explicitly update the festive offer settings for Pakistan Day
     await connection.query(`
       UPDATE store_settings
-      SET setting_value = 'We are celebrating Pakistan Day'
+      SET setting_value = ?
+      WHERE setting_key = 'clay_oven_festive_header'
+    `, ['Pakistan day platter']);
+
+    await connection.query(`
+      UPDATE store_settings
+      SET setting_value = ?
+      WHERE setting_key = 'clay_oven_festive_subheader'
+    `, ['The actual platter']);
+
+    await connection.query(`
+      UPDATE store_settings
+      SET setting_value = ?
       WHERE setting_key = 'clay_oven_festive_description'
-    `);
+    `, ['We are celebrating Pakistan Day']);
+
+    await connection.query(`
+      UPDATE store_settings
+      SET setting_value = ?
+      WHERE setting_key = 'clay_oven_festive_price'
+    `, ['60.00']);
+
+    await connection.query(`
+      UPDATE store_settings
+      SET setting_value = ?
+      WHERE setting_key = 'clay_oven_festive_items'
+    `, [`green chicken Karhai | Pakistani Specialty
+green tikka boti | Grilled Boneless Chicken
+Coriander naan | Tandoor Baked Flatbread
+lamb Biryani | Fragrant Basmati Rice Dish
+Pista falooda | Traditional Dessert
+Complimentary green tea | Beverage`]);
     
     console.log('Global storefront settings verified and seeded in database successfully.');
 
