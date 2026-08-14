@@ -37,15 +37,19 @@ export interface CartItem {
   notes?: string;
 }
 
+export interface OrderItem {
+  name: string;
+  quantity: number;
+  price: number;
+  size?: string;
+  notes?: string;
+  cancelled?: boolean;
+  cancelReason?: string;
+}
+
 export interface Order {
   id: string;
-  items: {
-    name: string;
-    quantity: number;
-    price: number;
-    size?: string;
-    notes?: string;
-  }[];
+  items: OrderItem[];
   packagingFee: number;
   subtotal: number;
   total: number;
@@ -58,7 +62,9 @@ export interface Order {
     preferredTime: string;
     notes?: string;
   };
-  status: 'Received' | 'Preparing' | 'Ready for Collection' | 'Out for Delivery' | 'Completed';
+  status: 'Received' | 'Preparing' | 'Ready for Collection' | 'Out for Delivery' | 'Completed' | 'Cancelled';
+  cancellationReason?: string;
+  adminNotes?: string;
   isArchived?: boolean;
   createdAt: string;
 }

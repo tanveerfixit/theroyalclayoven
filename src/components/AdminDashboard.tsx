@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Play, Check, X, ShieldAlert, ShoppingBag, Calendar, ListFilter, Search, RefreshCw, Volume2, ShieldCheck, Clock, Settings, Sparkles, Mail, KeyRound, Loader2 } from 'lucide-react';
+import { Play, Check, X, ShieldAlert, ShoppingBag, Calendar, ListFilter, Search, RefreshCw, Volume2, ShieldCheck, Clock, Settings, Sparkles, Mail, KeyRound, Loader2, Ban, XCircle, AlertTriangle, Trash2, Filter, CheckCircle2 } from 'lucide-react';
 import { Order, Reservation } from '../types';
 import { MENU_ITEMS, CATEGORIES } from '../data/menu';
 
@@ -111,6 +111,18 @@ The Royal Clay Oven`);
     return (saved as any) || 'chime';
   });
   const [activeNewOrderNotification, setActiveNewOrderNotification] = useState<Order | null>(null);
+
+  // Cancellation & Rejection states
+  const [rejectModalOrder, setRejectModalOrder] = useState<Order | null>(null);
+  const [rejectItemTarget, setRejectItemTarget] = useState<{ order: Order; itemIndex: number } | null>(null);
+  const [cancellationReasonOption, setCancellationReasonOption] = useState<string>('Kitchen at maximum capacity');
+  const [cancellationCustomNote, setCancellationCustomNote] = useState<string>('');
+  const [sendCancellationEmail, setSendCancellationEmail] = useState<boolean>(true);
+  const [cancellationSubmitting, setCancellationSubmitting] = useState<boolean>(false);
+  const [orderViewFilter, setOrderViewFilter] = useState<'active' | 'cancelled' | 'all'>('active');
+  const [historyDateFilter, setHistoryDateFilter] = useState<'today' | 'last7days' | 'month' | 'all'>('last7days');
+  const [historySearchQuery, setHistorySearchQuery] = useState<string>('');
+  const [historyStatusFilter, setHistoryStatusFilter] = useState<'all' | 'Completed' | 'Cancelled' | 'Active'>('all');
 
   // Sync tone changes to localStorage
   useEffect(() => {
@@ -823,6 +835,128 @@ Beverages | Tea or Coffee`);
     setActiveNewOrderNotification(null);
   };
 
+  const handleOpenRejectOrderModal = (order: Order) => {
+    setRejectModalOrder(order);
+    setRejectItemTarget(null);
+    setCancellationReasonOption('Kitchen at maximum capacity');
+    setCancellationCustomNote('');
+    setSendCancellationEmail(true);
+  };
+
+  const handleOpenCancelItemModal = (order: Order, itemIndex: number) => {
+    setRejectItemTarget({ order, itemIndex });
+    setRejectModalOrder(null);
+    setCancellationReasonOption('Item out of stock / sold out');
+    setCancellationCustomNote('');
+    setSendCancellationEmail(false);
+  };
+
+  const handleConfirmOrderCancellation = async () => {
+    if (!rejectModalOrder) return;
+    const targetOrder = rejectModalOrder;
+    const targetOrderId = targetOrder.id;
+
+    const finalReason = cancellationCustomNote.trim()
+      ? `${cancellationReasonOption}: ${cancellationCustomNote.trim()}`
+      : cancellationReasonOption;
+
+    // 1. Optimistically update local state immediately
+    setOrders(prev => prev.map(o => o.id === targetOrderId ? {
+      ...o,
+      status: 'Cancelled',
+      cancellationReason: finalReason
+    } : o));
+
+    if (activeNewOrderNotification?.id === targetOrderId) {
+      setActiveNewOrderNotification(null);
+    }
+    setRejectModalOrder(null);
+    setCancellationSubmitting(false);
+
+    // 2. Persist update to database
+    try {
+      const response = await fetch(`/api/admin/orders/${targetOrderId}/status`, {
+        method: 'PUT',
+        headers: adminHeaders(),
+        body: JSON.stringify({
+          status: 'Cancelled',
+          cancellationReason: finalReason,
+          sendEmail: sendCancellationEmail
+        })
+      });
+
+      if (response.status === 401) { handleUnauthorized(); return; }
+
+      if (!response.ok) {
+        const data = await response.json();
+        console.error('Server rejected cancellation update:', data.error);
+      }
+    } catch (err) {
+      console.error('Error rejecting order on backend:', err);
+    }
+  };
+
+  const handleConfirmItemCancellation = async () => {
+    if (!rejectItemTarget) return;
+    const { order, itemIndex } = rejectItemTarget;
+    const targetItem = order.items[itemIndex];
+    if (!targetItem) return;
+
+    const itemReason = cancellationCustomNote.trim()
+      ? `${cancellationReasonOption}: ${cancellationCustomNote.trim()}`
+      : cancellationReasonOption;
+
+    const updatedItems = order.items.map((it, idx) => {
+      if (idx === itemIndex) {
+        return {
+          ...it,
+          cancelled: true,
+          cancelReason: itemReason
+        };
+      }
+      return it;
+    });
+
+    const newSubtotal = updatedItems
+      .filter(it => !it.cancelled)
+      .reduce((sum, it) => sum + (it.price * it.quantity), 0);
+    const packagingFee = order.packagingFee || 0;
+    const newTotal = Number((newSubtotal + packagingFee).toFixed(2));
+
+    // Optimistically update frontend state
+    setOrders(prev => prev.map(o => o.id === order.id ? {
+      ...o,
+      items: updatedItems,
+      subtotal: Number(newSubtotal.toFixed(2)),
+      total: newTotal
+    } : o));
+
+    setRejectItemTarget(null);
+    setCancellationSubmitting(false);
+
+    try {
+      const response = await fetch(`/api/admin/orders/${order.id}/items`, {
+        method: 'PUT',
+        headers: adminHeaders(),
+        body: JSON.stringify({
+          items: updatedItems,
+          subtotal: Number(newSubtotal.toFixed(2)),
+          total: newTotal,
+          adminNotes: `Item "${targetItem.name}" cancelled: ${itemReason}`
+        })
+      });
+
+      if (response.status === 401) { handleUnauthorized(); return; }
+
+      if (!response.ok) {
+        const data = await response.json();
+        console.error('Failed to update cancelled item on backend:', data.error);
+      }
+    } catch (err) {
+      console.error('Error cancelling item on backend:', err);
+    }
+  };
+
   // Update Booking Status
   const handleUpdateBookingStatus = async (bookingId: string, nextStatus: Reservation['status'], sendEmail: boolean = false) => {
     try {
@@ -1187,219 +1321,798 @@ Beverages | Tea or Coffee`);
 
       {/* 1. TAB: ACTIVE TAKEAWAY ORDERS */}
       {adminTab === 'orders' && (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-fade-in" id="admin-orders-board">
+        <div className="space-y-6 animate-fade-in" id="admin-orders-board">
           
-          {/* COLUMN 1: NEW/RECEIVED */}
-          <div className="bg-white border border-brand-dark/10 p-5 space-y-4">
-            <div className="flex justify-between items-center border-b border-brand-dark/10 pb-3">
-              <span className="font-mono text-xs font-bold uppercase tracking-wider text-brand-accent flex items-center gap-1.5">
-                <span className="w-2 h-2 bg-brand-accent animate-ping inline-block"></span>
-                RECEIVED (NEW)
+          {/* Sub-Filter Toolbar: Active vs Cancelled vs All */}
+          <div className="flex flex-wrap items-center justify-between gap-4 bg-white border border-brand-dark/10 p-3">
+            <div className="flex items-center gap-2">
+              <span className="font-mono text-xs font-bold uppercase text-brand-muted flex items-center gap-1.5 pl-2">
+                <Filter className="w-3.5 h-3.5" /> Filter:
               </span>
-              <span className="font-mono text-xs bg-brand-accent/5 text-brand-accent font-bold px-2 py-0.5 border border-brand-accent/15">
-                {orders.filter(o => o.status === 'Received').length} Active
-              </span>
+              <button
+                type="button"
+                onClick={() => setOrderViewFilter('active')}
+                className={`px-3 py-1 font-mono text-xs font-bold uppercase tracking-wider border transition-all ${
+                  orderViewFilter === 'active'
+                    ? 'bg-brand-dark text-white border-brand-dark'
+                    : 'bg-[#FDFBF7] text-brand-dark border-brand-dark/10 hover:border-brand-dark/30'
+                }`}
+              >
+                Active Kitchen ({orders.filter(o => o.status !== 'Completed' && o.status !== 'Cancelled').length})
+              </button>
+              <button
+                type="button"
+                onClick={() => setOrderViewFilter('cancelled')}
+                className={`px-3 py-1 font-mono text-xs font-bold uppercase tracking-wider border transition-all ${
+                  orderViewFilter === 'cancelled'
+                    ? 'bg-rose-700 text-white border-rose-700'
+                    : 'bg-[#FDFBF7] text-rose-700 border-rose-200 hover:bg-rose-50'
+                }`}
+              >
+                Cancelled Orders ({orders.filter(o => o.status === 'Cancelled').length})
+              </button>
+              <button
+                type="button"
+                onClick={() => setOrderViewFilter('all')}
+                className={`px-3 py-1 font-mono text-xs font-bold uppercase tracking-wider border transition-all ${
+                  orderViewFilter === 'all'
+                    ? 'bg-brand-dark text-white border-brand-dark'
+                    : 'bg-[#FDFBF7] text-brand-dark border-brand-dark/10 hover:border-brand-dark/30'
+                }`}
+              >
+                All Orders ({orders.length})
+              </button>
             </div>
 
-            <div className="space-y-4 overflow-y-auto max-h-[65vh] pr-1">
-              {orders.filter(o => o.status === 'Received').length === 0 ? (
-                <p className="text-sm text-brand-muted font-mono italic text-center py-10">No new orders placed.</p>
-              ) : (
-                orders.filter(o => o.status === 'Received').map(order => (
-                  <div key={order.id} className="p-4 border border-brand-dark/15 hover:border-brand-dark/30 bg-[#FDFBF7]/40 space-y-4 relative transition-all shadow-[0_4px_12px_rgba(44,38,33,0.008)]">
-                    <div className="flex justify-between items-start font-mono text-sm">
-                      <div>
-                        <span className="font-bold text-brand-dark block">ORDER: {order.id}</span>
-                        <span className="text-xs text-brand-muted">Placed: {new Date(order.createdAt).toLocaleTimeString()}</span>
-                      </div>
-                      <span className="text-brand-accent font-bold text-base">&euro;{order.total.toFixed(2)}</span>
-                    </div>
+            <div className="text-xs font-mono text-brand-muted pr-2">
+              Auto-refreshing live every 12s
+            </div>
+          </div>
 
-                    <div className="text-xs font-mono border-t border-b border-brand-dark/5 py-2 space-y-1 text-brand-muted">
-                      <div>Customer: <span className="font-bold text-brand-dark">{order.customerInfo.name}</span></div>
-                      <div>Contact: <span className="underline">{order.customerInfo.phone}</span></div>
-                      <div>Time: <span className="font-bold text-brand-dark uppercase">{order.customerInfo.preferredTime}</span></div>
-                      <div>Type: <span className="font-bold uppercase text-brand-accent">{order.serviceType}</span></div>
-                      {order.customerInfo.address && (
-                        <div className="pt-1 font-sans text-brand-dark border-t border-dashed border-brand-dark/5 mt-1 font-medium">
-                          Deliver: {order.customerInfo.address}
+          {/* ACTIVE 3-COLUMN KANBAN BOARD */}
+          {orderViewFilter === 'active' && (
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              
+              {/* COLUMN 1: NEW/RECEIVED */}
+              <div className="bg-white border border-brand-dark/10 p-5 space-y-4">
+                <div className="flex justify-between items-center border-b border-brand-dark/10 pb-3">
+                  <span className="font-mono text-xs font-bold uppercase tracking-wider text-brand-accent flex items-center gap-1.5">
+                    <span className="w-2 h-2 bg-brand-accent animate-ping inline-block"></span>
+                    RECEIVED (NEW)
+                  </span>
+                  <span className="font-mono text-xs bg-brand-accent/5 text-brand-accent font-bold px-2 py-0.5 border border-brand-accent/15">
+                    {orders.filter(o => o.status === 'Received').length} Active
+                  </span>
+                </div>
+
+                <div className="space-y-4 overflow-y-auto max-h-[65vh] pr-1">
+                  {orders.filter(o => o.status === 'Received').length === 0 ? (
+                    <p className="text-sm text-brand-muted font-mono italic text-center py-10">No new orders placed.</p>
+                  ) : (
+                    orders.filter(o => o.status === 'Received').map(order => (
+                      <div key={order.id} className="p-4 border border-brand-dark/15 hover:border-brand-dark/30 bg-[#FDFBF7]/40 space-y-4 relative transition-all shadow-[0_4px_12px_rgba(44,38,33,0.008)]">
+                        <div className="flex justify-between items-start font-mono text-sm">
+                          <div>
+                            <span className="font-bold text-brand-dark block">ORDER: {order.id}</span>
+                            <span className="text-xs text-brand-muted">Placed: {new Date(order.createdAt).toLocaleTimeString()}</span>
+                          </div>
+                          <span className="text-brand-accent font-bold text-base">&euro;{order.total.toFixed(2)}</span>
                         </div>
-                      )}
-                    </div>
 
-                    <div className="space-y-1">
-                      <span className="font-mono text-xs font-bold text-brand-dark uppercase block">Items:</span>
-                      <ul className="text-xs font-mono text-brand-muted space-y-1 list-disc list-inside">
-                        {order.items.map((it, i) => (
-                          <li key={i} className="truncate">
-                            {it.quantity}x {it.name} {it.size ? `(${it.size})` : ''}
-                            {it.notes && <span className="text-brand-accent block font-sans italic text-[11px] pl-3">&ldquo;{it.notes}&rdquo;</span>}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
+                        <div className="text-xs font-mono border-t border-b border-brand-dark/5 py-2 space-y-1 text-brand-muted">
+                          <div>Customer: <span className="font-bold text-brand-dark">{order.customerInfo.name}</span></div>
+                          <div>Contact: <span className="underline">{order.customerInfo.phone}</span></div>
+                          <div>Time: <span className="font-bold text-brand-dark uppercase">{order.customerInfo.preferredTime}</span></div>
+                          <div>Type: <span className="font-bold uppercase text-brand-accent">{order.serviceType}</span></div>
+                          {order.customerInfo.address && (
+                            <div className="pt-1 font-sans text-brand-dark border-t border-dashed border-brand-dark/5 mt-1 font-medium">
+                              Deliver: {order.customerInfo.address}
+                            </div>
+                          )}
+                        </div>
 
-                    {order.customerInfo.notes && (
-                      <div className="p-2 bg-amber-50/50 border border-amber-100 text-[11px] font-sans text-amber-800 italic leading-relaxed">
-                        ★ "{order.customerInfo.notes}"
+                        <div className="space-y-1">
+                          <span className="font-mono text-xs font-bold text-brand-dark uppercase block">Items:</span>
+                          <ul className="text-xs font-mono text-brand-muted space-y-1.5 list-none">
+                            {order.items.map((it, i) => (
+                              <li key={i} className={`flex items-start justify-between gap-2 ${it.cancelled ? 'opacity-50 line-through' : ''}`}>
+                                <div className="flex-1 truncate">
+                                  <span className={it.cancelled ? 'text-rose-700 font-bold' : ''}>
+                                    {it.quantity}x {it.name} {it.size ? `(${it.size})` : ''}
+                                  </span>
+                                  {it.cancelled && (
+                                    <span className="ml-1 inline-block text-[10px] uppercase font-bold text-rose-600 bg-rose-50 border border-rose-200 px-1 py-0.2 not-italic">
+                                      Cancelled {it.cancelReason ? `— ${it.cancelReason}` : ''}
+                                    </span>
+                                  )}
+                                  {it.notes && <span className="text-brand-accent block font-sans italic text-[11px] pl-3">&ldquo;{it.notes}&rdquo;</span>}
+                                </div>
+                                {!it.cancelled && (
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleOpenCancelItemModal(order, i);
+                                    }}
+                                    title="Cancel this item from order"
+                                    className="text-rose-500 hover:text-rose-700 hover:bg-rose-50 p-1 border border-rose-200/60 rounded-none transition-colors shrink-0"
+                                  >
+                                    <X className="w-3 h-3" />
+                                  </button>
+                                )}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+
+                        {order.customerInfo.notes && (
+                          <div className="p-2 bg-amber-50/50 border border-amber-100 text-[11px] font-sans text-amber-800 italic leading-relaxed">
+                            ★ "{order.customerInfo.notes}"
+                          </div>
+                        )}
+
+                        <div className="pt-2 border-t border-brand-dark/5 flex items-center justify-between gap-2">
+                          <button
+                            type="button"
+                            onClick={() => handleOpenRejectOrderModal(order)}
+                            className="border border-rose-300 text-rose-700 hover:bg-rose-50 px-3 py-2 font-mono text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 rounded-none active:scale-95 transition-all"
+                          >
+                            <Ban className="w-3.5 h-3.5" />
+                            <span>REJECT</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleUpdateOrderStatus(order.id, 'Preparing')}
+                            className="bg-brand-dark text-white hover:bg-brand-accent px-4 py-2 font-mono text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 rounded-none active:scale-95 transition-all"
+                          >
+                            <Play className="w-3 h-3 fill-current" />
+                            <span>START PREPARING</span>
+                          </button>
+                        </div>
                       </div>
+                    ))
+                  )}
+                </div>
+              </div>
+
+              {/* COLUMN 2: IN PREPARATION */}
+              <div className="bg-white border border-brand-dark/10 p-5 space-y-4">
+                <div className="flex justify-between items-center border-b border-brand-dark/10 pb-3">
+                  <span className="font-mono text-xs font-bold uppercase tracking-wider text-brand-dark flex items-center gap-1.5">
+                    <span className="w-2 h-2 bg-amber-500 inline-block"></span>
+                    PREPARING (COOKING)
+                  </span>
+                  <span className="font-mono text-xs bg-brand-dark/5 text-brand-dark font-bold px-2 py-0.5 border border-brand-dark/10">
+                    {orders.filter(o => o.status === 'Preparing').length} Active
+                  </span>
+                </div>
+
+                <div className="space-y-4 overflow-y-auto max-h-[65vh] pr-1">
+                  {orders.filter(o => o.status === 'Preparing').length === 0 ? (
+                    <p className="text-sm text-brand-muted font-mono italic text-center py-10">No orders actively cooking.</p>
+                  ) : (
+                    orders.filter(o => o.status === 'Preparing').map(order => (
+                      <div key={order.id} className="p-4 border border-brand-dark/15 hover:border-brand-dark/30 bg-[#FDFBF7]/40 space-y-4 relative transition-all shadow-[0_4px_12px_rgba(44,38,33,0.008)]">
+                        <div className="flex justify-between items-start font-mono text-sm">
+                          <div>
+                            <span className="font-bold text-brand-dark block">ORDER: {order.id}</span>
+                            <span className="text-xs text-brand-muted">Placed: {new Date(order.createdAt).toLocaleTimeString()}</span>
+                          </div>
+                          <span className="text-brand-dark font-bold text-base">&euro;{order.total.toFixed(2)}</span>
+                        </div>
+
+                        <div className="text-xs font-mono border-t border-b border-brand-dark/5 py-2 space-y-1 text-brand-muted">
+                          <div>Customer: <span className="font-bold text-brand-dark">{order.customerInfo.name}</span></div>
+                          <div>Contact: <span className="underline">{order.customerInfo.phone}</span></div>
+                          <div>Time: <span className="font-bold text-brand-dark uppercase">{order.customerInfo.preferredTime}</span></div>
+                          <div>Type: <span className="font-bold uppercase text-brand-accent">{order.serviceType}</span></div>
+                          {order.customerInfo.address && (
+                            <div className="pt-1 font-sans text-brand-dark border-t border-dashed border-brand-dark/5 mt-1 font-medium">
+                              Deliver: {order.customerInfo.address}
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="space-y-1">
+                          <span className="font-mono text-xs font-bold text-brand-dark uppercase block">Items:</span>
+                          <ul className="text-xs font-mono text-brand-muted space-y-1.5 list-none">
+                            {order.items.map((it, i) => (
+                              <li key={i} className={`flex items-start justify-between gap-2 ${it.cancelled ? 'opacity-50 line-through' : ''}`}>
+                                <div className="flex-1 truncate">
+                                  <span className={it.cancelled ? 'text-rose-700 font-bold' : ''}>
+                                    {it.quantity}x {it.name} {it.size ? `(${it.size})` : ''}
+                                  </span>
+                                  {it.cancelled && (
+                                    <span className="ml-1 inline-block text-[10px] uppercase font-bold text-rose-600 bg-rose-50 border border-rose-200 px-1 py-0.2 not-italic">
+                                      Cancelled {it.cancelReason ? `— ${it.cancelReason}` : ''}
+                                    </span>
+                                  )}
+                                  {it.notes && <span className="text-brand-accent block font-sans italic text-[11px] pl-3">&ldquo;{it.notes}&rdquo;</span>}
+                                </div>
+                                {!it.cancelled && (
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleOpenCancelItemModal(order, i);
+                                    }}
+                                    title="Cancel this item from order"
+                                    className="text-rose-500 hover:text-rose-700 hover:bg-rose-50 p-1 border border-rose-200/60 rounded-none transition-colors shrink-0"
+                                  >
+                                    <X className="w-3 h-3" />
+                                  </button>
+                                )}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+
+                        <div className="pt-2 border-t border-brand-dark/5 flex items-center justify-between gap-2">
+                          <button
+                            type="button"
+                            onClick={() => handleOpenRejectOrderModal(order)}
+                            className="border border-rose-300 text-rose-700 hover:bg-rose-50 px-2.5 py-2 font-mono text-[11px] font-bold uppercase tracking-wider rounded-none active:scale-95 transition-all"
+                          >
+                            CANCEL
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleUpdateOrderStatus(order.id, 'Ready for Collection')}
+                            className="bg-emerald-700 text-white hover:bg-emerald-800 px-4 py-2 font-mono text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 rounded-none active:scale-95 transition-all"
+                          >
+                            <Check className="w-3.5 h-3.5" />
+                            <span>MARK READY</span>
+                          </button>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+
+              {/* COLUMN 3: READY / DELIVERING */}
+              <div className="bg-white border border-brand-dark/10 p-5 space-y-4">
+                <div className="flex justify-between items-center border-b border-brand-dark/10 pb-3">
+                  <span className="font-mono text-xs font-bold uppercase tracking-wider text-emerald-700 flex items-center gap-1.5">
+                    <span className="w-2 h-2 bg-emerald-500 inline-block"></span>
+                    READY FOR DISPATCH
+                  </span>
+                  <span className="font-mono text-xs bg-emerald-50 text-emerald-700 font-bold px-2 py-0.5 border border-emerald-200">
+                    {orders.filter(o => o.status === 'Ready for Collection' || o.status === 'Out for Delivery').length} Active
+                  </span>
+                </div>
+
+                <div className="space-y-4 overflow-y-auto max-h-[65vh] pr-1">
+                  {orders.filter(o => o.status === 'Ready for Collection' || o.status === 'Out for Delivery').length === 0 ? (
+                    <p className="text-sm text-brand-muted font-mono italic text-center py-10">No orders waiting on dispatch.</p>
+                  ) : (
+                    orders.filter(o => o.status === 'Ready for Collection' || o.status === 'Out for Delivery').map(order => (
+                      <div key={order.id} className="p-4 border border-emerald-600/20 hover:border-emerald-600/40 bg-emerald-50/5 space-y-4 relative transition-all shadow-[0_4px_12px_rgba(44,38,33,0.008)]">
+                        <div className="flex justify-between items-start font-mono text-sm">
+                          <div>
+                            <span className="font-bold text-brand-dark block">ORDER: {order.id}</span>
+                            <span className="text-xs text-brand-muted">Placed: {new Date(order.createdAt).toLocaleTimeString()}</span>
+                          </div>
+                          <span className="text-emerald-800 font-bold text-base">&euro;{order.total.toFixed(2)}</span>
+                        </div>
+
+                        <div className="text-xs font-mono border-t border-b border-brand-dark/5 py-2 space-y-1 text-brand-muted">
+                          <div>Customer: <span className="font-bold text-brand-dark">{order.customerInfo.name}</span></div>
+                          <div>Contact: <span className="underline">{order.customerInfo.phone}</span></div>
+                          <div>Time: <span className="font-bold text-brand-dark uppercase">{order.customerInfo.preferredTime}</span></div>
+                          <div>Type: <span className="font-bold uppercase text-brand-accent">{order.serviceType}</span></div>
+                          {order.customerInfo.address && (
+                            <div className="pt-1 font-sans text-brand-dark border-t border-dashed border-brand-dark/5 mt-1 font-medium">
+                              Deliver: {order.customerInfo.address}
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="space-y-1">
+                          <span className="font-mono text-xs font-bold text-brand-dark uppercase block">Items:</span>
+                          <ul className="text-xs font-mono text-brand-muted space-y-1.5 list-none">
+                            {order.items.map((it, i) => (
+                              <li key={i} className={`flex items-start justify-between gap-2 ${it.cancelled ? 'opacity-50 line-through' : ''}`}>
+                                <div className="flex-1 truncate">
+                                  <span className={it.cancelled ? 'text-rose-700 font-bold' : ''}>
+                                    {it.quantity}x {it.name} {it.size ? `(${it.size})` : ''}
+                                  </span>
+                                  {it.cancelled && (
+                                    <span className="ml-1 inline-block text-[10px] uppercase font-bold text-rose-600 bg-rose-50 border border-rose-200 px-1 py-0.2 not-italic">
+                                      Cancelled {it.cancelReason ? `— ${it.cancelReason}` : ''}
+                                    </span>
+                                  )}
+                                  {it.notes && <span className="text-brand-accent block font-sans italic text-[11px] pl-3">&ldquo;{it.notes}&rdquo;</span>}
+                                </div>
+                                {!it.cancelled && (
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleOpenCancelItemModal(order, i);
+                                    }}
+                                    title="Cancel this item from order"
+                                    className="text-rose-500 hover:text-rose-700 hover:bg-rose-50 p-1 border border-rose-200/60 rounded-none transition-colors shrink-0"
+                                  >
+                                    <X className="w-3 h-3" />
+                                  </button>
+                                )}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+
+                        <div className="pt-2 border-t border-brand-dark/5 flex gap-2 justify-end">
+                          {order.serviceType === 'delivery' && order.status === 'Ready for Collection' && (
+                            <button
+                              type="button"
+                              onClick={() => handleUpdateOrderStatus(order.id, 'Out for Delivery')}
+                              className="bg-brand-dark text-white hover:bg-brand-accent px-3 py-2 font-mono text-[10px] font-bold uppercase tracking-wider rounded-none active:scale-95 transition-all"
+                            >
+                              OUT FOR DELIVERY
+                            </button>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => handleUpdateOrderStatus(order.id, 'Completed')}
+                            className="bg-emerald-700 text-white hover:bg-emerald-800 px-3 py-2 font-mono text-[10px] font-bold uppercase tracking-wider rounded-none active:scale-95 transition-all"
+                          >
+                            COMPLETE &amp; CLOSE
+                          </button>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+
+            </div>
+          )}
+
+          {/* CANCELLED ORDERS VIEW */}
+          {orderViewFilter === 'cancelled' && (() => {
+            const isWithinDate = (dateString?: string) => {
+              if (historyDateFilter === 'all' || !dateString) return true;
+              const itemDate = new Date(dateString);
+              const now = new Date();
+              if (historyDateFilter === 'today') {
+                return itemDate.getFullYear() === now.getFullYear() &&
+                  itemDate.getMonth() === now.getMonth() &&
+                  itemDate.getDate() === now.getDate();
+              }
+              if (historyDateFilter === 'last7days') {
+                const sevenDaysAgo = new Date();
+                sevenDaysAgo.setDate(now.getDate() - 7);
+                sevenDaysAgo.setHours(0, 0, 0, 0);
+                return itemDate >= sevenDaysAgo;
+              }
+              if (historyDateFilter === 'month') {
+                return itemDate.getFullYear() === now.getFullYear() &&
+                  itemDate.getMonth() === now.getMonth();
+              }
+              return true;
+            };
+
+            const filteredCancelledOrders = orders
+              .filter(o => o.status === 'Cancelled')
+              .filter(o => isWithinDate(o.createdAt))
+              .filter(o => {
+                if (!historySearchQuery.trim()) return true;
+                const q = historySearchQuery.toLowerCase().trim();
+                return (
+                  o.id.toLowerCase().includes(q) ||
+                  o.customerInfo.name.toLowerCase().includes(q) ||
+                  o.customerInfo.phone.toLowerCase().includes(q) ||
+                  (o.cancellationReason && o.cancellationReason.toLowerCase().includes(q))
+                );
+              });
+
+            return (
+              <div className="bg-white border border-brand-dark/10 p-6 space-y-6">
+                
+                {/* Header & Date Range Filter Toolbar */}
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-brand-dark/10 pb-4">
+                  <div className="space-y-1">
+                    <span className="font-mono text-sm font-bold uppercase tracking-wider text-rose-800 flex items-center gap-2">
+                      <Ban className="w-4 h-4 text-rose-700" />
+                      Cancelled Orders Audit Log
+                    </span>
+                    <p className="text-xs font-mono text-brand-muted">
+                      Showing records for: <strong className="text-brand-dark uppercase">{historyDateFilter === 'last7days' ? 'Last 7 Days (Default)' : historyDateFilter === 'today' ? 'Today' : historyDateFilter === 'month' ? 'This Month' : 'All Time'}</strong> ({filteredCancelledOrders.length} orders found)
+                    </p>
+                  </div>
+
+                  {/* Date Range Chips */}
+                  <div className="flex flex-wrap items-center gap-1.5 bg-[#FDFBF7] p-1 border border-brand-dark/10">
+                    <button
+                      type="button"
+                      onClick={() => setHistoryDateFilter('today')}
+                      className={`px-3 py-1.5 font-mono text-xs font-bold uppercase tracking-wider transition-all ${
+                        historyDateFilter === 'today'
+                          ? 'bg-rose-700 text-white shadow-sm'
+                          : 'text-brand-dark hover:bg-white'
+                      }`}
+                    >
+                      Today
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setHistoryDateFilter('last7days')}
+                      className={`px-3 py-1.5 font-mono text-xs font-bold uppercase tracking-wider transition-all ${
+                        historyDateFilter === 'last7days'
+                          ? 'bg-rose-700 text-white shadow-sm'
+                          : 'text-brand-dark hover:bg-white'
+                      }`}
+                    >
+                      Last 7 Days
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setHistoryDateFilter('month')}
+                      className={`px-3 py-1.5 font-mono text-xs font-bold uppercase tracking-wider transition-all ${
+                        historyDateFilter === 'month'
+                          ? 'bg-rose-700 text-white shadow-sm'
+                          : 'text-brand-dark hover:bg-white'
+                      }`}
+                    >
+                      This Month
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setHistoryDateFilter('all')}
+                      className={`px-3 py-1.5 font-mono text-xs font-bold uppercase tracking-wider transition-all ${
+                        historyDateFilter === 'all'
+                          ? 'bg-rose-700 text-white shadow-sm'
+                          : 'text-brand-dark hover:bg-white'
+                      }`}
+                    >
+                      All
+                    </button>
+                  </div>
+                </div>
+
+                {/* Search & Filter Bar */}
+                <div className="flex items-center gap-3">
+                  <div className="relative flex-1">
+                    <Search className="w-4 h-4 text-brand-muted absolute left-3 top-1/2 -translate-y-1/2" />
+                    <input
+                      type="text"
+                      placeholder="Search cancelled orders by ID, customer name, phone, or reason..."
+                      value={historySearchQuery}
+                      onChange={(e) => setHistorySearchQuery(e.target.value)}
+                      className="w-full pl-9 pr-4 py-2 border border-brand-dark/15 text-xs font-mono focus:border-rose-600 outline-none bg-brand-beige/5"
+                    />
+                  </div>
+                  {historySearchQuery && (
+                    <button
+                      type="button"
+                      onClick={() => setHistorySearchQuery('')}
+                      className="px-3 py-2 border border-brand-dark/15 font-mono text-xs text-brand-dark hover:bg-brand-dark/5"
+                    >
+                      Clear
+                    </button>
+                  )}
+                </div>
+
+                {filteredCancelledOrders.length === 0 ? (
+                  <div className="text-center py-16 border border-dashed border-brand-dark/15 space-y-2 bg-[#FDFBF7]/50">
+                    <CheckCircle2 className="w-8 h-8 mx-auto text-emerald-600" />
+                    <p className="font-serif text-sm font-bold text-brand-dark">No cancelled orders in this timeframe.</p>
+                    <p className="font-mono text-xs text-brand-muted">
+                      {historyDateFilter === 'last7days' ? 'No cancellations occurred in the last 7 days.' : 'Try changing your date filter or search criteria above.'}
+                    </p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                    {filteredCancelledOrders.map(order => (
+                      <div key={order.id} className="p-4 border border-rose-300 bg-rose-50/20 space-y-3 shadow-sm">
+                        <div className="flex justify-between items-start font-mono text-sm">
+                          <div>
+                            <span className="font-bold text-brand-dark block">ORDER: {order.id}</span>
+                            <span className="text-xs text-brand-muted">Placed: {new Date(order.createdAt).toLocaleString()}</span>
+                          </div>
+                          <span className="font-mono text-xs font-bold uppercase px-2 py-0.5 bg-rose-100 text-rose-800 border border-rose-300">
+                            Cancelled
+                          </span>
+                        </div>
+
+                        {/* Reason Description Card */}
+                        <div className="p-2.5 bg-rose-50 border-l-4 border-rose-600 text-xs font-sans text-rose-900 space-y-1">
+                          <span className="font-mono font-bold text-[10px] uppercase tracking-wider text-rose-800 block">
+                            Reason for Cancellation:
+                          </span>
+                          <p className="leading-relaxed font-medium">
+                            {order.cancellationReason || 'No specific cancellation description recorded.'}
+                          </p>
+                        </div>
+
+                        <div className="text-xs font-mono border-t border-b border-brand-dark/5 py-2 space-y-1 text-brand-muted">
+                          <div>Customer: <span className="font-bold text-brand-dark">{order.customerInfo.name}</span></div>
+                          <div>Contact: <span className="underline">{order.customerInfo.phone}</span></div>
+                          <div>Time: <span className="font-bold text-brand-dark uppercase">{order.customerInfo.preferredTime}</span></div>
+                          <div>Fulfillment: <span className="font-bold uppercase text-brand-accent">{order.serviceType}</span></div>
+                          {order.customerInfo.address && (
+                            <div className="pt-1 font-sans text-brand-dark">Address: {order.customerInfo.address}</div>
+                          )}
+                        </div>
+
+                        <div className="space-y-1 text-xs font-mono text-brand-muted">
+                          <span className="font-bold text-brand-dark block">Items:</span>
+                          <ul className="space-y-1 list-disc list-inside">
+                            {order.items.map((it, idx) => (
+                              <li key={idx} className="truncate">
+                                {it.quantity}x {it.name} {it.size ? `(${it.size})` : ''}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+
+                        <div className="pt-2 border-t border-brand-dark/5 flex justify-between font-mono text-xs font-bold text-brand-dark">
+                          <span>Original Total:</span>
+                          <span className="line-through text-brand-muted">€{order.total.toFixed(2)}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          })()}
+
+          {/* COMPLETE ORDERS HISTORY VIEW */}
+          {orderViewFilter === 'all' && (() => {
+            const isWithinDate = (dateString?: string) => {
+              if (historyDateFilter === 'all' || !dateString) return true;
+              const itemDate = new Date(dateString);
+              const now = new Date();
+              if (historyDateFilter === 'today') {
+                return itemDate.getFullYear() === now.getFullYear() &&
+                  itemDate.getMonth() === now.getMonth() &&
+                  itemDate.getDate() === now.getDate();
+              }
+              if (historyDateFilter === 'last7days') {
+                const sevenDaysAgo = new Date();
+                sevenDaysAgo.setDate(now.getDate() - 7);
+                sevenDaysAgo.setHours(0, 0, 0, 0);
+                return itemDate >= sevenDaysAgo;
+              }
+              if (historyDateFilter === 'month') {
+                return itemDate.getFullYear() === now.getFullYear() &&
+                  itemDate.getMonth() === now.getMonth();
+              }
+              return true;
+            };
+
+            const filteredOrders = orders
+              .filter(o => isWithinDate(o.createdAt))
+              .filter(o => {
+                if (historyStatusFilter === 'all') return true;
+                if (historyStatusFilter === 'Active') return o.status !== 'Completed' && o.status !== 'Cancelled';
+                return o.status === historyStatusFilter;
+              })
+              .filter(o => {
+                if (!historySearchQuery.trim()) return true;
+                const q = historySearchQuery.toLowerCase().trim();
+                return (
+                  o.id.toLowerCase().includes(q) ||
+                  o.customerInfo.name.toLowerCase().includes(q) ||
+                  o.customerInfo.phone.toLowerCase().includes(q) ||
+                  (o.customerInfo.address && o.customerInfo.address.toLowerCase().includes(q)) ||
+                  o.items.some(it => it.name.toLowerCase().includes(q))
+                );
+              });
+
+            // Calculate Period Metrics
+            const totalOrdersInRange = filteredOrders.length;
+            const completedCount = filteredOrders.filter(o => o.status === 'Completed').length;
+            const cancelledCount = filteredOrders.filter(o => o.status === 'Cancelled').length;
+            const activeCount = filteredOrders.filter(o => o.status !== 'Completed' && o.status !== 'Cancelled').length;
+            const totalRevenue = filteredOrders
+              .filter(o => o.status !== 'Cancelled')
+              .reduce((sum, o) => sum + (o.total || 0), 0);
+
+            return (
+              <div className="bg-white border border-brand-dark/10 p-6 space-y-6">
+                
+                {/* Header & Date Range Toolbar */}
+                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-brand-dark/10 pb-4">
+                  <div className="space-y-1">
+                    <span className="font-mono text-sm font-bold uppercase tracking-wider text-brand-dark flex items-center gap-2">
+                      <Clock className="w-4 h-4 text-brand-accent" />
+                      Complete Orders History
+                    </span>
+                    <p className="text-xs font-mono text-brand-muted">
+                      Filtered by date: <strong className="text-brand-dark uppercase">{historyDateFilter === 'last7days' ? 'Last 7 Days (Default)' : historyDateFilter === 'today' ? 'Today' : historyDateFilter === 'month' ? 'This Month' : 'All Time'}</strong> &bull; Showing {filteredOrders.length} of {orders.length} total records
+                    </p>
+                  </div>
+
+                  {/* Date Filter Buttons */}
+                  <div className="flex flex-wrap items-center gap-1.5 bg-[#FDFBF7] p-1 border border-brand-dark/10">
+                    <button
+                      type="button"
+                      onClick={() => setHistoryDateFilter('today')}
+                      className={`px-3 py-1.5 font-mono text-xs font-bold uppercase tracking-wider transition-all ${
+                        historyDateFilter === 'today'
+                          ? 'bg-brand-dark text-white shadow-sm'
+                          : 'text-brand-dark hover:bg-white'
+                      }`}
+                    >
+                      Today
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setHistoryDateFilter('last7days')}
+                      className={`px-3 py-1.5 font-mono text-xs font-bold uppercase tracking-wider transition-all ${
+                        historyDateFilter === 'last7days'
+                          ? 'bg-brand-dark text-white shadow-sm'
+                          : 'text-brand-dark hover:bg-white'
+                      }`}
+                    >
+                      Last 7 Days
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setHistoryDateFilter('month')}
+                      className={`px-3 py-1.5 font-mono text-xs font-bold uppercase tracking-wider transition-all ${
+                        historyDateFilter === 'month'
+                          ? 'bg-brand-dark text-white shadow-sm'
+                          : 'text-brand-dark hover:bg-white'
+                      }`}
+                    >
+                      This Month
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setHistoryDateFilter('all')}
+                      className={`px-3 py-1.5 font-mono text-xs font-bold uppercase tracking-wider transition-all ${
+                        historyDateFilter === 'all'
+                          ? 'bg-brand-dark text-white shadow-sm'
+                          : 'text-brand-dark hover:bg-white'
+                      }`}
+                    >
+                      All History
+                    </button>
+                  </div>
+                </div>
+
+                {/* Period KPI Summary Cards */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-[#FDFBF7] p-4 border border-brand-dark/10">
+                  <div className="space-y-0.5">
+                    <span className="font-mono text-[11px] text-brand-muted uppercase font-semibold">Total Orders:</span>
+                    <p className="font-mono text-lg font-bold text-brand-dark">{totalOrdersInRange}</p>
+                  </div>
+                  <div className="space-y-0.5">
+                    <span className="font-mono text-[11px] text-brand-muted uppercase font-semibold">Total Sales:</span>
+                    <p className="font-mono text-lg font-bold text-emerald-800">€{totalRevenue.toFixed(2)}</p>
+                  </div>
+                  <div className="space-y-0.5">
+                    <span className="font-mono text-[11px] text-brand-muted uppercase font-semibold">Completed:</span>
+                    <p className="font-mono text-lg font-bold text-emerald-700">{completedCount}</p>
+                  </div>
+                  <div className="space-y-0.5">
+                    <span className="font-mono text-[11px] text-brand-muted uppercase font-semibold">Cancelled:</span>
+                    <p className="font-mono text-lg font-bold text-rose-700">{cancelledCount}</p>
+                  </div>
+                </div>
+
+                {/* Status & Search Sub-bar */}
+                <div className="flex flex-col md:flex-row items-center gap-3">
+                  <div className="relative flex-1 w-full">
+                    <Search className="w-4 h-4 text-brand-muted absolute left-3 top-1/2 -translate-y-1/2" />
+                    <input
+                      type="text"
+                      placeholder="Search orders by ID (e.g. ORD-1234), customer name, phone, address, dish..."
+                      value={historySearchQuery}
+                      onChange={(e) => setHistorySearchQuery(e.target.value)}
+                      className="w-full pl-9 pr-4 py-2 border border-brand-dark/15 text-xs font-mono focus:border-brand-accent outline-none bg-brand-beige/5"
+                    />
+                  </div>
+
+                  <div className="flex items-center gap-1.5 w-full md:w-auto overflow-x-auto pb-1 md:pb-0">
+                    <span className="font-mono text-xs text-brand-muted uppercase font-bold pl-1">Status:</span>
+                    {(['all', 'Completed', 'Cancelled', 'Active'] as const).map(statusTab => (
+                      <button
+                        key={statusTab}
+                        type="button"
+                        onClick={() => setHistoryStatusFilter(statusTab)}
+                        className={`px-2.5 py-1 font-mono text-xs font-bold uppercase border transition-all ${
+                          historyStatusFilter === statusTab
+                            ? 'bg-brand-dark text-white border-brand-dark'
+                            : 'bg-white text-brand-dark border-brand-dark/15 hover:bg-brand-dark/5'
+                        }`}
+                      >
+                        {statusTab === 'all' ? 'All' : statusTab}
+                      </button>
+                    ))}
+                    {historySearchQuery && (
+                      <button
+                        type="button"
+                        onClick={() => setHistorySearchQuery('')}
+                        className="px-2.5 py-1 font-mono text-xs text-brand-muted hover:text-brand-dark underline"
+                      >
+                        Reset
+                      </button>
                     )}
-
-                    <div className="pt-2 border-t border-brand-dark/5 flex justify-end">
-                      <button
-                        type="button"
-                        onClick={() => handleUpdateOrderStatus(order.id, 'Preparing')}
-                        className="bg-brand-dark text-white hover:bg-brand-accent px-4 py-2 font-mono text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 rounded-none active:scale-95 transition-all"
-                      >
-                        <Play className="w-3 h-3 fill-current" />
-                        <span>START PREPARING</span>
-                      </button>
-                    </div>
                   </div>
-                ))
-              )}
-            </div>
-          </div>
+                </div>
 
-          {/* COLUMN 2: IN PREPARATION */}
-          <div className="bg-white border border-brand-dark/10 p-5 space-y-4">
-            <div className="flex justify-between items-center border-b border-brand-dark/10 pb-3">
-              <span className="font-mono text-xs font-bold uppercase tracking-wider text-brand-dark flex items-center gap-1.5">
-                <span className="w-2 h-2 bg-amber-500 inline-block"></span>
-                PREPARING (COOKING)
-              </span>
-              <span className="font-mono text-xs bg-brand-dark/5 text-brand-dark font-bold px-2 py-0.5 border border-brand-dark/10">
-                {orders.filter(o => o.status === 'Preparing').length} Active
-              </span>
-            </div>
-
-            <div className="space-y-4 overflow-y-auto max-h-[65vh] pr-1">
-              {orders.filter(o => o.status === 'Preparing').length === 0 ? (
-                <p className="text-sm text-brand-muted font-mono italic text-center py-10">No orders actively cooking.</p>
-              ) : (
-                orders.filter(o => o.status === 'Preparing').map(order => (
-                  <div key={order.id} className="p-4 border border-brand-dark/15 hover:border-brand-dark/30 bg-[#FDFBF7]/40 space-y-4 relative transition-all shadow-[0_4px_12px_rgba(44,38,33,0.008)]">
-                    <div className="flex justify-between items-start font-mono text-sm">
-                      <div>
-                        <span className="font-bold text-brand-dark block">ORDER: {order.id}</span>
-                        <span className="text-xs text-brand-muted">Placed: {new Date(order.createdAt).toLocaleTimeString()}</span>
-                      </div>
-                      <span className="text-brand-dark font-bold text-base">&euro;{order.total.toFixed(2)}</span>
-                    </div>
-
-                    <div className="text-xs font-mono border-t border-b border-brand-dark/5 py-2 space-y-1 text-brand-muted">
-                      <div>Customer: <span className="font-bold text-brand-dark">{order.customerInfo.name}</span></div>
-                      <div>Contact: <span className="underline">{order.customerInfo.phone}</span></div>
-                      <div>Time: <span className="font-bold text-brand-dark uppercase">{order.customerInfo.preferredTime}</span></div>
-                      <div>Type: <span className="font-bold uppercase text-brand-accent">{order.serviceType}</span></div>
-                      {order.customerInfo.address && (
-                        <div className="pt-1 font-sans text-brand-dark border-t border-dashed border-brand-dark/5 mt-1 font-medium">
-                          Deliver: {order.customerInfo.address}
+                {/* Orders Grid */}
+                {filteredOrders.length === 0 ? (
+                  <div className="text-center py-16 border border-dashed border-brand-dark/15 space-y-2 bg-[#FDFBF7]/50">
+                    <Clock className="w-8 h-8 mx-auto text-brand-muted/50" />
+                    <p className="font-serif text-sm font-bold text-brand-dark">No orders found matching the filter.</p>
+                    <p className="font-mono text-xs text-brand-muted">
+                      {historyDateFilter === 'last7days' ? 'No orders recorded in the last 7 days.' : 'Try changing your date filter or search query above.'}
+                    </p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                    {filteredOrders.map(order => (
+                      <div key={order.id} className="p-4 border border-brand-dark/15 bg-white space-y-3 relative hover:border-brand-dark/30 transition-all shadow-sm">
+                        <div className="flex justify-between items-start font-mono text-sm">
+                          <div>
+                            <span className="font-bold text-brand-dark block">ORDER: {order.id}</span>
+                            <span className="text-xs text-brand-muted">Placed: {new Date(order.createdAt).toLocaleString()}</span>
+                          </div>
+                          <span className={`font-mono text-xs font-bold uppercase px-2 py-0.5 border ${
+                            order.status === 'Cancelled'
+                              ? 'bg-rose-50 text-rose-800 border-rose-200'
+                              : order.status === 'Completed'
+                              ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                              : order.status === 'Ready for Collection' || order.status === 'Out for Delivery'
+                              ? 'bg-blue-50 text-blue-800 border-blue-200'
+                              : 'bg-amber-50 text-amber-800 border-amber-200'
+                          }`}>
+                            {order.status}
+                          </span>
                         </div>
-                      )}
-                    </div>
 
-                    <div className="space-y-1">
-                      <span className="font-mono text-xs font-bold text-brand-dark uppercase block">Items:</span>
-                      <ul className="text-xs font-mono text-brand-muted space-y-1 list-disc list-inside">
-                        {order.items.map((it, i) => (
-                          <li key={i} className="truncate">
-                            {it.quantity}x {it.name} {it.size ? `(${it.size})` : ''}
-                            {it.notes && <span className="text-brand-accent block font-sans italic text-[11px] pl-3">&ldquo;{it.notes}&rdquo;</span>}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
+                        {order.cancellationReason && (
+                          <div className="p-2.5 bg-rose-50 border-l-4 border-rose-600 text-xs font-sans text-rose-900 space-y-0.5">
+                            <span className="font-mono font-bold text-[10px] uppercase tracking-wider text-rose-800 block">
+                              Cancellation Reason:
+                            </span>
+                            <p className="font-medium">{order.cancellationReason}</p>
+                          </div>
+                        )}
 
-                    <div className="pt-2 border-t border-brand-dark/5 flex justify-end">
-                      <button
-                        type="button"
-                        onClick={() => handleUpdateOrderStatus(order.id, 'Ready for Collection')}
-                        className="bg-emerald-700 text-white hover:bg-emerald-800 px-4 py-2 font-mono text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 rounded-none active:scale-95 transition-all"
-                      >
-                        <Check className="w-3.5 h-3.5" />
-                        <span>MARK READY</span>
-                      </button>
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-          </div>
-
-          {/* COLUMN 3: READY / DELIVERING */}
-          <div className="bg-white border border-brand-dark/10 p-5 space-y-4">
-            <div className="flex justify-between items-center border-b border-brand-dark/10 pb-3">
-              <span className="font-mono text-xs font-bold uppercase tracking-wider text-emerald-700 flex items-center gap-1.5">
-                <span className="w-2 h-2 bg-emerald-500 inline-block"></span>
-                READY FOR DISPATCH
-              </span>
-              <span className="font-mono text-xs bg-emerald-50 text-emerald-700 font-bold px-2 py-0.5 border border-emerald-200">
-                {orders.filter(o => o.status === 'Ready for Collection' || o.status === 'Out for Delivery').length} Active
-              </span>
-            </div>
-
-            <div className="space-y-4 overflow-y-auto max-h-[65vh] pr-1">
-              {orders.filter(o => o.status === 'Ready for Collection' || o.status === 'Out for Delivery').length === 0 ? (
-                <p className="text-sm text-brand-muted font-mono italic text-center py-10">No orders waiting on dispatch.</p>
-              ) : (
-                orders.filter(o => o.status === 'Ready for Collection' || o.status === 'Out for Delivery').map(order => (
-                  <div key={order.id} className="p-4 border border-emerald-600/20 hover:border-emerald-600/40 bg-emerald-50/5 space-y-4 relative transition-all shadow-[0_4px_12px_rgba(44,38,33,0.008)]">
-                    <div className="flex justify-between items-start font-mono text-sm">
-                      <div>
-                        <span className="font-bold text-brand-dark block">ORDER: {order.id}</span>
-                        <span className="text-xs text-brand-muted">Placed: {new Date(order.createdAt).toLocaleTimeString()}</span>
-                      </div>
-                      <span className="text-emerald-800 font-bold text-base">&euro;{order.total.toFixed(2)}</span>
-                    </div>
-
-                    <div className="text-xs font-mono border-t border-b border-brand-dark/5 py-2 space-y-1 text-brand-muted">
-                      <div>Customer: <span className="font-bold text-brand-dark">{order.customerInfo.name}</span></div>
-                      <div>Contact: <span className="underline">{order.customerInfo.phone}</span></div>
-                      <div>Time: <span className="font-bold text-brand-dark uppercase">{order.customerInfo.preferredTime}</span></div>
-                      <div>Type: <span className="font-bold uppercase text-brand-accent">{order.serviceType}</span></div>
-                      {order.customerInfo.address && (
-                        <div className="pt-1 font-sans text-brand-dark border-t border-dashed border-brand-dark/5 mt-1 font-medium">
-                          Deliver: {order.customerInfo.address}
+                        <div className="text-xs font-mono border-t border-b border-brand-dark/5 py-2 space-y-1 text-brand-muted">
+                          <div>Customer: <span className="font-bold text-brand-dark">{order.customerInfo.name}</span></div>
+                          <div>Contact: <span className="underline">{order.customerInfo.phone}</span></div>
+                          <div>Fulfillment: <span className="font-bold uppercase text-brand-accent">{order.serviceType}</span> &bull; Time: <span className="font-bold text-brand-dark uppercase">{order.customerInfo.preferredTime}</span></div>
+                          {order.customerInfo.address && (
+                            <div className="pt-1 font-sans text-brand-dark font-medium">Deliver to: {order.customerInfo.address}</div>
+                          )}
+                          {order.customerInfo.notes && (
+                            <div className="font-sans italic text-amber-800 pt-0.5">Note: "{order.customerInfo.notes}"</div>
+                          )}
                         </div>
-                      )}
-                    </div>
 
-                    <div className="space-y-1">
-                      <span className="font-mono text-xs font-bold text-brand-dark uppercase block">Items:</span>
-                      <ul className="text-xs font-mono text-brand-muted space-y-1 list-disc list-inside">
-                        {order.items.map((it, i) => (
-                          <li key={i} className="truncate">
-                            {it.quantity}x {it.name} {it.size ? `(${it.size})` : ''}
-                            {it.notes && <span className="text-brand-accent block font-sans italic text-[11px] pl-3">&ldquo;{it.notes}&rdquo;</span>}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
+                        <div className="space-y-1 text-xs font-mono text-brand-muted">
+                          <span className="font-bold text-brand-dark block">Items:</span>
+                          <ul className="space-y-1 list-none">
+                            {order.items.map((it, idx) => (
+                              <li key={idx} className={`flex justify-between items-start ${it.cancelled ? 'line-through text-rose-700 opacity-60' : ''}`}>
+                                <span className="truncate pr-2">{it.quantity}x {it.name} {it.size ? `(${it.size})` : ''}</span>
+                                <span className="font-bold text-brand-dark shrink-0">€{(it.price * it.quantity).toFixed(2)}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
 
-                    <div className="pt-2 border-t border-brand-dark/5 flex gap-2 justify-end">
-                      {order.serviceType === 'delivery' && order.status === 'Ready for Collection' && (
-                        <button
-                          type="button"
-                          onClick={() => handleUpdateOrderStatus(order.id, 'Out for Delivery')}
-                          className="bg-brand-dark text-white hover:bg-brand-accent px-3 py-2 font-mono text-[10px] font-bold uppercase tracking-wider rounded-none active:scale-95 transition-all"
-                        >
-                          OUT FOR DELIVERY
-                        </button>
-                      )}
-                      <button
-                        type="button"
-                        onClick={() => handleUpdateOrderStatus(order.id, 'Completed')}
-                        className="bg-emerald-700 text-white hover:bg-emerald-800 px-3 py-2 font-mono text-[10px] font-bold uppercase tracking-wider rounded-none active:scale-95 transition-all"
-                      >
-                        COMPLETE &amp; CLOSE
-                      </button>
-                    </div>
+                        <div className="pt-2 border-t border-brand-dark/5 flex justify-between font-mono text-xs font-bold text-brand-dark">
+                          <span>Total Amount:</span>
+                          <span className={order.status === 'Cancelled' ? 'line-through text-brand-muted' : 'text-brand-accent text-sm'}>
+                            €{order.total.toFixed(2)}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                ))
-              )}
-            </div>
-          </div>
+                )}
+              </div>
+            );
+          })()}
 
         </div>
       )}
@@ -3243,7 +3956,7 @@ Beverages | Tea or Coffee`);
               </div>
             </div>
 
-            <div className="pt-4 border-t border-brand-dark/10 flex gap-3">
+            <div className="pt-4 border-t border-brand-dark/10 flex gap-2 sm:gap-3">
               <button
                 type="button"
                 onClick={() => setActiveNewOrderNotification(null)}
@@ -3253,11 +3966,158 @@ Beverages | Tea or Coffee`);
               </button>
               <button
                 type="button"
+                onClick={() => {
+                  const toReject = activeNewOrderNotification;
+                  setActiveNewOrderNotification(null);
+                  handleOpenRejectOrderModal(toReject);
+                }}
+                className="flex-1 border border-rose-300 hover:bg-rose-50 text-rose-700 py-3 font-mono text-xs font-bold uppercase tracking-wider rounded-none active:scale-95 transition-all text-center flex items-center justify-center gap-1.5"
+              >
+                <Ban className="w-4 h-4" />
+                Reject
+              </button>
+              <button
+                type="button"
                 onClick={() => handleAcceptOrder(activeNewOrderNotification.id)}
                 className="flex-1 bg-brand-accent hover:bg-brand-dark text-white py-3 font-mono text-xs font-bold uppercase tracking-wider rounded-none active:scale-95 transition-all text-center flex items-center justify-center gap-1.5 shadow-md shadow-brand-accent/15"
               >
                 <Check className="w-4 h-4" />
-                Accept Order
+                Accept
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* CANCELLATION / REJECTION MODAL */}
+      {(rejectModalOrder || rejectItemTarget) && (
+        <div className="fixed inset-0 z-[120] bg-black/75 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white border-2 border-rose-600 max-w-lg w-full p-6 shadow-2xl space-y-5 animate-scale-in">
+            <div className="flex justify-between items-start border-b border-brand-dark/10 pb-3">
+              <div className="flex items-center gap-2 text-rose-700">
+                <AlertTriangle className="w-5 h-5" />
+                <h3 className="font-serif text-lg font-bold text-brand-dark">
+                  {rejectModalOrder 
+                    ? `Reject Order #${rejectModalOrder.id}`
+                    : `Cancel Item from Order #${rejectItemTarget?.order.id}`
+                  }
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setRejectModalOrder(null);
+                  setRejectItemTarget(null);
+                }}
+                className="text-brand-muted hover:text-brand-dark"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {rejectItemTarget && (
+              <div className="p-3 bg-amber-50 border border-amber-200 text-xs font-mono text-amber-900">
+                Item to Cancel: <strong>{rejectItemTarget.order.items[rejectItemTarget.itemIndex]?.name}</strong> ({rejectItemTarget.order.items[rejectItemTarget.itemIndex]?.quantity}x &bull; €{(rejectItemTarget.order.items[rejectItemTarget.itemIndex]?.price * rejectItemTarget.order.items[rejectItemTarget.itemIndex]?.quantity).toFixed(2)})
+              </div>
+            )}
+
+            {rejectModalOrder && (
+              <div className="p-3 bg-rose-50 border border-rose-200 text-xs font-mono text-rose-900 flex justify-between items-center">
+                <span>Customer: <strong>{rejectModalOrder.customerInfo.name}</strong></span>
+                <span>Total: <strong>€{rejectModalOrder.total.toFixed(2)}</strong></span>
+              </div>
+            )}
+
+            {/* Quick-select reason presets */}
+            <div className="space-y-2">
+              <label className="block font-mono text-xs font-bold uppercase text-brand-dark">
+                Select Reason / Template:
+              </label>
+              <div className="flex flex-wrap gap-2">
+                {(rejectModalOrder ? [
+                  'Kitchen at maximum capacity',
+                  'Item(s) out of stock',
+                  'Outside delivery radius',
+                  'Kitchen closing / closed',
+                  'Customer requested cancellation',
+                  'Other reason'
+                ] : [
+                  'Item out of stock / sold out',
+                  'Ingredient unavailable',
+                  'Customer requested removal',
+                  'Kitchen unable to prepare',
+                  'Other reason'
+                ]).map((reasonPreset) => (
+                  <button
+                    key={reasonPreset}
+                    type="button"
+                    onClick={() => setCancellationReasonOption(reasonPreset)}
+                    className={`px-3 py-1.5 font-mono text-xs font-bold border transition-all text-left ${
+                      cancellationReasonOption === reasonPreset
+                        ? 'bg-rose-700 text-white border-rose-700 shadow-sm'
+                        : 'bg-white text-brand-dark border-brand-dark/15 hover:border-brand-dark/40'
+                    }`}
+                  >
+                    {reasonPreset}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Short custom description/notes */}
+            <div className="space-y-1.5">
+              <label className="block font-mono text-xs font-bold uppercase text-brand-dark">
+                Short Description / Explanation:
+              </label>
+              <textarea
+                value={cancellationCustomNote}
+                onChange={(e) => setCancellationCustomNote(e.target.value)}
+                rows={3}
+                placeholder="Write specific details for the customer (e.g. 'Sorry, fresh Lamb Karahi is sold out this evening')..."
+                className="w-full border border-brand-dark/20 p-3 font-sans text-xs text-brand-dark focus:border-rose-600 focus:outline-none bg-[#FDFBF7]/50"
+              />
+            </div>
+
+            {/* Email dispatch toggle */}
+            {rejectModalOrder && (
+              <label className="flex items-center gap-2.5 cursor-pointer text-xs font-sans text-brand-dark pt-1">
+                <input
+                  type="checkbox"
+                  checked={sendCancellationEmail}
+                  onChange={(e) => setSendCancellationEmail(e.target.checked)}
+                  className="w-4 h-4 text-rose-600 border-brand-dark/20 rounded-none focus:ring-0"
+                />
+                <span className="font-mono text-xs text-brand-dark">
+                  Send polite cancellation email to customer ({rejectModalOrder.customerInfo.email})
+                </span>
+              </label>
+            )}
+
+            {/* Action buttons */}
+            <div className="pt-3 border-t border-brand-dark/10 flex gap-3">
+              <button
+                type="button"
+                onClick={() => {
+                  setRejectModalOrder(null);
+                  setRejectItemTarget(null);
+                }}
+                disabled={cancellationSubmitting}
+                className="flex-1 border border-brand-dark/15 hover:border-brand-dark text-brand-dark py-3 font-mono text-xs font-bold uppercase tracking-wider rounded-none active:scale-95 transition-all text-center"
+              >
+                Go Back
+              </button>
+              <button
+                type="button"
+                disabled={cancellationSubmitting}
+                onClick={rejectModalOrder ? handleConfirmOrderCancellation : handleConfirmItemCancellation}
+                className="flex-1 bg-rose-700 hover:bg-rose-800 text-white py-3 font-mono text-xs font-bold uppercase tracking-wider rounded-none active:scale-95 transition-all text-center flex items-center justify-center gap-1.5 shadow-md"
+              >
+                {cancellationSubmitting ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Ban className="w-4 h-4" />
+                )}
+                {rejectModalOrder ? 'Confirm Reject Order' : 'Confirm Cancel Item'}
               </button>
             </div>
           </div>

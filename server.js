@@ -360,6 +360,18 @@ const pool = mysql.createPool({
       console.warn('Altering store_settings column failed (might be already LONGTEXT):', alterErr.message);
     }
 
+    // Upgrade orders table to support cancellation reason & admin notes
+    try {
+      await connection.query('ALTER TABLE orders ADD COLUMN cancellation_reason TEXT');
+    } catch (e) {
+      // Column might already exist
+    }
+    try {
+      await connection.query('ALTER TABLE orders ADD COLUMN admin_notes TEXT');
+    } catch (e) {
+      // Column might already exist
+    }
+
     // Default settings to seed
     const defaultSettings = {
       'clay_oven_timing_monday': '4:00 PM - 9:00 PM',
@@ -1066,6 +1078,8 @@ app.get('/api/orders', async (req, res) => {
           notes: order.notes || undefined
         },
         status: order.status,
+        cancellationReason: order.cancellation_reason || undefined,
+        adminNotes: order.admin_notes || undefined,
         isArchived: order.is_archived === 1,
         createdAt: order.createdAt
       };
@@ -1442,6 +1456,8 @@ app.get('/api/admin/orders', requireAdmin, async (req, res) => {
           notes: order.notes || undefined
         },
         status: order.status,
+        cancellationReason: order.cancellation_reason || undefined,
+        adminNotes: order.admin_notes || undefined,
         isArchived: order.is_archived === 1,
         createdAt: order.createdAt
       };
@@ -1456,24 +1472,114 @@ app.get('/api/admin/orders', requireAdmin, async (req, res) => {
 
 app.put('/api/admin/orders/:id/status', requireAdmin, async (req, res) => {
   const { id } = req.params;
-  const { status } = req.body;
+  const { status, cancellationReason, adminNotes, sendEmail } = req.body;
   if (!status) {
     return res.status(400).json({ error: 'Status is required' });
   }
 
   try {
-    const [result] = await pool.query(
-      'UPDATE orders SET status = ? WHERE id = ?',
-      [status, id]
-    );
+    let updateQuery = 'UPDATE orders SET status = ?';
+    const params = [status];
+
+    if (cancellationReason !== undefined) {
+      updateQuery += ', cancellation_reason = ?';
+      params.push(cancellationReason);
+    }
+    if (adminNotes !== undefined) {
+      updateQuery += ', admin_notes = ?';
+      params.push(adminNotes);
+    }
+    updateQuery += ' WHERE id = ?';
+    params.push(id);
+
+    const [result] = await pool.query(updateQuery, params);
     
     if (result.affectedRows === 0) {
       return res.status(404).json({ error: 'Order not found' });
     }
-    
+
+    // Send immediate response so admin UI updates in milliseconds
     res.json({ success: true, message: `Order status updated to ${status}` });
+
+    // Asynchronously dispatch polite cancellation email in background without blocking response
+    if (status === 'Cancelled' && sendEmail !== false) {
+      (async () => {
+        try {
+          const [rows] = await pool.query('SELECT * FROM orders WHERE id = ?', [id]);
+          if (rows.length > 0 && rows[0].customer_email) {
+            const order = rows[0];
+            const mailSender = await getMailSender();
+            const activeTransporter = await getTransporter();
+            
+            const reasonText = cancellationReason || 'Kitchen unable to fulfil order at this time';
+
+            await activeTransporter.sendMail({
+              from: `"The Royal Clay Oven" <${mailSender}>`,
+              to: order.customer_email,
+              subject: `Order Update - Order #${order.id} Cancelled`,
+              html: `
+                <div style="font-family: sans-serif; padding: 24px; max-width: 600px; margin: auto; border: 1px solid #eee; background-color: #ffffff;">
+                  <div style="text-align: center; margin-bottom: 24px;">
+                    <h2 style="color: #C85A32; font-family: serif; margin: 0; letter-spacing: 0.1em; font-size: 28px;">THE ROYAL CLAY OVEN</h2>
+                    <p style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.2em; color: #777; margin: 5px 0 0 0;">Order Cancellation Notification</p>
+                  </div>
+                  <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;" />
+                  <p style="font-size: 14px; line-height: 1.5; color: #333;">Dear ${escapeHtml(order.customer_name)},</p>
+                  <p style="font-size: 14px; line-height: 1.5; color: #333;">We sincerely apologize, but your order <strong>#${escapeHtml(order.id)}</strong> could not be accepted/completed and has been cancelled by our kitchen team.</p>
+                  
+                  <div style="background-color: #FFF5F5; border-left: 4px solid #E53E3E; padding: 16px; margin: 20px 0;">
+                    <h4 style="color: #C53030; margin: 0 0 6px 0; font-size: 14px;">Reason for Cancellation:</h4>
+                    <p style="margin: 0; font-size: 14px; color: #4A5568;">${escapeHtml(reasonText)}</p>
+                  </div>
+
+                  <p style="font-size: 13px; line-height: 1.5; color: #666;">If you have any questions or would like to speak directly with our team, please do not hesitate to contact us by phone at <strong>061 703 513</strong> or WhatsApp <strong>086 020 3720</strong>.</p>
+                  
+                  <div style="margin-top: 30px; padding-top: 15px; border-top: 1px solid #eee; text-align: center; font-size: 12px; color: #999;">
+                    The Royal Clay Oven &bull; Ballycasey Craft & Design Center, Shannon, Co. Clare
+                  </div>
+                </div>
+              `
+            });
+            console.log(`Order cancellation email dispatched to ${order.customer_email} for order ${id}`);
+          }
+        } catch (mailErr) {
+          console.error('Failed to send order cancellation email in background:', mailErr);
+        }
+      })();
+    }
   } catch (error) {
     console.error('Error updating admin order status:', error);
+    res.status(500).json({ error: 'Database update failed' });
+  }
+});
+
+app.put('/api/admin/orders/:id/items', requireAdmin, async (req, res) => {
+  const { id } = req.params;
+  const { items, subtotal, total, adminNotes } = req.body;
+  if (!items || subtotal === undefined || total === undefined) {
+    return res.status(400).json({ error: 'Items, subtotal, and total are required' });
+  }
+
+  try {
+    const serializedItems = JSON.stringify(items);
+    let updateQuery = 'UPDATE orders SET items = ?, subtotal = ?, total = ?';
+    const params = [serializedItems, subtotal, total];
+
+    if (adminNotes !== undefined) {
+      updateQuery += ', admin_notes = ?';
+      params.push(adminNotes);
+    }
+    updateQuery += ' WHERE id = ?';
+    params.push(id);
+
+    const [result] = await pool.query(updateQuery, params);
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: 'Order not found' });
+    }
+
+    res.json({ success: true, message: 'Order items updated successfully' });
+  } catch (error) {
+    console.error('Error updating order items:', error);
     res.status(500).json({ error: 'Database update failed' });
   }
 });

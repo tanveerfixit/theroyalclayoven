@@ -13,8 +13,33 @@ export const HistoryView: React.FC<{ hideHeader?: boolean; showArchivedOnly?: bo
 }) => {
   const [orders, setOrders] = React.useState<Order[]>([]);
   const [bookings, setBookings] = React.useState<Reservation[]>([]);
+  const [dateFilter, setDateFilter] = React.useState<'today' | 'last7days' | 'month' | 'all'>('last7days');
 
-  const displayedOrders = orders.filter((o) => showArchivedOnly ? o.isArchived : !o.isArchived);
+  const isWithinDate = (dateString?: string) => {
+    if (dateFilter === 'all' || !dateString) return true;
+    const itemDate = new Date(dateString);
+    const now = new Date();
+    if (dateFilter === 'today') {
+      return itemDate.getFullYear() === now.getFullYear() &&
+        itemDate.getMonth() === now.getMonth() &&
+        itemDate.getDate() === now.getDate();
+    }
+    if (dateFilter === 'last7days') {
+      const sevenDaysAgo = new Date();
+      sevenDaysAgo.setDate(now.getDate() - 7);
+      sevenDaysAgo.setHours(0, 0, 0, 0);
+      return itemDate >= sevenDaysAgo;
+    }
+    if (dateFilter === 'month') {
+      return itemDate.getFullYear() === now.getFullYear() &&
+        itemDate.getMonth() === now.getMonth();
+    }
+    return true;
+  };
+
+  const displayedOrders = orders
+    .filter((o) => showArchivedOnly ? o.isArchived : !o.isArchived)
+    .filter((o) => isWithinDate(o.createdAt));
 
   React.useEffect(() => {
     fetchLogs();
@@ -115,10 +140,60 @@ export const HistoryView: React.FC<{ hideHeader?: boolean; showArchivedOnly?: bo
       <div className={showArchivedOnly ? "max-w-4xl mx-auto space-y-6" : "grid grid-cols-1 lg:grid-cols-2 gap-12"}>
         
         {/* COLUMN 1: TAKEAWAY ORDERS */}
-        <section className="space-y-6">
-          <div className="flex items-center space-x-2.5 border-b border-brand-dark/10 pb-4">
-            <ShoppingBag className="w-5 h-5 text-brand-accent" />
-            <h2 className="font-serif text-xl font-bold text-brand-dark">Order Takeaway History</h2>
+        <section className="space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-brand-dark/10 pb-3">
+            <div className="flex items-center space-x-2.5">
+              <ShoppingBag className="w-5 h-5 text-brand-accent" />
+              <h2 className="font-serif text-xl font-bold text-brand-dark">Order Takeaway History</h2>
+            </div>
+
+            {/* Date filter toolbar */}
+            <div className="flex items-center gap-1 bg-[#FDFBF7] p-1 border border-brand-dark/10 self-start sm:self-auto">
+              <button
+                type="button"
+                onClick={() => setDateFilter('today')}
+                className={`px-2.5 py-1 font-mono text-[11px] font-bold uppercase transition-all ${
+                  dateFilter === 'today'
+                    ? 'bg-brand-dark text-white shadow-sm'
+                    : 'text-brand-dark hover:bg-white'
+                }`}
+              >
+                Today
+              </button>
+              <button
+                type="button"
+                onClick={() => setDateFilter('last7days')}
+                className={`px-2.5 py-1 font-mono text-[11px] font-bold uppercase transition-all ${
+                  dateFilter === 'last7days'
+                    ? 'bg-brand-dark text-white shadow-sm'
+                    : 'text-brand-dark hover:bg-white'
+                }`}
+              >
+                Last 7 Days
+              </button>
+              <button
+                type="button"
+                onClick={() => setDateFilter('month')}
+                className={`px-2.5 py-1 font-mono text-[11px] font-bold uppercase transition-all ${
+                  dateFilter === 'month'
+                    ? 'bg-brand-dark text-white shadow-sm'
+                    : 'text-brand-dark hover:bg-white'
+                }`}
+              >
+                Month
+              </button>
+              <button
+                type="button"
+                onClick={() => setDateFilter('all')}
+                className={`px-2.5 py-1 font-mono text-[11px] font-bold uppercase transition-all ${
+                  dateFilter === 'all'
+                    ? 'bg-brand-dark text-white shadow-sm'
+                    : 'text-brand-dark hover:bg-white'
+                }`}
+              >
+                All
+              </button>
+            </div>
           </div>
 
           {displayedOrders.length === 0 ? (
@@ -152,10 +227,27 @@ export const HistoryView: React.FC<{ hideHeader?: boolean; showArchivedOnly?: bo
                     <span className="font-mono text-sm font-bold text-brand-dark">
                       ORDER ID: {order.id}
                     </span>
-                    <span className="font-mono text-sm bg-emerald-50 text-emerald-800 border border-emerald-200 px-2 py-0.5 uppercase font-bold">
+                    <span className={`font-mono text-xs px-2.5 py-0.5 uppercase font-bold border ${
+                      order.status === 'Cancelled'
+                        ? 'bg-rose-50 text-rose-800 border-rose-200'
+                        : order.status === 'Completed'
+                        ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                        : 'bg-amber-50 text-amber-800 border-amber-200'
+                    }`}>
                       {order.status}
                     </span>
                   </div>
+
+                  {order.status === 'Cancelled' && (
+                    <div className="p-3 bg-rose-50 border border-rose-200 text-xs font-sans text-rose-900 rounded-none space-y-1">
+                      <span className="font-mono font-bold uppercase tracking-wider block text-rose-800 text-[10px]">
+                        Order Cancelled:
+                      </span>
+                      <p className="leading-relaxed">
+                        {order.cancellationReason || 'The kitchen was unable to fulfil this order at this time.'}
+                      </p>
+                    </div>
+                  )}
 
                   <div className="text-sm font-mono text-brand-muted space-y-2 py-1 border-t border-b border-brand-dark/5">
                     <div className="flex justify-between">
@@ -176,8 +268,13 @@ export const HistoryView: React.FC<{ hideHeader?: boolean; showArchivedOnly?: bo
                     <span className="font-serif font-bold text-brand-dark text-sm block">Items Configured:</span>
                     <ul className="space-y-1 font-mono text-sm text-brand-muted list-inside list-disc">
                       {order.items.map((item, idx) => (
-                        <li key={idx} className="truncate">
-                          {item.quantity}x {item.name} {item.size ? `(${item.size})` : ''} 
+                        <li key={idx} className={`truncate ${item.cancelled ? 'line-through text-rose-500 opacity-60' : ''}`}>
+                          {item.quantity}x {item.name} {item.size ? `(${item.size})` : ''}
+                          {item.cancelled && (
+                            <span className="ml-1 not-italic font-sans text-[11px] font-bold text-rose-700 no-underline">
+                              [Cancelled {item.cancelReason ? `— ${item.cancelReason}` : ''}]
+                            </span>
+                          )}
                           {item.notes && <span className="text-brand-accent text-sm italic"> &mdash; &ldquo;{item.notes}&rdquo;</span>}
                         </li>
                       ))}
@@ -185,8 +282,12 @@ export const HistoryView: React.FC<{ hideHeader?: boolean; showArchivedOnly?: bo
                   </div>
 
                   <div className="pt-2 border-t border-brand-dark/5 flex justify-between items-baseline font-mono text-sm">
-                    <span className="text-brand-muted font-normal">Price Paid (incl. Packaging Fee)</span>
-                    <span className="text-brand-dark font-bold text-base">&euro;{order.total.toFixed(2)}</span>
+                    <span className="text-brand-muted font-normal">
+                      {order.status === 'Cancelled' ? 'Total (Cancelled)' : 'Price Paid (incl. Packaging Fee)'}
+                    </span>
+                    <span className={`font-bold text-base ${order.status === 'Cancelled' ? 'text-rose-700 line-through' : 'text-brand-dark'}`}>
+                      &euro;{order.total.toFixed(2)}
+                    </span>
                   </div>
 
                 </div>
