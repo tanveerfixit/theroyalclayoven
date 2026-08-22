@@ -4,7 +4,6 @@
  */
 
 import React from 'react';
-import { AnimatePresence, motion } from 'motion/react';
 import { Navbar } from './components/Navbar';
 import { CartItem, MenuItem } from './types';
 import { Plus, Minus, Trash2, X, ShoppingBag, Send, PhoneCall, MessageCircle } from 'lucide-react';
@@ -213,7 +212,22 @@ export default function App() {
 
   const [cart, setCart] = React.useState<CartItem[]>([]);
   const [isCartOpen, setIsCartOpen] = React.useState<boolean>(false);
+  const [isCartDrawerMounted, setIsCartDrawerMounted] = React.useState<boolean>(false);
+  const [isCartDrawerAnimatingIn, setIsCartDrawerAnimatingIn] = React.useState<boolean>(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = React.useState<boolean>(false);
+
+  // Drive the cart drawer's enter/exit CSS transition without the motion library
+  React.useEffect(() => {
+    if (isCartOpen) {
+      setIsCartDrawerMounted(true);
+      const raf = requestAnimationFrame(() => requestAnimationFrame(() => setIsCartDrawerAnimatingIn(true)));
+      return () => cancelAnimationFrame(raf);
+    } else {
+      setIsCartDrawerAnimatingIn(false);
+      const timeout = setTimeout(() => setIsCartDrawerMounted(false), 250);
+      return () => clearTimeout(timeout);
+    }
+  }, [isCartOpen]);
 
   // Synchronize cart with localStorage for continuity
   React.useEffect(() => {
@@ -324,59 +338,42 @@ export default function App() {
 
       {/* Main Responsive Canvas */}
       <main id="main-content" className="flex-grow pt-0 font-sans">
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={currentTab}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            transition={{ duration: 0.18, ease: 'easeOut' }}
-            className="w-full"
-          >
-            <React.Suspense fallback={<BrandLoader />}>
-              {currentTab === 'home' && <HomeView setCurrentTab={setCurrentTab} businessInfo={businessInfo} storeSettings={storeSettings} />}
-              {currentTab === 'menu' && <MenuView storeSettings={storeSettings} />}
-              {currentTab === 'takeaway' && (
-                <OrderView
-                  cart={cart}
-                  setCart={setCart}
-                  addToCart={addToCart}
-                  removeFromCart={removeFromCart}
-                  updateQuantity={updateQuantity}
-                  businessInfo={businessInfo}
-                  storeSettings={storeSettings}
-                />
-              )}
-              {currentTab === 'booking' && <BookingView businessInfo={businessInfo} storeSettings={storeSettings} />}
-              {currentTab === 'history' && <HistoryView />}
-              {currentTab === 'profile' && <ProfileView />}
-              {currentTab === 'admin' && <AdminDashboard />}
-            </React.Suspense>
-          </motion.div>
-        </AnimatePresence>
+        <div key={currentTab} className="w-full animate-slide-up">
+          <React.Suspense fallback={<BrandLoader />}>
+            {currentTab === 'home' && <HomeView setCurrentTab={setCurrentTab} businessInfo={businessInfo} storeSettings={storeSettings} />}
+            {currentTab === 'menu' && <MenuView storeSettings={storeSettings} />}
+            {currentTab === 'takeaway' && (
+              <OrderView
+                cart={cart}
+                setCart={setCart}
+                addToCart={addToCart}
+                removeFromCart={removeFromCart}
+                updateQuantity={updateQuantity}
+                businessInfo={businessInfo}
+                storeSettings={storeSettings}
+              />
+            )}
+            {currentTab === 'booking' && <BookingView businessInfo={businessInfo} storeSettings={storeSettings} />}
+            {currentTab === 'history' && <HistoryView />}
+            {currentTab === 'profile' && <ProfileView />}
+            {currentTab === 'admin' && <AdminDashboard />}
+          </React.Suspense>
+        </div>
       </main>
 
       {/* Slide-out Shopping Tray Drawer Overlay */}
-      <AnimatePresence>
-        {isCartOpen && (
+      {isCartDrawerMounted && (
           <div className="fixed inset-0 z-50 flex justify-end" id="cart-drawer-overlay">
-            
+
             {/* Dark transparent Backdrop overlay */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 0.5 }}
-              exit={{ opacity: 0 }}
+            <div
               onClick={() => setIsCartOpen(false)}
-              className="absolute inset-0 bg-brand-dark"
+              className={`absolute inset-0 bg-brand-dark transition-opacity duration-[250ms] ease-out ${isCartDrawerAnimatingIn ? 'opacity-50' : 'opacity-0'}`}
             />
 
             {/* Right Drawer Panel with strictly rounded-none corners */}
-            <motion.div
-              initial={{ x: '100%' }}
-              animate={{ x: 0 }}
-              exit={{ x: '100%' }}
-              transition={{ type: 'tween', duration: 0.25 }}
-              className="relative w-full max-w-md h-full bg-brand-beige border-l border-brand-dark/20 flex flex-col justify-between rounded-none shadow-2xl p-6"
+            <div
+              className={`relative w-full max-w-md h-full bg-brand-beige border-l border-brand-dark/20 flex flex-col justify-between rounded-none shadow-2xl p-6 transition-transform duration-[250ms] ease-out ${isCartDrawerAnimatingIn ? 'translate-x-0' : 'translate-x-full'}`}
             >
               <div>
                 
@@ -524,10 +521,9 @@ export default function App() {
                 </div>
               )}
 
-            </motion.div>
+            </div>
           </div>
-        )}
-      </AnimatePresence>
+      )}
 
       {/* Comprehensive Minimalist Editorial Footer with sharp shapes */}
       <footer className="bg-white border-t border-brand-dark/15 mt-20 p-8 sm:p-12 lg:p-16">

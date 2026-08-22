@@ -566,13 +566,13 @@ Beverages | Tea or Coffee`);
                   <span>FRIDAY</span>
                   <span className="text-brand-dark">{weeklyTimings.friday}</span>
                 </div>
-                <div className="flex justify-between pb-1 border-b border-brand-dark/5 font-mono text-brand-muted">
-                  <span>SATURDAY</span>
-                  <span className="text-brand-dark">{weeklyTimings.saturday}</span>
+                <div className="flex justify-between items-center px-2 py-1.5 -mx-2 bg-brand-accent/10 border border-brand-accent/20 rounded-sm font-mono text-brand-dark">
+                  <span className="font-semibold text-brand-accent">SATURDAY</span>
+                  <span className="text-brand-dark font-bold">{weeklyTimings.saturday}</span>
                 </div>
-                <div className="flex justify-between pb-1 border-b border-brand-dark/5 font-mono text-brand-muted">
-                  <span>SUNDAY</span>
-                  <span className="text-brand-dark">{weeklyTimings.sunday}</span>
+                <div className="flex justify-between items-center px-2 py-1.5 -mx-2 bg-brand-accent/10 border border-brand-accent/20 rounded-sm font-mono text-brand-dark">
+                  <span className="font-semibold text-brand-accent">SUNDAY</span>
+                  <span className="text-brand-dark font-bold">{weeklyTimings.sunday}</span>
                 </div>
               </div>
             </div>
