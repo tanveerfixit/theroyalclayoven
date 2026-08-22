@@ -3,8 +3,32 @@ Allow: /
 Allow: /menu
 Allow: /takeaway
 Allow: /booking
+Allow: /llms.txt
 Disallow: /admin
 Disallow: /profile
 Disallow: /history
 
+# AI Crawlers & LLM Agents
+User-agent: GPTBot
+Allow: /
+
+User-agent: ChatGPT-User
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+
+User-agent: ClaudeBot
+Allow: /
+
+User-agent: anthropic-ai
+Allow: /
+
+User-agent: Google-Extended
+Allow: /
+
+User-agent: Applebot-Extended
+Allow: /
+
 Sitemap: https://www.clayoven.ie/sitemap.xml
+
