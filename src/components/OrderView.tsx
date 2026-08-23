@@ -9,16 +9,13 @@ import { MenuItem, CartItem, Order } from '../types';
 import { MENU_ITEMS, CATEGORIES } from '../data/menu';
 import {
   DeliverySchedule,
-  AvailableDeliveryDate,
-  DeliverySlot,
   DAY_NAMES,
   getDefaultDeliverySchedule,
   parseDeliverySchedule,
-  getAvailableDeliveryDates,
-  getDeliverySlots,
-  formatDeliveryPreferredTime,
   getStoreOperatingStatus,
-  getTakeawayTimeOptions
+  getTakeawayTimeOptions,
+  getTodayDeliveryStatus,
+  getTodayDeliveryTimeOptions
 } from '../utils/deliveryScheduler';
 
 interface OrderViewProps {
@@ -136,8 +133,6 @@ export const OrderView: React.FC<OrderViewProps> = ({
     const saved = localStorage.getItem('clay_oven_delivery_schedule');
     return parseDeliverySchedule(saved);
   });
-  const [selectedDeliveryDateKey, setSelectedDeliveryDateKey] = React.useState<string>('');
-  const [selectedDeliverySlot, setSelectedDeliverySlot] = React.useState<string>('');
   const [checkoutNotes, setCheckoutNotes] = React.useState('');
   const [validationError, setValidationError] = React.useState('');
 
@@ -263,50 +258,15 @@ export const OrderView: React.FC<OrderViewProps> = ({
   const deliveryCharges = serviceType === 'delivery' ? deliveryChargesSetting : 0.00;
   const total = subtotal + packagingFee + deliveryCharges;
 
-  // Delivery slot computations
-  const availableDeliveryDates: AvailableDeliveryDate[] = React.useMemo(() => {
-    if (!deliverySchedule) return [];
-    return getAvailableDeliveryDates(deliverySchedule);
-  }, [deliverySchedule]);
-
-  const activeDeliveryDate = React.useMemo(() => {
-    if (!availableDeliveryDates.length) return null;
-    const found = availableDeliveryDates.find((d) => d.dateKey === selectedDeliveryDateKey);
-    return found || availableDeliveryDates[0];
-  }, [availableDeliveryDates, selectedDeliveryDateKey]);
-
-  React.useEffect(() => {
-    if (activeDeliveryDate && (!selectedDeliveryDateKey || !availableDeliveryDates.some((d) => d.dateKey === selectedDeliveryDateKey))) {
-      setSelectedDeliveryDateKey(activeDeliveryDate.dateKey);
-    }
-  }, [activeDeliveryDate, availableDeliveryDates, selectedDeliveryDateKey]);
-
-  const availableDeliverySlots: DeliverySlot[] = React.useMemo(() => {
-    if (!activeDeliveryDate || !deliverySchedule) return [];
-    return getDeliverySlots(
-      activeDeliveryDate.date,
-      activeDeliveryDate.dayConfig,
-      deliverySchedule.lead_time_minutes,
-      deliverySchedule.slot_interval_minutes
-    );
-  }, [activeDeliveryDate, deliverySchedule]);
-
-  // Auto-select first available slot if not selected or current selection is invalid
-  React.useEffect(() => {
-    if (availableDeliverySlots.length > 0) {
-      const isValid = availableDeliverySlots.some((s) => s.label === selectedDeliverySlot && s.isAvailable);
-      if (!isValid) {
-        const firstAvailable = availableDeliverySlots.find((s) => s.isAvailable);
-        if (firstAvailable) {
-          setSelectedDeliverySlot(firstAvailable.label);
-        } else {
-          setSelectedDeliverySlot('');
-        }
-      }
-    } else {
-      setSelectedDeliverySlot('');
-    }
-  }, [availableDeliverySlots, selectedDeliverySlot]);
+  // Today's Delivery status & simple time options
+  const deliveryStatusToday = React.useMemo(
+    () => getTodayDeliveryStatus(deliverySchedule),
+    [deliverySchedule]
+  );
+  const deliveryTimeOptions = React.useMemo(
+    () => getTodayDeliveryTimeOptions(deliveryStatusToday),
+    [deliveryStatusToday]
+  );
 
   // Today's operating hours and Takeaway time options
   const todayDayName = DAY_NAMES[new Date().getDay()];
@@ -317,18 +277,26 @@ export const OrderView: React.FC<OrderViewProps> = ({
   const storeStatus = React.useMemo(() => getStoreOperatingStatus(todayTimingStr), [todayTimingStr]);
   const takeawayTimeOptions = React.useMemo(() => getTakeawayTimeOptions(todayTimingStr), [todayTimingStr]);
 
-  // Ensure preferredTime is set to a valid takeaway option when switching to takeaway
+  // Synchronize preferredTime when toggling between delivery and takeaway
   React.useEffect(() => {
-    if (serviceType === 'takeaway' && takeawayTimeOptions.length > 0) {
-      const isValid = takeawayTimeOptions.some((opt) => opt.value === preferredTime && opt.isAvailable);
-      if (!isValid) {
-        const firstAvailable = takeawayTimeOptions.find((opt) => opt.isAvailable);
-        if (firstAvailable) {
-          setPreferredTime(firstAvailable.value);
+    if (serviceType === 'delivery') {
+      if (deliveryTimeOptions.length > 0) {
+        const isValid = deliveryTimeOptions.some((opt) => opt.value === preferredTime && opt.isAvailable);
+        if (!isValid) {
+          const firstAvailable = deliveryTimeOptions.find((opt) => opt.isAvailable);
+          if (firstAvailable) setPreferredTime(firstAvailable.value);
+        }
+      }
+    } else {
+      if (takeawayTimeOptions.length > 0) {
+        const isValid = takeawayTimeOptions.some((opt) => opt.value === preferredTime && opt.isAvailable);
+        if (!isValid) {
+          const firstAvailable = takeawayTimeOptions.find((opt) => opt.isAvailable);
+          if (firstAvailable) setPreferredTime(firstAvailable.value);
         }
       }
     }
-  }, [serviceType, takeawayTimeOptions, preferredTime]);
+  }, [serviceType, deliveryTimeOptions, takeawayTimeOptions, preferredTime]);
 
   // Checkout submission handler
   const handlePlaceOrderSubmit = async (e: React.FormEvent) => {
@@ -356,32 +324,31 @@ export const OrderView: React.FC<OrderViewProps> = ({
       return;
     }
 
-    let finalPreferredTime = preferredTime;
     if (serviceType === 'delivery') {
-      if (availableDeliveryDates.length === 0) {
-        setValidationError('Home delivery is currently unavailable. Please choose Collection / Takeaway.');
+      if (!deliveryStatusToday.isDeliveryDay) {
+        setValidationError(`Home delivery is available on ${deliveryStatusToday.activeDaysLabel}. Please choose Collection for your order today.`);
         return;
       }
-      if (!activeDeliveryDate) {
-        setValidationError('Please select a valid delivery date.');
+      if (deliveryStatusToday.isAfterClose) {
+        setValidationError(`Home delivery has ended for tonight (closed at ${deliveryStatusToday.endTimeLabel}). Please choose Collection.`);
         return;
       }
-      if (!selectedDeliverySlot) {
-        setValidationError('Please select an available delivery time slot for your order.');
+      if (!preferredTime) {
+        setValidationError('Please select a preferred delivery time.');
         return;
       }
-      finalPreferredTime = formatDeliveryPreferredTime(activeDeliveryDate.date, selectedDeliverySlot);
     } else {
       if (storeStatus.isAfterClose) {
-        setValidationError('The kitchen is currently closed for takeaway today.');
+        setValidationError('The kitchen is currently closed for takeaway collection today.');
         return;
       }
       if (!preferredTime) {
         setValidationError('Please select a preferred collection time.');
         return;
       }
-      finalPreferredTime = preferredTime;
     }
+
+    const finalPreferredTime = preferredTime;
 
     // Compose structural order object
     const finalOrder: Order = {
@@ -665,7 +632,7 @@ export const OrderView: React.FC<OrderViewProps> = ({
                   type="button"
                   id="checkout-option-delivery"
                   onClick={() => setServiceType('delivery')}
-                  className={`py-3 px-4 border text-sm font-mono font-bold uppercase transition-all flex flex-col items-center justify-center space-y-1.5 ${
+                  className={`py-3 px-4 border text-sm font-mono font-bold uppercase transition-all flex flex-col items-center justify-center space-y-1 ${
                     serviceType === 'delivery'
                       ? 'border-brand-dark bg-brand-dark text-white'
                       : 'border-brand-dark/15 text-brand-dark hover:bg-brand-dark/5'
@@ -673,6 +640,11 @@ export const OrderView: React.FC<OrderViewProps> = ({
                 >
                   <MapPin className="w-4 h-4" />
                   <span>Delivery</span>
+                  {!deliveryStatusToday.isDeliveryDay && (
+                    <span className={`text-[10px] lowercase font-normal tracking-tight ${serviceType === 'delivery' ? 'text-white/80' : 'text-brand-muted'}`}>
+                      ({deliveryStatusToday.activeDaysLabel})
+                    </span>
+                  )}
                 </button>
               </div>
             </div>
@@ -759,91 +731,50 @@ export const OrderView: React.FC<OrderViewProps> = ({
             )}
 
             {serviceType === 'delivery' ? (
-              availableDeliveryDates.length === 0 ? (
-                <div className="p-4 border border-rose-300 bg-rose-50 text-xs font-mono text-rose-850 text-center space-y-1">
-                  <p className="font-bold uppercase tracking-wider text-rose-900">Delivery Currently Unavailable</p>
-                  <p className="text-[11px] text-rose-700">No active delivery slots are open for the upcoming days. Please switch to Collection or contact the restaurant.</p>
+              !deliveryStatusToday.isDeliveryDay ? (
+                <div className="p-3.5 bg-amber-50 border border-amber-200 text-xs font-mono text-amber-900 space-y-1">
+                  <div className="font-bold uppercase tracking-wider flex items-center gap-1.5 text-amber-900">
+                    <Clock className="w-3.5 h-3.5 text-amber-700" />
+                    <span>Home Delivery Unavailable Today</span>
+                  </div>
+                  <p className="text-[11px] text-amber-800 leading-relaxed font-sans">
+                    Home delivery runs on <strong>{deliveryStatusToday.activeDaysLabel}</strong> ({deliveryStatusToday.startTimeLabel || '4:30 PM'} – {deliveryStatusToday.endTimeLabel || '9:00 PM'}). Please switch to <strong>Collection</strong> for your order today!
+                  </p>
+                </div>
+              ) : deliveryStatusToday.isAfterClose ? (
+                <div className="p-3 bg-rose-50 border border-rose-200 text-xs font-mono text-rose-800 text-center">
+                  Delivery has ended for tonight (closed at {deliveryStatusToday.endTimeLabel}). Please select Collection or order on our next delivery day.
                 </div>
               ) : (
-                <div className="space-y-4 pt-1 border border-brand-dark/10 p-4 bg-[#FDFBF7]/60 animate-fade-in">
-                  {/* Delivery Date Selection */}
-                  <div className="space-y-2">
-                    <label className="block font-mono text-xs text-brand-accent uppercase tracking-widest font-bold flex items-center justify-between">
-                      <span>1. SELECT DELIVERY DATE</span>
-                      <span className="text-[10px] text-brand-muted font-normal lowercase tracking-normal">
-                        (Delivery days only)
-                      </span>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <label htmlFor="chk-custtime" className="block font-mono text-xs text-brand-accent uppercase tracking-widest font-bold">
+                      PREFERRED DELIVERY TIME
                     </label>
-                    <div className="flex gap-2 overflow-x-auto pb-1.5 scrollbar-thin">
-                      {availableDeliveryDates.map((item) => {
-                        const isSelected = activeDeliveryDate?.dateKey === item.dateKey;
-                        return (
-                          <button
-                            key={item.dateKey}
-                            type="button"
-                            onClick={() => {
-                              setSelectedDeliveryDateKey(item.dateKey);
-                              setSelectedDeliverySlot('');
-                            }}
-                            className={`px-3 py-2.5 border text-xs font-mono shrink-0 transition-all text-left rounded-none ${
-                              isSelected
-                                ? 'border-brand-dark bg-brand-dark text-white font-bold shadow-sm'
-                                : 'border-brand-dark/15 text-brand-dark hover:bg-brand-dark/5 bg-white'
-                            }`}
-                          >
-                            <div className="text-[11px] font-bold uppercase">{item.dayLabel}</div>
-                            <div className={`text-[10px] ${isSelected ? 'text-white/70' : 'text-brand-muted'}`}>
-                              {item.dayConfig.start} – {item.dayConfig.end}
-                            </div>
-                          </button>
-                        );
-                      })}
+                    <span className="text-[10px] font-mono text-brand-muted">
+                      Delivery hours: {deliveryStatusToday.startTimeLabel} – {deliveryStatusToday.endTimeLabel}
+                    </span>
+                  </div>
+
+                  {deliveryStatusToday.isBeforeOpen && (
+                    <div className="p-2.5 bg-amber-50 border border-amber-200 text-[11px] font-mono text-amber-900 flex items-center gap-2">
+                      <Clock className="w-3.5 h-3.5 text-amber-700 shrink-0" />
+                      <span>Delivery starts at <strong>{deliveryStatusToday.startTimeLabel}</strong> today. Select your delivery time below:</span>
                     </div>
-                  </div>
+                  )}
 
-                  {/* Delivery Time Slot Selection */}
-                  <div className="space-y-2">
-                    <label className="block font-mono text-xs text-brand-accent uppercase tracking-widest font-bold flex items-center justify-between">
-                      <span>2. SELECT DELIVERY TIME SLOT</span>
-                      <span className="text-[10px] text-brand-muted font-normal lowercase tracking-normal">
-                        ({deliverySchedule.slot_interval_minutes}-min windows)
-                      </span>
-                    </label>
-
-                    {availableDeliverySlots.length === 0 ? (
-                      <div className="p-3 border border-dashed border-brand-dark/20 text-xs font-mono text-brand-muted text-center bg-white">
-                        No delivery time slots available for this date.
-                      </div>
-                    ) : availableDeliverySlots.every((s) => !s.isAvailable) ? (
-                      <div className="p-3 border border-amber-600/30 bg-amber-50 text-xs font-mono text-amber-900 text-center">
-                        All delivery slots for today have passed or cut off. Please choose another delivery day above.
-                      </div>
-                    ) : (
-                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-48 overflow-y-auto pr-1">
-                        {availableDeliverySlots.map((slot) => {
-                          const isSelected = selectedDeliverySlot === slot.label;
-                          return (
-                            <button
-                              key={slot.label}
-                              type="button"
-                              disabled={!slot.isAvailable}
-                              onClick={() => setSelectedDeliverySlot(slot.label)}
-                              className={`p-2 border text-xs font-mono text-center transition-all rounded-none ${
-                                !slot.isAvailable
-                                  ? 'border-brand-dark/10 bg-brand-dark/5 text-brand-muted/40 cursor-not-allowed line-through'
-                                  : isSelected
-                                  ? 'border-brand-accent bg-brand-accent text-white font-bold shadow-sm'
-                                  : 'border-brand-dark/15 text-brand-dark hover:border-brand-dark hover:bg-white bg-white'
-                              }`}
-                            >
-                              <Clock className="w-3 h-3 inline mr-1 opacity-70" />
-                              <span>{slot.label}</span>
-                            </button>
-                          );
-                        })}
-                      </div>
-                    )}
-                  </div>
+                  <select
+                    id="chk-custtime"
+                    value={preferredTime}
+                    onChange={(e) => setPreferredTime(e.target.value)}
+                    className="w-full border border-brand-dark/10 p-2.5 text-sm font-mono focus:border-brand-dark outline-none bg-brand-beige/10 bg-white rounded-none"
+                  >
+                    {deliveryTimeOptions.map((opt) => (
+                      <option key={opt.value} value={opt.value} disabled={!opt.isAvailable}>
+                        {opt.label}
+                      </option>
+                    ))}
+                  </select>
                 </div>
               )
             ) : (
@@ -853,7 +784,7 @@ export const OrderView: React.FC<OrderViewProps> = ({
                     PREFERRED COLLECTION TIME
                   </label>
                   <span className="text-[10px] font-mono text-brand-muted">
-                    Hours today: {storeStatus.todayTiming}
+                    Kitchen hours: {storeStatus.todayTiming}
                   </span>
                 </div>
 

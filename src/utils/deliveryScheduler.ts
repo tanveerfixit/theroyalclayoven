@@ -355,3 +355,124 @@ export function getTakeawayTimeOptions(timingStr: string, now: Date = new Date()
 
   return options;
 }
+
+export interface TodayDeliveryStatus {
+  isDeliveryDay: boolean;
+  isOpenNow: boolean;
+  isBeforeOpen: boolean;
+  isAfterClose: boolean;
+  startTimeLabel: string;
+  endTimeLabel: string;
+  activeDaysLabel: string;
+  dayConfig: DeliveryDayConfig | null;
+}
+
+export function getTodayDeliveryStatus(schedule: DeliverySchedule, now: Date = new Date()): TodayDeliveryStatus {
+  const dayOfWeek = DAY_NAMES[now.getDay()];
+  const dayConfig = schedule.schedule[dayOfWeek] || { active: false, start: '16:30', end: '21:00' };
+
+  const activeDays = DAY_NAMES.filter((d) => schedule.schedule[d]?.active).map((d) => {
+    return d.charAt(0).toUpperCase() + d.slice(1, 3);
+  });
+  const activeDaysLabel = activeDays.length > 0 ? activeDays.join(', ') : 'Thursday – Sunday';
+
+  if (!dayConfig || !dayConfig.active) {
+    return {
+      isDeliveryDay: false,
+      isOpenNow: false,
+      isBeforeOpen: false,
+      isAfterClose: false,
+      startTimeLabel: '',
+      endTimeLabel: '',
+      activeDaysLabel,
+      dayConfig: null
+    };
+  }
+
+  const [startH, startM] = (dayConfig.start || '16:30').split(':').map(Number);
+  const [endH, endM] = (dayConfig.end || '21:00').split(':').map(Number);
+
+  const currentMinutes = now.getHours() * 60 + now.getMinutes();
+  const openMinutes = startH * 60 + (startM || 0);
+  const closeMinutes = endH * 60 + (endM || 0);
+
+  const formatHM = (h: number, m: number) => {
+    const period = h >= 12 ? 'PM' : 'AM';
+    const displayH = h % 12 === 0 ? 12 : h % 12;
+    const displayM = m === 0 ? '00' : String(m).padStart(2, '0');
+    return `${displayH}:${displayM} ${period}`;
+  };
+
+  const isBeforeOpen = currentMinutes < openMinutes;
+  const isAfterClose = currentMinutes >= closeMinutes;
+  const isOpenNow = currentMinutes >= openMinutes && currentMinutes < closeMinutes;
+
+  return {
+    isDeliveryDay: true,
+    isOpenNow,
+    isBeforeOpen,
+    isAfterClose,
+    startTimeLabel: formatHM(startH, startM),
+    endTimeLabel: formatHM(endH, endM),
+    activeDaysLabel,
+    dayConfig
+  };
+}
+
+/**
+ * Returns simple, fast time options for delivery today
+ */
+export function getTodayDeliveryTimeOptions(status: TodayDeliveryStatus, now: Date = new Date()): { value: string; label: string; isAvailable: boolean }[] {
+  if (!status.isDeliveryDay || !status.dayConfig || status.isAfterClose) {
+    return [];
+  }
+
+  const options: { value: string; label: string; isAvailable: boolean }[] = [];
+  const [startH, startM] = (status.dayConfig.start || '16:30').split(':').map(Number);
+  const [endH, endM] = (status.dayConfig.end || '21:00').split(':').map(Number);
+
+  const openMinutes = startH * 60 + (startM || 0);
+  const closeMinutes = endH * 60 + (endM || 0);
+  const currentMinutes = now.getHours() * 60 + now.getMinutes();
+
+  if (status.isOpenNow) {
+    options.push({
+      value: 'As soon as possible (approx. 30-45 mins)',
+      label: 'As soon as possible (approx. 30-45 mins)',
+      isAvailable: true
+    });
+    options.push({
+      value: 'In 1 Hour',
+      label: 'In 1 Hour',
+      isAvailable: true
+    });
+    options.push({
+      value: 'In 1.5 Hours',
+      label: 'In 1.5 Hours',
+      isAvailable: true
+    });
+  }
+
+  // Add options up to closing time
+  const nextSlotStart = status.isBeforeOpen ? openMinutes : Math.ceil((currentMinutes + 45) / 30) * 30;
+
+  for (let min = nextSlotStart; min < closeMinutes; min += 30) {
+    const h = Math.floor(min / 60);
+    const m = min % 60;
+    const period = h >= 12 ? 'PM' : 'AM';
+    const displayH = h % 12 === 0 ? 12 : h % 12;
+    const displayM = m === 0 ? '00' : String(m).padStart(2, '0');
+    const timeLabel = `${displayH}:${displayM} ${period}`;
+    const valueStr = `Delivery at ${timeLabel}`;
+
+    if (!options.some((o) => o.value === valueStr)) {
+      options.push({
+        value: valueStr,
+        label: status.isBeforeOpen && min === openMinutes ? `At Delivery Opening (${timeLabel})` : timeLabel,
+        isAvailable: true
+      });
+    }
+  }
+
+  return options;
+}
