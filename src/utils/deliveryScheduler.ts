@@ -215,3 +215,143 @@ export function formatDeliveryPreferredTime(targetDate: Date, slotLabel: string)
   });
   return `${dateStr} · ${slotLabel}`;
 }
+
+/**
+ * Parses a timing string like "4:00 PM - 9:00 PM" into start and end hours/minutes
+ */
+export function parseOperatingHours(timingStr: string): { startHour: number; startMinute: number; endHour: number; endMinute: number } | null {
+  if (!timingStr || !timingStr.includes('-')) return null;
+
+  const parts = timingStr.split('-');
+  if (parts.length !== 2) return null;
+
+  const parsePart = (str: string) => {
+    const cleaned = str.trim().toUpperCase();
+    const match = cleaned.match(/(\d+):?(\d+)?\s*(AM|PM)?/);
+    if (!match) return { h: 12, m: 0 };
+
+    let h = parseInt(match[1], 10);
+    const m = match[2] ? parseInt(match[2], 10) : 0;
+    const period = match[3];
+
+    if (period === 'PM' && h !== 12) h += 12;
+    if (period === 'AM' && h === 12) h = 0;
+
+    return { h, m };
+  };
+
+  const start = parsePart(parts[0]);
+  const end = parsePart(parts[1]);
+
+  return {
+    startHour: start.h,
+    startMinute: start.m,
+    endHour: end.h,
+    endMinute: end.m
+  };
+}
+
+export interface StoreOperatingStatus {
+  isOpen: boolean;
+  isBeforeOpen: boolean;
+  isAfterClose: boolean;
+  opensAtLabel: string;
+  closesAtLabel: string;
+  todayTiming: string;
+}
+
+export function getStoreOperatingStatus(timingStr: string, now: Date = new Date()): StoreOperatingStatus {
+  const parsed = parseOperatingHours(timingStr);
+  if (!parsed) {
+    return {
+      isOpen: true,
+      isBeforeOpen: false,
+      isAfterClose: false,
+      opensAtLabel: '',
+      closesAtLabel: '',
+      todayTiming: timingStr || ''
+    };
+  }
+
+  const currentMinutes = now.getHours() * 60 + now.getMinutes();
+  const openMinutes = parsed.startHour * 60 + parsed.startMinute;
+  const closeMinutes = parsed.endHour * 60 + parsed.endMinute;
+
+  const isBeforeOpen = currentMinutes < openMinutes;
+  const isAfterClose = currentMinutes >= closeMinutes;
+  const isOpen = currentMinutes >= openMinutes && currentMinutes < closeMinutes;
+
+  const formatDisplay = (h: number, m: number) => {
+    const period = h >= 12 ? 'PM' : 'AM';
+    const displayH = h % 12 === 0 ? 12 : h % 12;
+    const displayM = m === 0 ? '00' : String(m).padStart(2, '0');
+    return `${displayH}:${displayM} ${period}`;
+  };
+
+  return {
+    isOpen,
+    isBeforeOpen,
+    isAfterClose,
+    opensAtLabel: formatDisplay(parsed.startHour, parsed.startMinute),
+    closesAtLabel: formatDisplay(parsed.endHour, parsed.endMinute),
+    todayTiming: timingStr
+  };
+}
+
+/**
+ * Generates takeaway / collection options respecting store opening hours.
+ */
+export function getTakeawayTimeOptions(timingStr: string, now: Date = new Date()): { value: string; label: string; isAvailable: boolean }[] {
+  const parsed = parseOperatingHours(timingStr);
+  const status = getStoreOperatingStatus(timingStr, now);
+
+  if (!parsed) {
+    return [
+      { value: 'As soon as possible (approx. 30-45 mins)', label: 'As soon as possible (approx. 30-45 mins)', isAvailable: true },
+      { value: 'In 1 Hour', label: 'In 1 Hour', isAvailable: true },
+      { value: 'In 1.5 Hours', label: 'In 1.5 Hours', isAvailable: true },
+      { value: 'In 2 Hours', label: 'In 2 Hours', isAvailable: true }
+    ];
+  }
+
+  const options: { value: string; label: string; isAvailable: boolean }[] = [];
+
+  if (status.isOpen) {
+    options.push({
+      value: 'As soon as possible (approx. 30-45 mins)',
+      label: 'As soon as possible (approx. 30-45 mins)',
+      isAvailable: true
+    });
+  }
+
+  // Generate slots up to closing time
+  const currentMinutes = now.getHours() * 60 + now.getMinutes();
+  const startMinutes = status.isBeforeOpen ? parsed.startHour * 60 + parsed.startMinute : Math.ceil((currentMinutes + 30) / 30) * 30;
+  const endMinutes = parsed.endHour * 60 + parsed.endMinute;
+
+  for (let min = startMinutes; min < endMinutes; min += 30) {
+    const h = Math.floor(min / 60);
+    const m = min % 60;
+    const period = h >= 12 ? 'PM' : 'AM';
+    const displayH = h % 12 === 0 ? 12 : h % 12;
+    const displayM = m === 0 ? '00' : String(m).padStart(2, '0');
+    const timeLabel = `${displayH}:${displayM} ${period}`;
+    const valueStr = `Collection at ${timeLabel}`;
+
+    options.push({
+      value: valueStr,
+      label: status.isBeforeOpen && min === startMinutes ? `At Opening Time (${timeLabel})` : timeLabel,
+      isAvailable: true
+    });
+  }
+
+  if (options.length === 0) {
+    options.push({
+      value: `Collection at ${status.opensAtLabel || 'Opening'}`,
+      label: `Kitchen closed today. Opens at ${status.opensAtLabel || 'Opening'}`,
+      isAvailable: false
+    });
+  }
+
+  return options;
+}
