@@ -425,7 +425,21 @@ Complimentary green tea | Beverage`,
       'clay_oven_image_heritage_left': 'https://images.unsplash.com/photo-1627308595229-7830a5c91f9f?auto=format&fit=crop&w=600&q=80',
       'clay_oven_image_heritage_right': 'https://images.unsplash.com/photo-1603360946369-dc9bb6258143?auto=format&fit=crop&w=600&q=80',
       'clay_oven_takeaway_charges': '0.95',
-      'clay_oven_delivery_charges': '3.00'
+      'clay_oven_delivery_charges': '3.00',
+      'clay_oven_delivery_schedule': JSON.stringify({
+        slot_interval_minutes: 30,
+        lead_time_minutes: 45,
+        advance_days: 7,
+        schedule: {
+          monday:    { active: false, start: '17:00', end: '21:00' },
+          tuesday:   { active: false, start: '17:00', end: '21:00' },
+          wednesday: { active: false, start: '17:00', end: '21:00' },
+          thursday:  { active: true,  start: '16:30', end: '21:00' },
+          friday:    { active: true,  start: '16:30', end: '21:00' },
+          saturday:  { active: true,  start: '12:00', end: '21:00' },
+          sunday:    { active: true,  start: '13:00', end: '18:00' }
+        }
+      })
     };
 
     for (const [key, value] of Object.entries(defaultSettings)) {

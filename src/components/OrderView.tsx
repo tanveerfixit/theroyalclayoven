@@ -7,6 +7,15 @@ import React from 'react';
 import { ShoppingCart, Plus, Minus, Trash2, Check, ArrowRight, ArrowLeft, Clock, MapPin, Sparkles, ShoppingBag, ChevronLeft, ChevronRight, Phone, X } from 'lucide-react';
 import { MenuItem, CartItem, Order } from '../types';
 import { MENU_ITEMS, CATEGORIES } from '../data/menu';
+import {
+  DeliverySchedule,
+  AvailableDeliveryDate,
+  DeliverySlot,
+  parseDeliverySchedule,
+  getAvailableDeliveryDates,
+  getDeliverySlots,
+  formatDeliveryPreferredTime
+} from '../utils/deliveryScheduler';
 
 interface OrderViewProps {
   cart: CartItem[];
@@ -100,6 +109,10 @@ export const OrderView: React.FC<OrderViewProps> = ({
       setDeliveryChargesSetting(isNaN(charge) ? 3.00 : charge);
       localStorage.setItem('clay_oven_delivery_charges', data.clay_oven_delivery_charges);
     }
+    if (data.clay_oven_delivery_schedule) {
+      const sched = parseDeliverySchedule(data.clay_oven_delivery_schedule);
+      setDeliverySchedule(sched);
+    }
   }, [storeSettings]);
   
   // Checkout inputs
@@ -109,6 +122,9 @@ export const OrderView: React.FC<OrderViewProps> = ({
   const [deliveryAddress, setDeliveryAddress] = React.useState('');
   const [eirCode, setEirCode] = React.useState('');
   const [preferredTime, setPreferredTime] = React.useState('As soon as possible (approx. 30-45 mins)');
+  const [deliverySchedule, setDeliverySchedule] = React.useState<DeliverySchedule | null>(null);
+  const [selectedDeliveryDateKey, setSelectedDeliveryDateKey] = React.useState<string>('');
+  const [selectedDeliverySlot, setSelectedDeliverySlot] = React.useState<string>('');
   const [checkoutNotes, setCheckoutNotes] = React.useState('');
   const [validationError, setValidationError] = React.useState('');
 
@@ -234,6 +250,51 @@ export const OrderView: React.FC<OrderViewProps> = ({
   const deliveryCharges = serviceType === 'delivery' ? deliveryChargesSetting : 0.00;
   const total = subtotal + packagingFee + deliveryCharges;
 
+  // Delivery slot computations
+  const availableDeliveryDates: AvailableDeliveryDate[] = React.useMemo(() => {
+    if (!deliverySchedule) return [];
+    return getAvailableDeliveryDates(deliverySchedule);
+  }, [deliverySchedule]);
+
+  const activeDeliveryDate = React.useMemo(() => {
+    if (!availableDeliveryDates.length) return null;
+    const found = availableDeliveryDates.find((d) => d.dateKey === selectedDeliveryDateKey);
+    return found || availableDeliveryDates[0];
+  }, [availableDeliveryDates, selectedDeliveryDateKey]);
+
+  React.useEffect(() => {
+    if (activeDeliveryDate && (!selectedDeliveryDateKey || !availableDeliveryDates.some((d) => d.dateKey === selectedDeliveryDateKey))) {
+      setSelectedDeliveryDateKey(activeDeliveryDate.dateKey);
+    }
+  }, [activeDeliveryDate, availableDeliveryDates, selectedDeliveryDateKey]);
+
+  const availableDeliverySlots: DeliverySlot[] = React.useMemo(() => {
+    if (!activeDeliveryDate || !deliverySchedule) return [];
+    return getDeliverySlots(
+      activeDeliveryDate.date,
+      activeDeliveryDate.dayConfig,
+      deliverySchedule.lead_time_minutes,
+      deliverySchedule.slot_interval_minutes
+    );
+  }, [activeDeliveryDate, deliverySchedule]);
+
+  // Auto-select first available slot if not selected or current selection is invalid
+  React.useEffect(() => {
+    if (availableDeliverySlots.length > 0) {
+      const isValid = availableDeliverySlots.some((s) => s.label === selectedDeliverySlot && s.isAvailable);
+      if (!isValid) {
+        const firstAvailable = availableDeliverySlots.find((s) => s.isAvailable);
+        if (firstAvailable) {
+          setSelectedDeliverySlot(firstAvailable.label);
+        } else {
+          setSelectedDeliverySlot('');
+        }
+      }
+    } else {
+      setSelectedDeliverySlot('');
+    }
+  }, [availableDeliverySlots, selectedDeliverySlot]);
+
   // Checkout submission handler
   const handlePlaceOrderSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -260,6 +321,19 @@ export const OrderView: React.FC<OrderViewProps> = ({
       return;
     }
 
+    let finalPreferredTime = preferredTime;
+    if (serviceType === 'delivery' && deliverySchedule && availableDeliveryDates.length > 0) {
+      if (!activeDeliveryDate) {
+        setValidationError('Please select a valid delivery date.');
+        return;
+      }
+      if (!selectedDeliverySlot) {
+        setValidationError('Please select an available delivery time slot for your order.');
+        return;
+      }
+      finalPreferredTime = formatDeliveryPreferredTime(activeDeliveryDate.date, selectedDeliverySlot);
+    }
+
     // Compose structural order object
     const finalOrder: Order = {
       id: 'CO-' + Math.floor(100000 + Math.random() * 900000),
@@ -279,7 +353,7 @@ export const OrderView: React.FC<OrderViewProps> = ({
         email: customerEmail,
         phone: customerPhone,
         address: serviceType === 'delivery' ? `${deliveryAddress}, Eir Code: ${eirCode}` : undefined,
-        preferredTime,
+        preferredTime: finalPreferredTime,
         notes: checkoutNotes
       },
       status: 'Received',
@@ -635,24 +709,107 @@ export const OrderView: React.FC<OrderViewProps> = ({
               </div>
             )}
 
-            <div className="space-y-1">
-              <label htmlFor="chk-custtime" className="block font-mono text-xs text-brand-accent uppercase tracking-widest font-bold">
-                PREFERRED FULFILLMENT TIME
-              </label>
-              <select
-                id="chk-custtime"
-                value={preferredTime}
-                onChange={(e) => setPreferredTime(e.target.value)}
-                className="w-full border border-brand-dark/10 p-2.5 text-sm font-mono focus:border-brand-dark outline-none bg-brand-beige/10 bg-white rounded-none"
-              >
-                <option value="As soon as possible (approx. 30-45 mins)">As soon as possible (approx. 30-45 mins)</option>
-                <option value="In 1 Hour">In 1 Hour</option>
-                <option value="In 1.5 Hours">In 1.5 Hours</option>
-                <option value="In 2 Hours">In 2 Hours</option>
-                <option value="Later this evening (Selected for 19:30)">Later this evening (Selected for 19:30)</option>
-                <option value="Later this evening (Selected for 20:30)">Later this evening (Selected for 20:30)</option>
-              </select>
-            </div>
+            {serviceType === 'delivery' && deliverySchedule && availableDeliveryDates.length > 0 ? (
+              <div className="space-y-4 pt-1 border border-brand-dark/10 p-4 bg-[#FDFBF7]/60 animate-fade-in">
+                {/* Delivery Date Selection */}
+                <div className="space-y-2">
+                  <label className="block font-mono text-xs text-brand-accent uppercase tracking-widest font-bold flex items-center justify-between">
+                    <span>1. SELECT DELIVERY DATE</span>
+                    <span className="text-[10px] text-brand-muted font-normal lowercase tracking-normal">
+                      (Delivery days only)
+                    </span>
+                  </label>
+                  <div className="flex gap-2 overflow-x-auto pb-1.5 scrollbar-thin">
+                    {availableDeliveryDates.map((item) => {
+                      const isSelected = activeDeliveryDate?.dateKey === item.dateKey;
+                      return (
+                        <button
+                          key={item.dateKey}
+                          type="button"
+                          onClick={() => {
+                            setSelectedDeliveryDateKey(item.dateKey);
+                            setSelectedDeliverySlot('');
+                          }}
+                          className={`px-3 py-2.5 border text-xs font-mono shrink-0 transition-all text-left rounded-none ${
+                            isSelected
+                              ? 'border-brand-dark bg-brand-dark text-white font-bold shadow-sm'
+                              : 'border-brand-dark/15 text-brand-dark hover:bg-brand-dark/5 bg-white'
+                          }`}
+                        >
+                          <div className="text-[11px] font-bold uppercase">{item.dayLabel}</div>
+                          <div className={`text-[10px] ${isSelected ? 'text-white/70' : 'text-brand-muted'}`}>
+                            {item.dayConfig.start} – {item.dayConfig.end}
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Delivery Time Slot Selection */}
+                <div className="space-y-2">
+                  <label className="block font-mono text-xs text-brand-accent uppercase tracking-widest font-bold flex items-center justify-between">
+                    <span>2. SELECT DELIVERY TIME SLOT</span>
+                    <span className="text-[10px] text-brand-muted font-normal lowercase tracking-normal">
+                      ({deliverySchedule.slot_interval_minutes}-min windows)
+                    </span>
+                  </label>
+
+                  {availableDeliverySlots.length === 0 ? (
+                    <div className="p-3 border border-dashed border-brand-dark/20 text-xs font-mono text-brand-muted text-center bg-white">
+                      No delivery time slots available for this date.
+                    </div>
+                  ) : availableDeliverySlots.every((s) => !s.isAvailable) ? (
+                    <div className="p-3 border border-amber-600/30 bg-amber-50 text-xs font-mono text-amber-900 text-center">
+                      All delivery slots for today have passed or cut off. Please choose another delivery day above.
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-48 overflow-y-auto pr-1">
+                      {availableDeliverySlots.map((slot) => {
+                        const isSelected = selectedDeliverySlot === slot.label;
+                        return (
+                          <button
+                            key={slot.label}
+                            type="button"
+                            disabled={!slot.isAvailable}
+                            onClick={() => setSelectedDeliverySlot(slot.label)}
+                            className={`p-2 border text-xs font-mono text-center transition-all rounded-none ${
+                              !slot.isAvailable
+                                ? 'border-brand-dark/10 bg-brand-dark/5 text-brand-muted/40 cursor-not-allowed line-through'
+                                : isSelected
+                                ? 'border-brand-accent bg-brand-accent text-white font-bold shadow-sm'
+                                : 'border-brand-dark/15 text-brand-dark hover:border-brand-dark hover:bg-white bg-white'
+                            }`}
+                          >
+                            <Clock className="w-3 h-3 inline mr-1 opacity-70" />
+                            <span>{slot.label}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-1">
+                <label htmlFor="chk-custtime" className="block font-mono text-xs text-brand-accent uppercase tracking-widest font-bold">
+                  PREFERRED FULFILLMENT TIME
+                </label>
+                <select
+                  id="chk-custtime"
+                  value={preferredTime}
+                  onChange={(e) => setPreferredTime(e.target.value)}
+                  className="w-full border border-brand-dark/10 p-2.5 text-sm font-mono focus:border-brand-dark outline-none bg-brand-beige/10 bg-white rounded-none"
+                >
+                  <option value="As soon as possible (approx. 30-45 mins)">As soon as possible (approx. 30-45 mins)</option>
+                  <option value="In 1 Hour">In 1 Hour</option>
+                  <option value="In 1.5 Hours">In 1.5 Hours</option>
+                  <option value="In 2 Hours">In 2 Hours</option>
+                  <option value="Later this evening (Selected for 19:30)">Later this evening (Selected for 19:30)</option>
+                  <option value="Later this evening (Selected for 20:30)">Later this evening (Selected for 20:30)</option>
+                </select>
+              </div>
+            )}
 
             <div className="space-y-1">
               <label htmlFor="chk-custnotes" className="block font-mono text-xs text-brand-accent uppercase tracking-widest font-bold">

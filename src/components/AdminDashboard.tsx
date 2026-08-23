@@ -1,7 +1,14 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Play, Check, X, ShieldAlert, ShoppingBag, Calendar, ListFilter, Search, RefreshCw, Volume2, ShieldCheck, Clock, Settings, Sparkles, Mail, KeyRound, Loader2, Ban, XCircle, AlertTriangle, Trash2, Filter, CheckCircle2 } from 'lucide-react';
+import { Play, Check, X, ShieldAlert, ShoppingBag, Calendar, ListFilter, Search, RefreshCw, Volume2, ShieldCheck, Clock, Settings, Sparkles, Mail, KeyRound, Loader2, Ban, XCircle, AlertTriangle, Trash2, Filter, CheckCircle2, HelpCircle, Info, Save } from 'lucide-react';
 import { Order, Reservation } from '../types';
 import { MENU_ITEMS, CATEGORIES } from '../data/menu';
+import {
+  DeliverySchedule,
+  DayOfWeek,
+  getDefaultDeliverySchedule,
+  parseDeliverySchedule,
+  DAY_NAMES
+} from '../utils/deliveryScheduler';
 
 // Helper to get stored admin token
 const getAdminToken = (): string | null => localStorage.getItem('clay_oven_admin_token');
@@ -97,6 +104,7 @@ The Royal Clay Oven`);
   const [takeawayNoticeText, setTakeawayNoticeText] = useState('We are temporarily not taking online orders. Please phone us to order directly!');
   const [takeawayCharges, setTakeawayCharges] = useState('0.95');
   const [deliveryCharges, setDeliveryCharges] = useState('3.00');
+  const [deliverySchedule, setDeliverySchedule] = useState<DeliverySchedule>(getDefaultDeliverySchedule);
 
   // Reservation Enable/Disable controls
   const [reservationsEnabled, setReservationsEnabled] = useState(true);
@@ -178,8 +186,7 @@ The Royal Clay Oven`);
     }
   };
 
-  const handleSaveSmtpSettings = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const executeSaveSmtpSettings = async () => {
     setSmtpLoading(true);
     setSmtpSuccess(false);
 
@@ -203,52 +210,114 @@ The Royal Clay Oven`);
 
       if (response.ok) {
         setSmtpSuccess(true);
+        setNotificationBox({
+          isOpen: true,
+          type: 'success',
+          title: 'SMTP Server Updated',
+          message: 'Mail server credentials have been verified and saved successfully.'
+        });
         setTimeout(() => setSmtpSuccess(false), 5000);
         await fetchSmtpSettings();
       } else {
         const data = await response.json();
-        alert(data.error || 'Failed to update SMTP settings');
+        setNotificationBox({
+          isOpen: true,
+          type: 'error',
+          title: 'SMTP Update Failed',
+          message: data.error || 'Failed to update SMTP configurations.'
+        });
       }
     } catch (err) {
       console.error('Failed to update SMTP settings:', err);
-      alert('Network error while updating SMTP settings');
+      setNotificationBox({
+        isOpen: true,
+        type: 'error',
+        title: 'Connection Error',
+        message: 'Network error while attempting to update SMTP server settings.'
+      });
     } finally {
       setSmtpLoading(false);
     }
   };
 
+  const handleSaveSmtpSettings = (e: React.FormEvent) => {
+    e.preventDefault();
+    setConfirmModal({
+      isOpen: true,
+      title: 'Save SMTP Configuration',
+      message: 'Are you sure you want to update the mail server settings?',
+      detail: `Host: ${smtpHost || 'Not set'} · Port: ${smtpPort} · User: ${smtpUser || 'Not set'}`,
+      confirmText: 'Yes, Save SMTP',
+      cancelText: 'Cancel',
+      isDanger: false,
+      onConfirm: executeSaveSmtpSettings
+    });
+  };
+
   const handleAddNotificationEmail = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newNotificationEmail.trim()) return;
+    const cleanEmail = newNotificationEmail.trim().toLowerCase();
+    if (!cleanEmail) return;
     try {
       const response = await fetch('/api/admin/notification-emails', {
         method: 'POST',
         headers: { ...adminHeaders(), 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: newNotificationEmail.trim().toLowerCase() })
+        body: JSON.stringify({ email: cleanEmail })
       });
       if (response.status === 401) { handleUnauthorized(); return; }
       if (response.ok) {
         setNewNotificationEmail('');
         fetchNotificationEmails();
+        setNotificationBox({
+          isOpen: true,
+          type: 'success',
+          title: 'Recipient Email Added',
+          message: `"${cleanEmail}" will now receive automated alerts for new online orders.`
+        });
+      } else {
+        const data = await response.json();
+        setNotificationBox({
+          isOpen: true,
+          type: 'error',
+          title: 'Failed to Add Email',
+          message: data.error || 'Could not register notification email.'
+        });
       }
     } catch (err) {
       console.error('Failed to add notification email:', err);
     }
   };
 
-  const handleDeleteNotificationEmail = async (email: string) => {
-    try {
-      const response = await fetch(`/api/admin/notification-emails/${encodeURIComponent(email)}`, {
-        method: 'DELETE',
-        headers: adminHeaders()
-      });
-      if (response.status === 401) { handleUnauthorized(); return; }
-      if (response.ok) {
-        fetchNotificationEmails();
+  const handleDeleteNotificationEmail = (email: string) => {
+    setConfirmModal({
+      isOpen: true,
+      title: 'Remove Alert Recipient',
+      message: `Are you sure you want to remove "${email}" from order notification emails?`,
+      detail: 'This email will no longer receive real-time order alerts from the kitchen.',
+      confirmText: 'Yes, Remove Email',
+      cancelText: 'Keep Email',
+      isDanger: true,
+      onConfirm: async () => {
+        try {
+          const response = await fetch(`/api/admin/notification-emails/${encodeURIComponent(email)}`, {
+            method: 'DELETE',
+            headers: adminHeaders()
+          });
+          if (response.status === 401) { handleUnauthorized(); return; }
+          if (response.ok) {
+            fetchNotificationEmails();
+            setNotificationBox({
+              isOpen: true,
+              type: 'info',
+              title: 'Email Removed',
+              message: `"${email}" was successfully removed from alert recipients.`
+            });
+          }
+        } catch (err) {
+          console.error('Failed to delete notification email:', err);
+        }
       }
-    } catch (err) {
-      console.error('Failed to delete notification email:', err);
-    }
+    });
   };
 
   // Self-hosted Gallery Image States
@@ -292,6 +361,36 @@ Beverages | Tea or Coffee`);
 
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [saveLoading, setSaveLoading] = useState(false);
+
+  // Standard Confirmation Modal & Alert Box States
+  const [confirmModal, setConfirmModal] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    detail?: string;
+    confirmText?: string;
+    cancelText?: string;
+    isDanger?: boolean;
+    loading?: boolean;
+    onConfirm: () => Promise<void> | void;
+  } | null>(null);
+
+  const [notificationBox, setNotificationBox] = useState<{
+    isOpen: boolean;
+    type: 'success' | 'error' | 'info';
+    title: string;
+    message: string;
+  } | null>(null);
+
+  // Auto-dismiss floating notification box after 4.5 seconds
+  useEffect(() => {
+    if (notificationBox?.isOpen) {
+      const timer = setTimeout(() => {
+        setNotificationBox((prev) => (prev ? { ...prev, isOpen: false } : null));
+      }, 4500);
+      return () => clearTimeout(timer);
+    }
+  }, [notificationBox]);
 
   // Handle 401 responses globally — clear token and force re-login
   const handleUnauthorized = () => {
@@ -440,6 +539,7 @@ Beverages | Tea or Coffee`);
         if (data.clay_oven_takeaway_notice) setTakeawayNoticeText(data.clay_oven_takeaway_notice);
         if (data.clay_oven_takeaway_charges !== undefined) setTakeawayCharges(data.clay_oven_takeaway_charges);
         if (data.clay_oven_delivery_charges !== undefined) setDeliveryCharges(data.clay_oven_delivery_charges);
+        if (data.clay_oven_delivery_schedule) setDeliverySchedule(parseDeliverySchedule(data.clay_oven_delivery_schedule));
 
         if (data.clay_oven_reservations_enabled !== undefined) setReservationsEnabled(data.clay_oven_reservations_enabled !== 'false');
         if (data.clay_oven_reservations_notice) setReservationsNoticeText(data.clay_oven_reservations_notice);
@@ -475,9 +575,18 @@ Beverages | Tea or Coffee`);
     }
   };
 
-  const handleSaveSettings = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const executeSaveSettings = async () => {
     setSaveLoading(true);
+
+    const subTabNames: Record<string, string> = {
+      takeaway: 'Takeaway, Delivery & Schedule Settings',
+      reservations: 'Table Reservations & Guest Rules',
+      announcements: 'Operating Hours & Restaurant Announcements',
+      festive: 'Special Offers & Platter Details',
+      gallery: 'Homepage Banners & Gallery',
+      business: 'Business Profile & Contact Information'
+    };
+    const activeSection = subTabNames[settingsSubTab] || 'Store Settings';
     
     const settingsPayload = {
       'clay_oven_timing_monday': timingMonday,
@@ -497,6 +606,7 @@ Beverages | Tea or Coffee`);
       'clay_oven_takeaway_notice': takeawayNoticeText,
       'clay_oven_takeaway_charges': takeawayCharges,
       'clay_oven_delivery_charges': deliveryCharges,
+      'clay_oven_delivery_schedule': JSON.stringify(deliverySchedule),
       'clay_oven_reservations_enabled': String(reservationsEnabled),
       'clay_oven_reservations_notice': reservationsNoticeText,
       'clay_oven_festive_enabled': String(festiveEnabled),
@@ -536,7 +646,13 @@ Beverages | Tea or Coffee`);
       if (response.ok && bizResponse.ok) {
         setSaveSuccess(true);
         window.dispatchEvent(new Event('business_info_updated'));
-        setTimeout(() => setSaveSuccess(false), 3000);
+        setNotificationBox({
+          isOpen: true,
+          type: 'success',
+          title: 'Settings Saved Successfully',
+          message: `Your configurations for "${activeSection}" have been saved and applied to the live storefront.`
+        });
+        setTimeout(() => setSaveSuccess(false), 4000);
       } else {
         throw new Error('Server responded with an error');
       }
@@ -547,10 +663,42 @@ Beverages | Tea or Coffee`);
         localStorage.setItem(key, val);
       });
       setSaveSuccess(true);
-      setTimeout(() => setSaveSuccess(false), 3000);
+      setNotificationBox({
+        isOpen: true,
+        type: 'info',
+        title: 'Settings Saved Locally',
+        message: `Changes to "${activeSection}" were saved to local storage.`
+      });
+      setTimeout(() => setSaveSuccess(false), 4000);
     } finally {
       setSaveLoading(false);
     }
+  };
+
+  const promptSaveSettings = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    const subTabNames: Record<string, string> = {
+      takeaway: 'Takeaway, Delivery & Schedule Settings',
+      reservations: 'Table Reservations & Guest Rules',
+      announcements: 'Operating Hours & Restaurant Announcements',
+      festive: 'Special Offers & Platter Details',
+      gallery: 'Homepage Banners & Gallery',
+      business: 'Business Profile & Contact Information'
+    };
+    const activeSection = subTabNames[settingsSubTab] || 'Store Settings';
+
+    setConfirmModal({
+      isOpen: true,
+      title: 'Confirm Settings Update',
+      message: `Are you sure you want to save all changes to ${activeSection}?`,
+      detail: 'These updates will be published immediately and take effect across the live website.',
+      confirmText: 'Yes, Save Changes',
+      cancelText: 'Cancel',
+      isDanger: false,
+      onConfirm: async () => {
+        await executeSaveSettings();
+      }
+    });
   };
 
   const [imageUploadLoading, setImageUploadLoading] = useState<string | null>(null);
@@ -581,13 +729,24 @@ Beverages | Tea or Coffee`);
           else if (imageType === 'heritage_right') setImageHeritageRight(data.imageUrl);
           
           setSaveSuccess(true);
-          setTimeout(() => setSaveSuccess(false), 3000);
+          setNotificationBox({
+            isOpen: true,
+            type: 'success',
+            title: 'Image Uploaded Successfully',
+            message: 'New banner image was uploaded and updated on the storefront.'
+          });
+          setTimeout(() => setSaveSuccess(false), 4000);
         } else {
           throw new Error('Image upload failed');
         }
       } catch (err) {
         console.error(err);
-        alert('Failed to upload image to your hosting server.');
+        setNotificationBox({
+          isOpen: true,
+          type: 'error',
+          title: 'Image Upload Failed',
+          message: 'Failed to upload image file. Please verify file size or network connection.'
+        });
       } finally {
         setImageUploadLoading(null);
       }
@@ -2434,6 +2593,12 @@ Beverages | Tea or Coffee`);
                                     });
                                     if (response.ok) {
                                       fetchSettings();
+                                      setNotificationBox({
+                                        isOpen: true,
+                                        type: 'info',
+                                        title: 'Photo Removed',
+                                        message: `Photo for "${item.name}" was removed.`
+                                      });
                                     }
                                   } catch (err) {
                                     console.error(err);
@@ -2498,6 +2663,12 @@ Beverages | Tea or Coffee`);
                                       });
                                       if (response.ok) {
                                         fetchSettings();
+                                        setNotificationBox({
+                                          isOpen: true,
+                                          type: 'success',
+                                          title: 'Photo Uploaded',
+                                          message: `Photo for "${item.name}" was uploaded successfully.`
+                                        });
                                       }
                                     } catch (err) {
                                       console.error(err);
@@ -2633,7 +2804,7 @@ Beverages | Tea or Coffee`);
             </button>
           </div>
 
-          <form onSubmit={handleSaveSettings} className="space-y-8">
+          <form onSubmit={promptSaveSettings} className="space-y-8">
             
             {/* SUBTAB 1: TAKEAWAY SETTINGS */}
             {settingsSubTab === 'takeaway' && (
@@ -2723,6 +2894,201 @@ Beverages | Tea or Coffee`);
                         className="w-full border border-brand-dark/10 p-3 text-xs font-mono focus:border-brand-dark outline-none bg-brand-beige/10 rounded-none"
                         placeholder="e.g. 3.00"
                       />
+                    </div>
+                  </div>
+
+                  {/* Delivery Schedule — Days & Times Configuration */}
+                  <div className="pt-6 border-t border-brand-dark/10 space-y-5">
+                    <div className="space-y-1">
+                      <span className="block font-mono text-xs text-brand-dark font-bold uppercase tracking-wider flex items-center gap-2">
+                        <Clock className="w-4 h-4 text-brand-accent" />
+                        Delivery Schedule — Operating Days &amp; Time Windows
+                      </span>
+                      <span className="block text-[11px] text-brand-muted font-sans font-normal">
+                        Control which days home delivery is offered, operating time windows per day, and time-slot intervals.
+                      </span>
+                    </div>
+
+                    {/* Schedule Global Parameters */}
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 bg-brand-beige/5 border border-brand-dark/10 p-4">
+                      <div className="space-y-1.5">
+                        <label className="block font-mono text-[11px] text-brand-accent uppercase tracking-wider font-bold">
+                          Slot Interval
+                        </label>
+                        <select
+                          value={deliverySchedule.slot_interval_minutes}
+                          onChange={(e) =>
+                            setDeliverySchedule((prev) => ({
+                              ...prev,
+                              slot_interval_minutes: Number(e.target.value) || 30
+                            }))
+                          }
+                          className="w-full border border-brand-dark/10 p-2 text-xs font-mono focus:border-brand-dark outline-none bg-white rounded-none"
+                        >
+                          <option value={15}>15 Minutes</option>
+                          <option value={30}>30 Minutes</option>
+                          <option value={45}>45 Minutes</option>
+                          <option value={60}>60 Minutes</option>
+                        </select>
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <label className="block font-mono text-[11px] text-brand-accent uppercase tracking-wider font-bold">
+                          Lead Time Buffer
+                        </label>
+                        <div className="relative">
+                          <input
+                            type="number"
+                            min="0"
+                            step="5"
+                            value={deliverySchedule.lead_time_minutes}
+                            onChange={(e) =>
+                              setDeliverySchedule((prev) => ({
+                                ...prev,
+                                lead_time_minutes: Number(e.target.value) || 0
+                              }))
+                            }
+                            className="w-full border border-brand-dark/10 p-2 text-xs font-mono focus:border-brand-dark outline-none bg-white rounded-none pr-10"
+                            placeholder="45"
+                          />
+                          <span className="absolute right-3 top-2 text-[10px] text-brand-muted font-mono pointer-events-none">
+                            mins
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <label className="block font-mono text-[11px] text-brand-accent uppercase tracking-wider font-bold">
+                          Advance Ordering
+                        </label>
+                        <div className="relative">
+                          <input
+                            type="number"
+                            min="1"
+                            max="30"
+                            value={deliverySchedule.advance_days}
+                            onChange={(e) =>
+                              setDeliverySchedule((prev) => ({
+                                ...prev,
+                                advance_days: Number(e.target.value) || 7
+                              }))
+                            }
+                            className="w-full border border-brand-dark/10 p-2 text-xs font-mono focus:border-brand-dark outline-none bg-white rounded-none pr-10"
+                            placeholder="7"
+                          />
+                          <span className="absolute right-3 top-2 text-[10px] text-brand-muted font-mono pointer-events-none">
+                            days
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Day-by-Day Schedule Matrix */}
+                    <div className="space-y-2.5">
+                      <span className="block font-mono text-[11px] text-brand-muted uppercase tracking-wider">
+                        Weekly Day &amp; Time Breakdown
+                      </span>
+                      <div className="border border-brand-dark/10 divide-y divide-brand-dark/10 bg-white">
+                        {DAY_NAMES.map((dayKey) => {
+                          const config = deliverySchedule.schedule[dayKey] || { active: false, start: '17:00', end: '21:00' };
+                          const dayDisplayName = dayKey.charAt(0).toUpperCase() + dayKey.slice(1);
+                          return (
+                            <div
+                              key={dayKey}
+                              className={`p-3 sm:p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 transition-colors ${
+                                config.active ? 'bg-white' : 'bg-brand-dark/[0.02]'
+                              }`}
+                            >
+                              <div className="flex items-center gap-3 min-w-[140px]">
+                                <input
+                                  type="checkbox"
+                                  id={`sched-toggle-${dayKey}`}
+                                  checked={config.active}
+                                  onChange={(e) => {
+                                    const checked = e.target.checked;
+                                    setDeliverySchedule((prev) => ({
+                                      ...prev,
+                                      schedule: {
+                                        ...prev.schedule,
+                                        [dayKey]: {
+                                          ...config,
+                                          active: checked
+                                        }
+                                      }
+                                    }));
+                                  }}
+                                  className="w-4 h-4 accent-brand-accent rounded-none cursor-pointer"
+                                />
+                                <label
+                                  htmlFor={`sched-toggle-${dayKey}`}
+                                  className={`font-mono text-xs font-bold uppercase cursor-pointer ${
+                                    config.active ? 'text-brand-dark' : 'text-brand-muted line-through'
+                                  }`}
+                                >
+                                  {dayDisplayName}
+                                </label>
+                              </div>
+
+                              {config.active ? (
+                                <div className="flex items-center gap-2 flex-1 sm:justify-end">
+                                  <div className="flex items-center gap-1.5">
+                                    <span className="text-[10px] font-mono text-brand-muted uppercase">Start</span>
+                                    <input
+                                      type="time"
+                                      value={config.start}
+                                      onChange={(e) => {
+                                        const val = e.target.value;
+                                        setDeliverySchedule((prev) => ({
+                                          ...prev,
+                                          schedule: {
+                                            ...prev.schedule,
+                                            [dayKey]: {
+                                              ...config,
+                                              start: val
+                                            }
+                                          }
+                                        }));
+                                      }}
+                                      className="border border-brand-dark/10 p-1.5 text-xs font-mono focus:border-brand-dark outline-none bg-brand-beige/5 rounded-none"
+                                    />
+                                  </div>
+                                  <span className="text-brand-muted text-xs">–</span>
+                                  <div className="flex items-center gap-1.5">
+                                    <span className="text-[10px] font-mono text-brand-muted uppercase">End</span>
+                                    <input
+                                      type="time"
+                                      value={config.end}
+                                      onChange={(e) => {
+                                        const val = e.target.value;
+                                        setDeliverySchedule((prev) => ({
+                                          ...prev,
+                                          schedule: {
+                                            ...prev.schedule,
+                                            [dayKey]: {
+                                              ...config,
+                                              end: val
+                                            }
+                                          }
+                                        }));
+                                      }}
+                                      className="border border-brand-dark/10 p-1.5 text-xs font-mono focus:border-brand-dark outline-none bg-brand-beige/5 rounded-none"
+                                    />
+                                  </div>
+                                  <span className="ml-2 text-[10px] font-mono text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 uppercase hidden sm:inline-block font-bold">
+                                    Open
+                                  </span>
+                                </div>
+                              ) : (
+                                <div className="text-right flex-1">
+                                  <span className="text-[10px] font-mono text-brand-muted bg-brand-dark/5 px-2.5 py-1 uppercase inline-block">
+                                    Delivery Inactive
+                                  </span>
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
                     </div>
                   </div>
 
@@ -4120,6 +4486,120 @@ Beverages | Tea or Coffee`);
                 {rejectModalOrder ? 'Confirm Reject Order' : 'Confirm Cancel Item'}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* STANDARD CONFIRMATION DIALOG MODAL */}
+      {confirmModal?.isOpen && (
+        <div className="fixed inset-0 z-[125] bg-black/75 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in">
+          <div
+            className={`bg-white border-2 max-w-md w-full p-6 shadow-2xl space-y-5 animate-scale-in text-left ${
+              confirmModal.isDanger ? 'border-rose-600' : 'border-brand-accent'
+            }`}
+          >
+            <div className="flex items-start justify-between border-b border-brand-dark/10 pb-3">
+              <div className="flex items-center gap-2.5">
+                {confirmModal.isDanger ? (
+                  <AlertTriangle className="w-5 h-5 text-rose-600" />
+                ) : (
+                  <ShieldCheck className="w-5 h-5 text-brand-accent" />
+                )}
+                <h3 className="font-serif text-lg font-bold text-brand-dark">
+                  {confirmModal.title}
+                </h3>
+              </div>
+              <button
+                type="button"
+                disabled={confirmModal.loading}
+                onClick={() => setConfirmModal(null)}
+                className="text-brand-muted hover:text-brand-dark transition-colors disabled:opacity-50"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-2">
+              <p className="text-xs font-sans text-brand-dark font-medium leading-relaxed">
+                {confirmModal.message}
+              </p>
+              {confirmModal.detail && (
+                <p className="text-[11px] font-mono text-brand-muted bg-brand-beige/20 p-2.5 border border-brand-dark/5 leading-relaxed">
+                  {confirmModal.detail}
+                </p>
+              )}
+            </div>
+
+            <div className="pt-3 border-t border-brand-dark/10 flex gap-3 justify-end">
+              <button
+                type="button"
+                disabled={confirmModal.loading}
+                onClick={() => setConfirmModal(null)}
+                className="px-5 py-2.5 border border-brand-dark/20 text-brand-dark hover:bg-brand-dark/5 font-mono text-xs font-bold uppercase tracking-wider rounded-none transition-colors disabled:opacity-50"
+              >
+                {confirmModal.cancelText || 'Cancel'}
+              </button>
+              <button
+                type="button"
+                disabled={confirmModal.loading}
+                onClick={async () => {
+                  setConfirmModal((prev) => (prev ? { ...prev, loading: true } : null));
+                  try {
+                    await confirmModal.onConfirm();
+                  } finally {
+                    setConfirmModal(null);
+                  }
+                }}
+                className={`px-6 py-2.5 text-white font-mono text-xs font-bold uppercase tracking-wider rounded-none transition-all flex items-center justify-center gap-2 shadow-md ${
+                  confirmModal.isDanger
+                    ? 'bg-rose-700 hover:bg-rose-800'
+                    : 'bg-brand-accent hover:bg-brand-dark shadow-brand-accent/20'
+                } disabled:opacity-50`}
+              >
+                {confirmModal.loading && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                <span>{confirmModal.confirmText || 'Confirm & Save'}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* STANDARD FLOATING NOTIFICATION BOX */}
+      {notificationBox?.isOpen && (
+        <div className="fixed top-6 right-6 z-[130] max-w-md w-full animate-slide-in-right">
+          <div
+            className={`p-4 border shadow-2xl flex items-start gap-3 relative ${
+              notificationBox.type === 'success'
+                ? 'bg-emerald-50 border-emerald-600/40 text-emerald-950'
+                : notificationBox.type === 'error'
+                ? 'bg-rose-50 border-rose-600/40 text-rose-950'
+                : 'bg-amber-50 border-amber-600/40 text-amber-950'
+            }`}
+          >
+            <div className="flex-shrink-0 mt-0.5">
+              {notificationBox.type === 'success' ? (
+                <CheckCircle2 className="w-5 h-5 text-emerald-700" />
+              ) : notificationBox.type === 'error' ? (
+                <AlertTriangle className="w-5 h-5 text-rose-700" />
+              ) : (
+                <Info className="w-5 h-5 text-amber-700" />
+              )}
+            </div>
+            <div className="flex-1 pr-6 space-y-1">
+              <h4 className="font-mono text-xs font-bold uppercase tracking-wider">
+                {notificationBox.title}
+              </h4>
+              <p className="font-sans text-xs text-brand-dark/80 leading-relaxed">
+                {notificationBox.message}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setNotificationBox(null)}
+              className="absolute top-3 right-3 text-brand-muted hover:text-brand-dark transition-colors"
+            >
+              <X className="w-4 h-4" />
+            </button>
           </div>
         </div>
       )}
