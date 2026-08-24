@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { Play, Check, X, ShieldAlert, ShoppingBag, Calendar, ListFilter, Search, RefreshCw, Volume2, ShieldCheck, Clock, Settings, Sparkles, Mail, KeyRound, Loader2, Ban, XCircle, AlertTriangle, Trash2, Filter, CheckCircle2, HelpCircle, Info, Save } from 'lucide-react';
 import { Order, Reservation } from '../types';
 import { MENU_ITEMS, CATEGORIES } from '../data/menu';
@@ -7,6 +8,7 @@ import {
   DayOfWeek,
   getDefaultDeliverySchedule,
   parseDeliverySchedule,
+  getTodayDeliveryStatus,
   DAY_NAMES
 } from '../utils/deliveryScheduler';
 
@@ -826,6 +828,8 @@ Beverages | Tea or Coffee`);
 
   // Keep track of order count to play audio alert on increment
   const prevOrderCountRef = useRef<number>(0);
+  const lastOrdersSyncModifiedRef = useRef<string | null>(null);
+  const lastBookingsSyncModifiedRef = useRef<string | null>(null);
 
   // Logout handler — clear token and reset auth state
   const handleLogout = () => {
@@ -848,34 +852,31 @@ Beverages | Tea or Coffee`);
       
       const playTone = (frequency: number, startTime: number, duration: number, type: OscillatorType = 'sine') => {
         const osc = audioCtx.createOscillator();
-        const gainNode = audioCtx.createGain();
-        
+        const gain = audioCtx.createGain();
         osc.type = type;
         osc.frequency.setValueAtTime(frequency, startTime);
-        
-        gainNode.gain.setValueAtTime(0.15, startTime);
-        gainNode.gain.exponentialRampToValueAtTime(0.0001, startTime + duration);
-        
-        osc.connect(gainNode);
-        gainNode.connect(audioCtx.destination);
-        
+        gain.gain.setValueAtTime(0.3, startTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
         osc.start(startTime);
         osc.stop(startTime + duration);
       };
-      
+
       const selected = toneOverride || notificationTone;
-      
+
       if (selected === 'chime') {
-        // Pleasant double digital synthesizer chime (High pitch bell tone)
-        playTone(880, audioCtx.currentTime, 0.12);
-        playTone(1320, audioCtx.currentTime + 0.08, 0.3);
+        // High-low-high pleasant doorbell chime
+        playTone(587.33, audioCtx.currentTime, 0.25); // D5
+        playTone(880.00, audioCtx.currentTime + 0.15, 0.40); // A5
       } else if (selected === 'melody') {
-        // Triple-tone major melody
+        // 4-note welcoming hospitality ascending melody (C5 -> E5 -> G5 -> C6)
         playTone(523.25, audioCtx.currentTime, 0.15); // C5
         playTone(659.25, audioCtx.currentTime + 0.12, 0.15); // E5
-        playTone(783.99, audioCtx.currentTime + 0.24, 0.35); // G5
+        playTone(783.99, audioCtx.currentTime + 0.24, 0.15); // G5
+        playTone(1046.50, audioCtx.currentTime + 0.36, 0.45); // C6
       } else if (selected === 'alarm') {
-        // Double fast buzz/alarm using triangle wave
+        // Crisp dual alert pulses
         playTone(600, audioCtx.currentTime, 0.15, 'triangle');
         playTone(600, audioCtx.currentTime + 0.20, 0.15, 'triangle');
         playTone(600, audioCtx.currentTime + 0.40, 0.30, 'triangle');
@@ -890,14 +891,23 @@ Beverages | Tea or Coffee`);
     }
   };
 
-  // Fetch dynamic orders & bookings data only
+  // Fetch dynamic orders & bookings data only (Uses 304 change detection to avoid unnecessary DB load)
   const fetchOrdersAndBookings = async () => {
     if (!isAuthenticated) return;
-    setLoading(true);
     try {
+      const orderHeaders = adminHeaders();
+      if (lastOrdersSyncModifiedRef.current) {
+        orderHeaders['If-Modified-Since'] = lastOrdersSyncModifiedRef.current;
+      }
+
+      const bookingHeaders = adminHeaders();
+      if (lastBookingsSyncModifiedRef.current) {
+        bookingHeaders['If-Modified-Since'] = lastBookingsSyncModifiedRef.current;
+      }
+
       const [ordersRes, bookingsRes] = await Promise.all([
-        fetch(`/api/admin/orders?t=${Date.now()}`, { headers: adminHeaders() }),
-        fetch(`/api/admin/bookings?t=${Date.now()}`, { headers: adminHeaders() })
+        fetch('/api/admin/orders', { headers: orderHeaders }),
+        fetch('/api/admin/bookings', { headers: bookingHeaders })
       ]);
 
       // Handle 401 on either response
@@ -906,16 +916,17 @@ Beverages | Tea or Coffee`);
         return;
       }
 
-      if (ordersRes.ok && bookingsRes.ok) {
+      // If orders updated
+      if (ordersRes.status === 200) {
         const ordersData: Order[] = await ordersRes.json();
-        const bookingsData: Reservation[] = await bookingsRes.json();
-        
+        const lastMod = ordersRes.headers.get('Last-Modified');
+        if (lastMod) lastOrdersSyncModifiedRef.current = lastMod;
+
         // Sound Notification Logic: If order count has increased, play alert chime & show popup!
         const receivedOrders = ordersData.filter(o => o.status === 'Received');
         const activeNewOrders = receivedOrders.length;
         if (prevOrderCountRef.current !== undefined && activeNewOrders > prevOrderCountRef.current) {
           playNewOrderChime();
-          // Find the new order by seeing which ones are not in our current state list
           const existingIds = new Set(orders.map(o => o.id));
           const brandNewOrders = receivedOrders.filter(o => !existingIds.has(o.id));
           if (brandNewOrders.length > 0) {
@@ -925,15 +936,18 @@ Beverages | Tea or Coffee`);
           }
         }
         prevOrderCountRef.current = activeNewOrders;
-
-        // Filter out fully completed orders to keep board focused
         setOrders(ordersData);
+      }
+
+      // If bookings updated
+      if (bookingsRes.status === 200) {
+        const bookingsData: Reservation[] = await bookingsRes.json();
+        const lastMod = bookingsRes.headers.get('Last-Modified');
+        if (lastMod) lastBookingsSyncModifiedRef.current = lastMod;
         setBookings(bookingsData);
       }
     } catch (err) {
       console.error('Failed to sync orders & bookings', err);
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -962,14 +976,49 @@ Beverages | Tea or Coffee`);
     }
   }, [isAuthenticated]);
 
-  // Poll for data updates
+  // Adaptive Polling: high-frequency (15s) only during active delivery/operating hours, throttled outside or when tab is backgrounded
   useEffect(() => {
-    if (isAuthenticated) {
-      fetchOrdersAndBookings();
-      const interval = setInterval(fetchOrdersAndBookings, 12000); // Poll every 12s
-      return () => clearInterval(interval);
-    }
-  }, [isAuthenticated, muteSound]);
+    if (!isAuthenticated) return;
+
+    fetchOrdersAndBookings();
+
+    const getPollInterval = () => {
+      // Background tab throttle
+      if (document.hidden) {
+        return 90000; // 90 seconds when tab is hidden
+      }
+      // Check if delivery or kitchen is open right now
+      const deliveryStatus = getTodayDeliveryStatus(deliverySchedule);
+      if (deliveryStatus.isOpenNow) {
+        return 15000; // 15 seconds during active delivery hours
+      }
+      return 300000; // 5 minutes outside delivery/business hours
+    };
+
+    let timer: any = null;
+    const scheduleNextPoll = () => {
+      const interval = getPollInterval();
+      timer = setTimeout(async () => {
+        await fetchOrdersAndBookings();
+        scheduleNextPoll();
+      }, interval);
+    };
+
+    scheduleNextPoll();
+
+    // Instant refresh when admin switches back to the dashboard tab
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        fetchOrdersAndBookings();
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      if (timer) clearTimeout(timer);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [isAuthenticated, deliverySchedule, muteSound]);
 
   // Update Takeaway Order Status
   const handleUpdateOrderStatus = async (orderId: string, nextStatus: Order['status']) => {
@@ -4240,9 +4289,9 @@ Beverages | Tea or Coffee`);
         );
       })()}
 
-      {activeNewOrderNotification && (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-fade-in">
-          <div className="bg-white border-2 border-brand-accent max-w-lg w-full shadow-2xl p-6 relative animate-scale-up space-y-4">
+      {activeNewOrderNotification && createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-fade-in overflow-y-auto">
+          <div className="bg-white border-2 border-brand-accent max-w-lg w-full shadow-2xl p-6 relative my-auto animate-scale-up space-y-4 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between border-b border-brand-dark/10 pb-3">
               <span className="font-mono text-sm font-bold uppercase tracking-wider text-brand-accent flex items-center gap-2 animate-pulse">
                 <span className="w-2.5 h-2.5 bg-red-600 rounded-full inline-block animate-ping"></span>
@@ -4352,13 +4401,14 @@ Beverages | Tea or Coffee`);
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* CANCELLATION / REJECTION MODAL */}
-      {(rejectModalOrder || rejectItemTarget) && (
-        <div className="fixed inset-0 z-[120] bg-black/75 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white border-2 border-rose-600 max-w-lg w-full p-6 shadow-2xl space-y-5 animate-scale-in">
+      {(rejectModalOrder || rejectItemTarget) && createPortal(
+        <div className="fixed inset-0 z-[9999] bg-black/75 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto animate-fade-in">
+          <div className="bg-white border-2 border-rose-600 max-w-lg w-full p-6 shadow-2xl space-y-5 relative my-auto animate-scale-in max-h-[90vh] overflow-y-auto">
             <div className="flex justify-between items-start border-b border-brand-dark/10 pb-3">
               <div className="flex items-center gap-2 text-rose-700">
                 <AlertTriangle className="w-5 h-5" />
@@ -4487,14 +4537,15 @@ Beverages | Tea or Coffee`);
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* STANDARD CONFIRMATION DIALOG MODAL */}
-      {confirmModal?.isOpen && (
-        <div className="fixed inset-0 z-[125] bg-black/75 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in">
+      {confirmModal?.isOpen && createPortal(
+        <div className="fixed inset-0 z-[9999] bg-black/75 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto animate-fade-in">
           <div
-            className={`bg-white border-2 max-w-md w-full p-6 shadow-2xl space-y-5 animate-scale-in text-left ${
+            className={`bg-white border-2 max-w-md w-full p-6 shadow-2xl space-y-5 relative my-auto animate-scale-in text-left max-h-[90vh] overflow-y-auto ${
               confirmModal.isDanger ? 'border-rose-600' : 'border-brand-accent'
             }`}
           >
@@ -4561,7 +4612,8 @@ Beverages | Tea or Coffee`);
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* STANDARD FLOATING NOTIFICATION BOX */}

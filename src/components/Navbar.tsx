@@ -4,7 +4,7 @@
  */
 
 import React, { useEffect } from 'react';
-import { Menu, X, ShoppingBag, Calendar, Home, BookOpen, Clock, LogOut, User } from 'lucide-react';
+import { Menu, X, CookingPot, Calendar, Home, BookOpen, Clock, LogOut, User } from 'lucide-react';
 import { googleLogout } from '@react-oauth/google';
 import { UserProfile } from '../types';
 
@@ -83,7 +83,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   const navItems = [
     { id: 'home', label: 'THE RESTAURANT', icon: Home },
     { id: 'menu', label: 'OUR MENU', icon: BookOpen },
-    { id: 'takeaway', label: 'ORDER ONLINE / TAKEAWAY', icon: ShoppingBag },
+    { id: 'takeaway', label: 'ORDER ONLINE / TAKEAWAY', icon: CookingPot },
     { id: 'booking', label: 'BOOK A TABLE', icon: Calendar }
   ];
 
@@ -234,7 +234,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               className="relative p-2 text-brand-dark hover:text-brand-accent transition-colors duration-200 flex items-center justify-center"
               aria-label="Toggle Shopping Cart"
             >
-              <ShoppingBag className="w-5 h-5 stroke-[1.5]" />
+              <CookingPot className="w-5 h-5 stroke-[1.5]" />
               {cartCount > 0 && (
                 <span className="absolute -top-0.5 -right-0.5 bg-brand-accent text-white font-mono text-[10px] w-4 h-4 flex items-center justify-center font-bold rounded-full">
                   {cartCount}

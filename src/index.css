@@ -1,9 +1,9 @@
 @import "tailwindcss";
 
 @theme {
-  --font-sans: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-  --font-serif: Georgia, Cambria, "Times New Roman", Times, serif;
-  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-serif: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   
   --color-brand-beige: #FDFBF7; /* Warmer soft beige */
   --color-brand-dark: #2C2621; /* Warm deep charcoal */
@@ -18,6 +18,8 @@ body {
   color: var(--color-brand-dark);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  font-feature-settings: "cv02", "cv03", "cv04", "cv11";
 }
 
 :focus-visible {
@@ -37,10 +39,7 @@ body {
   background: var(--color-brand-dark);
 }
 
-/* Form controls reset for sharp edges default */
-input, select, textarea, button {
-  border-radius: 0px !important;
-}
+
 
 @keyframes slide-up {
   from {
@@ -92,26 +91,10 @@ input, select, textarea, button {
   animation: shimmer 3s infinite linear;
 }
 
-/* Mobile viewport optimization rules (enlarge font scale and tighten whitespace spacing) */
+/* Mobile viewport optimization rules (balanced authentic application font scaling) */
 @media (max-width: 768px) {
   html, body {
-    font-size: 15px; /* Boost base font size */
-  }
-
-  h1, h2 {
-    font-size: 1.95rem !important;
-    line-height: 1.15 !important;
-    letter-spacing: -0.015em !important;
-  }
-
-  h3 {
-    font-size: 1.35rem !important;
-  }
-
-  /* Boost brand name font size in navbar on mobile */
-  #nav-logo span:first-child {
-    font-size: 1.3rem !important;
-    letter-spacing: 0.05em !important;
+    font-size: 15px; /* Clean mobile base font size */
   }
 
   /* Make the absolute festive tag relative on mobile to prevent overlapping headers */

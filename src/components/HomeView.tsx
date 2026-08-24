@@ -219,23 +219,15 @@ Beverages | Tea or Coffee`);
             Welcome to <strong className="text-brand-beige font-semibold">The Royal Clay Oven</strong>. We fire up our traditional brick-lined tandoor daily, delivering premium Pakistani curries, dry-aged flame-grilled chops, spiced kebabs, and handcrafted pizzas.
           </p>
 
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
+          <div className="flex items-center justify-center pt-3">
             <button
               type="button"
               id="hero-order-btn"
               onClick={() => setCurrentTab('takeaway')}
-              className="w-max max-w-full bg-brand-accent text-white px-6 py-3 sm:px-8 sm:py-4 text-sm font-mono tracking-wider uppercase font-bold border border-transparent hover:bg-brand-beige hover:text-brand-dark hover:border-brand-dark transition-all duration-200 rounded-none flex items-center justify-center group"
+              className="w-max max-w-full bg-brand-accent text-white px-9 py-4 text-sm font-bold tracking-wider uppercase hover:bg-brand-dark transition-all duration-200 rounded-full shadow-lg hover:shadow-xl active:scale-[0.98] flex items-center justify-center group"
             >
-              Order Takeaway Now
+              <span>Order Now</span>
               <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
-            </button>
-            <button
-              type="button"
-              id="hero-book-btn"
-              onClick={() => setCurrentTab('booking')}
-              className="w-max max-w-full bg-transparent text-white px-6 py-3 sm:px-8 sm:py-4 text-sm font-mono tracking-wider uppercase font-bold border border-brand-beige/35 hover:border-white hover:bg-white/5 transition-all duration-200 rounded-none"
-            >
-              Reserve a Table
             </button>
           </div>
         </div>
@@ -302,21 +294,14 @@ Beverages | Tea or Coffee`);
                   ))}
                 </ul>
 
-                {/* Dynamic CTA buttons */}
-                <div className="pt-4 border-t border-emerald-800 flex flex-col sm:flex-row gap-3">
+                {/* Dynamic CTA button */}
+                <div className="pt-4 border-t border-emerald-800">
                   <button
                     type="button"
                     onClick={() => setCurrentTab('takeaway')}
-                    className="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white py-3.5 px-6 text-xs font-mono tracking-widest font-bold uppercase transition-all duration-200 text-center rounded-none cursor-pointer"
+                    className="w-full bg-emerald-600 hover:bg-emerald-500 text-white py-3.5 px-6 text-xs sm:text-sm tracking-wider font-bold uppercase transition-all duration-200 text-center rounded-full shadow-md cursor-pointer active:scale-[0.98]"
                   >
                     Order Platter Online
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setCurrentTab('booking')}
-                    className="flex-1 border border-emerald-700 hover:border-emerald-600 text-emerald-200 hover:bg-emerald-900/40 py-3.5 px-6 text-xs font-mono tracking-widest font-bold uppercase transition-all duration-200 text-center rounded-none cursor-pointer"
-                  >
-                    Reserve a Table
                   </button>
                 </div>
               </div>

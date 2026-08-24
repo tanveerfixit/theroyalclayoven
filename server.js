@@ -22,27 +22,97 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// Dynamic SMTP Transporter Factory
-async function getTransporter() {
+// Database Connection Pool — Optimized with Prepared Statement Caching & Keep-Alive for Hostinger
+const pool = mysql.createPool({
+  host: process.env.DB_HOST,
+  user: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  database: process.env.DB_DATABASE,
+  port: parseInt(process.env.DB_PORT || '3306'),
+  waitForConnections: true,
+  connectionLimit: 10,
+  maxIdle: 10,
+  idleTimeout: 60000,
+  queueLimit: 0,
+  enableKeepAlive: true,
+  keepAliveInitialDelay: 10000,
+  maxPreparedStatements: 500,
+});
+
+// --- In-Memory Caching & State Invalidation Layer ---
+let ordersLastUpdated = Date.now();
+let bookingsLastUpdated = Date.now();
+
+let settingsCache = null;
+let settingsCacheTime = 0;
+const imageSettingsCache = new Map();
+const SETTINGS_CACHE_TTL = 10 * 60 * 1000; // 10 minutes
+
+let businessInfoCache = null;
+let businessInfoCacheTime = 0;
+const BIZ_INFO_CACHE_TTL = 10 * 60 * 1000;
+
+let smtpConfigCache = null;
+let smtpConfigCacheTime = 0;
+const SMTP_CACHE_TTL = 10 * 60 * 1000;
+
+let notifEmailsCache = null;
+let notifEmailsCacheTime = 0;
+const NOTIF_EMAILS_CACHE_TTL = 10 * 60 * 1000;
+
+// Cached helper for SMTP configuration
+async function getSmtpConfig() {
+  const now = Date.now();
+  if (smtpConfigCache && (now - smtpConfigCacheTime) < SMTP_CACHE_TTL) {
+    return smtpConfigCache;
+  }
   try {
     const [rows] = await pool.query('SELECT * FROM smtp_settings LIMIT 1');
     if (rows.length > 0) {
-      const config = rows[0];
-      return nodemailer.createTransport({
-        host: config.host,
-        port: config.port,
-        secure: config.secure === 'true',
-        auth: {
-          user: config.user,
-          pass: config.password,
-        },
-        tls: {
-          rejectUnauthorized: false
-        }
-      });
+      smtpConfigCache = rows[0];
+      smtpConfigCacheTime = now;
+      return smtpConfigCache;
     }
   } catch (err) {
     console.error('Failed to retrieve SMTP settings from database, using env fallback', err);
+  }
+  return null;
+}
+
+// Cached helper for order notification recipients
+async function getOrderNotificationEmails() {
+  const now = Date.now();
+  if (notifEmailsCache && (now - notifEmailsCacheTime) < NOTIF_EMAILS_CACHE_TTL) {
+    return notifEmailsCache;
+  }
+  try {
+    const [rows] = await pool.query('SELECT email FROM order_notification_emails');
+    const emails = rows.map(r => r.email);
+    notifEmailsCache = emails;
+    notifEmailsCacheTime = now;
+    return emails;
+  } catch (err) {
+    console.error('Failed to retrieve notification emails from database', err);
+    return ['sales@clayoven.ie', 'tanveerfixit@gmail.com'];
+  }
+}
+
+// Dynamic SMTP Transporter Factory (Uses RAM Cache)
+async function getTransporter() {
+  const config = await getSmtpConfig();
+  if (config) {
+    return nodemailer.createTransport({
+      host: config.host,
+      port: config.port,
+      secure: config.secure === 'true',
+      auth: {
+        user: config.user,
+        pass: config.password,
+      },
+      tls: {
+        rejectUnauthorized: false
+      }
+    });
   }
 
   return nodemailer.createTransport({
@@ -60,13 +130,9 @@ async function getTransporter() {
 }
 
 async function getMailSender() {
-  try {
-    const [rows] = await pool.query('SELECT user FROM smtp_settings LIMIT 1');
-    if (rows.length > 0) {
-      return rows[0].user;
-    }
-  } catch (err) {
-    console.error('Failed to retrieve SMTP sender from database, using env fallback', err);
+  const config = await getSmtpConfig();
+  if (config && config.user) {
+    return config.user;
   }
   return process.env.SMTP_USER || '';
 }
@@ -179,24 +245,61 @@ app.use((req, res, next) => {
   next();
 });
 
-// Database Connection Pool
-const pool = mysql.createPool({
-  host: process.env.DB_HOST,
-  user: process.env.DB_USER,
-  password: process.env.DB_PASSWORD,
-  database: process.env.DB_DATABASE,
-  port: parseInt(process.env.DB_PORT || '3306'),
-  waitForConnections: true,
-  connectionLimit: 10,
-  queueLimit: 0,
-});
+// Helper for safe, non-destructive index creation across MySQL/MariaDB versions
+async function createIndexIfNotExists(connection, tableName, indexName, columnsSql) {
+  try {
+    const [existing] = await connection.query(`
+      SELECT 1 FROM information_schema.statistics 
+      WHERE table_schema = DATABASE() 
+        AND table_name = ? 
+        AND index_name = ? 
+      LIMIT 1
+    `, [tableName, indexName]);
+    
+    if (existing.length === 0) {
+      await connection.query(`CREATE INDEX ${indexName} ON ${tableName} (${columnsSql})`);
+      console.log(`Created index ${indexName} on ${tableName}`);
+    }
+  } catch (err) {
+    console.warn(`Index verification for ${indexName} on ${tableName}:`, err.message);
+  }
+}
 
-// Verify connection on startup & perform migration
+const TARGET_SCHEMA_VERSION = 2;
+
+// Verify connection on startup & perform migration (with Schema Version Lock)
 (async () => {
   try {
     const connection = await pool.getConnection();
     console.log('Database pool initialized successfully. Connected to Hostinger MariaDB/MySQL.');
     
+    // Ensure migration tracking table exists
+    await connection.query(`
+      CREATE TABLE IF NOT EXISTS _schema_migrations (
+        version INT PRIMARY KEY,
+        applied_at DATETIME NOT NULL
+      )
+    `);
+
+    // Check current schema version
+    const [verRows] = await connection.query('SELECT version FROM _schema_migrations ORDER BY version DESC LIMIT 1');
+    const currentVersion = verRows.length > 0 ? verRows[0].version : 0;
+
+    if (currentVersion >= TARGET_SCHEMA_VERSION) {
+      console.log(`Database schema verified (version ${currentVersion}). Bypassing redundant DDL metadata checks.`);
+      
+      // Ensure local uploads folder exists
+      const uploadsDir = path.join(__dirname, 'uploads');
+      if (!fs.existsSync(uploadsDir)) {
+        fs.mkdirSync(uploadsDir, { recursive: true });
+      }
+
+      connection.release();
+      return;
+    }
+
+    console.log(`Applying non-destructive database migrations (current: v${currentVersion} -> target: v${TARGET_SCHEMA_VERSION})...`);
+
     // Auto-create required tables if they don't exist
     await connection.query(`
       CREATE TABLE IF NOT EXISTS users (
@@ -340,7 +443,6 @@ const pool = mysql.createPool({
       ]);
       console.log('Default business info initialized inside database successfully.');
     } else {
-      // If table is not empty but contains old default numbers, update them automatically
       const current = bizRows[0];
       if (current.phone === '086 020 3720' && current.mobile === '089 489 9950') {
         await connection.query(`
@@ -355,22 +457,28 @@ const pool = mysql.createPool({
     // Upgrade column to LONGTEXT dynamically to support base64 images
     try {
       await connection.query('ALTER TABLE store_settings MODIFY COLUMN setting_value LONGTEXT NOT NULL');
-      console.log('Verified store_settings schema modified to LONGTEXT successfully.');
-    } catch (alterErr) {
-      console.warn('Altering store_settings column failed (might be already LONGTEXT):', alterErr.message);
-    }
+    } catch (alterErr) {}
 
     // Upgrade orders table to support cancellation reason & admin notes
     try {
       await connection.query('ALTER TABLE orders ADD COLUMN cancellation_reason TEXT');
-    } catch (e) {
-      // Column might already exist
-    }
+    } catch (e) {}
     try {
       await connection.query('ALTER TABLE orders ADD COLUMN admin_notes TEXT');
-    } catch (e) {
-      // Column might already exist
-    }
+    } catch (e) {}
+
+    // Add High-Performance Database Indexes (Non-Destructive)
+    await createIndexIfNotExists(connection, 'orders', 'idx_orders_customer_email_created', 'customer_email, createdAt');
+    await createIndexIfNotExists(connection, 'orders', 'idx_orders_created_at', 'createdAt');
+    await createIndexIfNotExists(connection, 'orders', 'idx_orders_status', 'status');
+    await createIndexIfNotExists(connection, 'orders', 'idx_orders_is_archived', 'is_archived');
+
+    await createIndexIfNotExists(connection, 'bookings', 'idx_bookings_email_created', 'email, createdAt');
+    await createIndexIfNotExists(connection, 'bookings', 'idx_bookings_date_time', 'date, time');
+    await createIndexIfNotExists(connection, 'bookings', 'idx_bookings_status', 'status');
+
+    await createIndexIfNotExists(connection, 'admin_otps', 'idx_admin_otps_expires', 'expires_at');
+    await createIndexIfNotExists(connection, 'password_reset_otps', 'idx_password_reset_expires', 'expires_at');
 
     // Default settings to seed
     const defaultSettings = {
@@ -509,7 +617,7 @@ Complimentary green tea | Beverage`]);
       )
     `);
 
-    // Seed authorized admin emails (insert only if not already present)
+    // Seed authorized admin emails
     const adminEmails = ['tanveerfixit@gmail.com', 'accounts@clayoven.ie'];
     for (const adminEmail of adminEmails) {
       await connection.query(
@@ -517,7 +625,6 @@ Complimentary green tea | Beverage`]);
         [adminEmail]
       );
     }
-    console.log('Admin authentication tables and authorized emails verified successfully.');
 
     // Auto-create order notification emails table
     await connection.query(`
@@ -526,7 +633,7 @@ Complimentary green tea | Beverage`]);
       )
     `);
 
-    // Seed default notification email if none exist yet (prevents re-inserting deleted items on restart)
+    // Seed default notification email if none exist yet
     const [existingNotifs] = await connection.query('SELECT COUNT(*) as count FROM order_notification_emails');
     if (existingNotifs[0].count === 0) {
       await connection.query(
@@ -543,7 +650,6 @@ Complimentary green tea | Beverage`]);
       'DELETE FROM order_notification_emails WHERE email = ?',
       ['customers@clayoven.ie']
     );
-    console.log('Order notification email settings verified and seeded successfully.');
 
     // Ensure local uploads folder exists
     const uploadsDir = path.join(__dirname, 'uploads');
@@ -552,11 +658,17 @@ Complimentary green tea | Beverage`]);
       console.log('Static self-hosted uploads directory verified and created successfully.');
     }
 
-    console.log('Database tables verified and auto-created successfully.');
+    // Record completed migration version in _schema_migrations
+    await connection.query(`
+      INSERT INTO _schema_migrations (version, applied_at)
+      VALUES (?, NOW())
+      ON DUPLICATE KEY UPDATE applied_at = NOW()
+    `, [TARGET_SCHEMA_VERSION]);
+
+    console.log(`Database schema migration version ${TARGET_SCHEMA_VERSION} successfully recorded.`);
     connection.release();
   } catch (error) {
     console.error('Database connection or initialization failed:', error);
-    // Don't crash the server on startup so that /api/health can run and report the exact connection error to the developer/user!
   }
 })();
 
@@ -953,10 +1065,12 @@ app.post('/api/bookings', orderLimiter, async (req, res) => {
     await activeTransporter.sendMail(mailOptions);
     console.log(`Dispatched initial booking request receipt email to customer ${email} for reference ${id}`);
 
+    bookingsLastUpdated = Date.now();
     res.status(201).json({ success: true, bookingId: id });
   } catch (error) {
     console.error('Error inserting booking or sending acknowledgement email:', error);
     // Return success since the database transaction was successful anyway
+    bookingsLastUpdated = Date.now();
     res.status(201).json({ success: true, bookingId: id });
   }
 });
@@ -977,6 +1091,8 @@ app.put('/api/bookings/:id/status', async (req, res) => {
     if (result.affectedRows === 0) {
       return res.status(404).json({ error: 'Booking not found' });
     }
+
+    bookingsLastUpdated = Date.now();
 
     // If requested, send booking confirmation email
     if (status === 'Confirmed' && sendEmail) {
@@ -1134,9 +1250,8 @@ app.post('/api/orders', orderLimiter, async (req, res) => {
         createdAt
       ]
     );
-    // Fetch active notification recipient email list
-    const [emailRows] = await pool.query('SELECT email FROM order_notification_emails');
-    const recipientEmails = emailRows.map(r => r.email);
+    // Fetch active notification recipient email list from RAM cache
+    const recipientEmails = await getOrderNotificationEmails();
 
     if (recipientEmails.length > 0) {
       const activeTransporter = await getTransporter();
@@ -1273,6 +1388,7 @@ app.post('/api/orders', orderLimiter, async (req, res) => {
       }
     }
 
+    ordersLastUpdated = Date.now();
     res.status(201).json({ success: true, orderId: id });
   } catch (error) {
     console.error('Error inserting order:', error);
@@ -1287,6 +1403,7 @@ app.delete('/api/orders/:id', async (req, res) => {
     if (result.affectedRows === 0) {
       return res.status(404).json({ error: 'Order not found' });
     }
+    ordersLastUpdated = Date.now();
     res.json({ success: true, message: 'Order receipt log soft deleted' });
   } catch (error) {
     console.error('Error archiving order:', error);
@@ -1440,8 +1557,17 @@ app.get('/api/admin/verify', (req, res) => {
 });
 
 // 4. Admin API Endpoints (Protected)
+// 4. Admin API Endpoints (Protected)
 app.get('/api/admin/orders', requireAdmin, async (req, res) => {
   try {
+    const clientSince = req.headers['if-modified-since']
+      ? new Date(req.headers['if-modified-since']).getTime()
+      : parseInt(req.query.since || '0', 10);
+
+    if (clientSince && clientSince >= ordersLastUpdated) {
+      return res.status(304).end();
+    }
+
     const [rows] = await pool.query(
       'SELECT * FROM orders ORDER BY createdAt DESC LIMIT 150'
     );
@@ -1477,6 +1603,7 @@ app.get('/api/admin/orders', requireAdmin, async (req, res) => {
       };
     });
     
+    res.setHeader('Last-Modified', new Date(ordersLastUpdated).toUTCString());
     res.json(formattedOrders);
   } catch (error) {
     console.error('Error fetching admin orders:', error);
@@ -1511,6 +1638,8 @@ app.put('/api/admin/orders/:id/status', requireAdmin, async (req, res) => {
     if (result.affectedRows === 0) {
       return res.status(404).json({ error: 'Order not found' });
     }
+
+    ordersLastUpdated = Date.now();
 
     // Send immediate response so admin UI updates in milliseconds
     res.json({ success: true, message: `Order status updated to ${status}` });
@@ -1591,6 +1720,7 @@ app.put('/api/admin/orders/:id/items', requireAdmin, async (req, res) => {
       return res.status(404).json({ error: 'Order not found' });
     }
 
+    ordersLastUpdated = Date.now();
     res.json({ success: true, message: 'Order items updated successfully' });
   } catch (error) {
     console.error('Error updating order items:', error);
@@ -1600,9 +1730,18 @@ app.put('/api/admin/orders/:id/items', requireAdmin, async (req, res) => {
 
 app.get('/api/admin/bookings', requireAdmin, async (req, res) => {
   try {
+    const clientSince = req.headers['if-modified-since']
+      ? new Date(req.headers['if-modified-since']).getTime()
+      : parseInt(req.query.since || '0', 10);
+
+    if (clientSince && clientSince >= bookingsLastUpdated) {
+      return res.status(304).end();
+    }
+
     const [rows] = await pool.query(
       'SELECT * FROM bookings ORDER BY date DESC, time DESC LIMIT 200'
     );
+    res.setHeader('Last-Modified', new Date(bookingsLastUpdated).toUTCString());
     res.json(rows);
   } catch (error) {
     console.error('Error fetching admin bookings:', error);
@@ -1610,12 +1749,7 @@ app.get('/api/admin/bookings', requireAdmin, async (req, res) => {
   }
 });
 
-// In-memory cache for non-image settings to reduce DB hits
-let settingsCache = null;
-let settingsCacheTime = 0;
-const SETTINGS_CACHE_TTL = 60 * 1000; // 60 seconds
-
-// 5. Store Settings API Endpoints
+// 5. Store Settings API Endpoints (With RAM Cache)
 app.get('/api/settings', async (req, res) => {
   try {
     const now = Date.now();
@@ -1639,16 +1773,22 @@ app.get('/api/settings', async (req, res) => {
   }
 });
 
-// Lightweight endpoint to fetch a single image setting by key
+// Lightweight endpoint to fetch a single image setting by key (With RAM Cache)
 app.get('/api/settings/images/:key', async (req, res) => {
   const { key } = req.params;
   // Only allow fetching image keys for security
   if (!key.startsWith('clay_oven_image_') && !key.startsWith('clay_oven_dish_image_')) {
     return res.status(400).json({ error: 'Only image setting keys are allowed' });
   }
+
+  if (imageSettingsCache.has(key)) {
+    return res.json({ key, value: imageSettingsCache.get(key) });
+  }
+
   try {
     const [rows] = await pool.query('SELECT setting_value FROM store_settings WHERE setting_key = ? LIMIT 1', [key]);
     if (rows.length > 0 && rows[0].setting_value) {
+      imageSettingsCache.set(key, rows[0].setting_value);
       res.json({ key, value: rows[0].setting_value });
     } else {
       res.status(404).json({ error: 'Image setting not found' });
@@ -1678,6 +1818,7 @@ app.post('/api/settings', requireAdmin, async (req, res) => {
     }
     await connection.commit();
     settingsCache = null;
+    imageSettingsCache.clear();
     res.json({ success: true, message: 'Settings successfully synchronized with server database' });
   } catch (error) {
     await connection.rollback();
@@ -1688,16 +1829,16 @@ app.post('/api/settings', requireAdmin, async (req, res) => {
   }
 });
 
-// 5.6. Admin SMTP Settings API Endpoints
+// 5.6. Admin SMTP Settings API Endpoints (With RAM Cache)
 app.get('/api/admin/smtp', requireAdmin, async (req, res) => {
   try {
-    const [rows] = await pool.query('SELECT host, port, secure, user FROM smtp_settings LIMIT 1');
-    if (rows.length > 0) {
+    const config = await getSmtpConfig();
+    if (config) {
       res.json({
-        host: rows[0].host,
-        port: rows[0].port,
-        secure: rows[0].secure === 'true',
-        user: rows[0].user,
+        host: config.host,
+        port: config.port,
+        secure: config.secure === 'true',
+        user: config.user,
         hasPassword: true
       });
     } else {
@@ -1739,6 +1880,7 @@ app.post('/api/admin/smtp', requireAdmin, async (req, res) => {
         [host, parseInt(port), String(secure), user, password || '']
       );
     }
+    smtpConfigCache = null;
     res.json({ success: true, message: 'SMTP settings successfully updated' });
   } catch (error) {
     console.error('Error saving SMTP settings:', error);
@@ -1746,11 +1888,18 @@ app.post('/api/admin/smtp', requireAdmin, async (req, res) => {
   }
 });
 
-// 5.5. Business Basic Information API Endpoints
+// 5.5. Business Basic Information API Endpoints (With RAM Cache)
 app.get('/api/business-info', async (req, res) => {
   try {
+    const now = Date.now();
+    if (businessInfoCache && (now - businessInfoCacheTime) < BIZ_INFO_CACHE_TTL) {
+      return res.json(businessInfoCache);
+    }
+
     const [rows] = await pool.query('SELECT * FROM business_info LIMIT 1');
     if (rows.length > 0) {
+      businessInfoCache = rows[0];
+      businessInfoCacheTime = now;
       res.json(rows[0]);
     } else {
       res.status(404).json({ error: 'Business basic information not found' });
@@ -1768,10 +1917,8 @@ app.post('/api/business-info', requireAdmin, async (req, res) => {
   }
 
   try {
-    // Check if there is an existing record
     const [rows] = await pool.query('SELECT id FROM business_info LIMIT 1');
     if (rows.length > 0) {
-      // Update existing record
       await pool.query(
         `UPDATE business_info 
          SET business_name = ?, address = ?, maps_url = ?, phone = ?, mobile = ?, whatsapp = ?, email = ?
@@ -1779,13 +1926,13 @@ app.post('/api/business-info', requireAdmin, async (req, res) => {
         [business_name, address, maps_url, phone, mobile, whatsapp, email, rows[0].id]
       );
     } else {
-      // Insert new record
       await pool.query(
         `INSERT INTO business_info (business_name, address, maps_url, phone, mobile, whatsapp, email)
          VALUES (?, ?, ?, ?, ?, ?, ?)`,
         [business_name, address, maps_url, phone, mobile, whatsapp, email]
       );
     }
+    businessInfoCache = null;
     res.json({ success: true, message: 'Business basic information updated successfully' });
   } catch (error) {
     console.error('Error updating business info in database:', error);
@@ -1806,14 +1953,12 @@ app.post('/api/admin/upload-image', requireAdmin, async (req, res) => {
   }
 
   try {
-    // Validate base64 payload prefix
     if (!imageBytes.startsWith('data:image/')) {
       return res.status(400).json({ error: 'Invalid image data format. Must be a base64 image data URI' });
     }
 
     const settingKey = `clay_oven_image_${imageType}`;
 
-    // Store raw base64 data directly inside store_settings database
     await pool.query(
       `INSERT INTO store_settings (setting_key, setting_value)
        VALUES (?, ?)
@@ -1823,6 +1968,7 @@ app.post('/api/admin/upload-image', requireAdmin, async (req, res) => {
 
     console.log(`Successfully stored self-hosted image directly in database under key: ${settingKey}`);
     settingsCache = null;
+    imageSettingsCache.clear();
 
     res.json({
       success: true,
@@ -1835,11 +1981,10 @@ app.post('/api/admin/upload-image', requireAdmin, async (req, res) => {
   }
 });
 
-// 7. Order Notification Email Settings API Endpoints
+// 7. Order Notification Email Settings API Endpoints (With RAM Cache)
 app.get('/api/admin/notification-emails', requireAdmin, async (req, res) => {
   try {
-    const [rows] = await pool.query('SELECT email FROM order_notification_emails');
-    const emails = rows.map(r => r.email);
+    const emails = await getOrderNotificationEmails();
     res.json(emails);
   } catch (error) {
     console.error('Error fetching notification emails:', error);
@@ -1855,6 +2000,7 @@ app.post('/api/admin/notification-emails', requireAdmin, async (req, res) => {
 
   try {
     await pool.query('INSERT IGNORE INTO order_notification_emails (email) VALUES (?)', [email]);
+    notifEmailsCache = null;
     res.json({ success: true, message: 'Notification email successfully added' });
   } catch (error) {
     console.error('Error adding notification email:', error);
@@ -1870,6 +2016,7 @@ app.delete('/api/admin/notification-emails/:email', requireAdmin, async (req, re
 
   try {
     await pool.query('DELETE FROM order_notification_emails WHERE email = ?', [email]);
+    notifEmailsCache = null;
     res.json({ success: true, message: 'Notification email successfully deleted' });
   } catch (error) {
     console.error('Error deleting notification email:', error);

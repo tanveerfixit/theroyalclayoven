@@ -4,6 +4,7 @@
  */
 
 import React from 'react';
+import { createPortal } from 'react-dom';
 import { Calendar, Users, Home, Compass, PhoneCall, HelpCircle, ShieldCheck, Mail, ArrowRight, Sparkles, X } from 'lucide-react';
 import { Reservation } from '../types';
 
@@ -746,9 +747,9 @@ The Royal Clay Oven`);
       )}
 
       {/* Custom Warning Modal Dialog */}
-      {showWarningModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-brand-dark/70 backdrop-blur-sm animate-fade-in">
-          <div className="relative w-full max-w-md bg-white border border-brand-dark p-6 sm:p-8 space-y-6 shadow-[0_20px_50px_rgba(0,0,0,0.3)] animate-slide-up">
+      {showWarningModal && createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-brand-dark/70 backdrop-blur-xs animate-fade-in overflow-y-auto">
+          <div className="relative my-auto w-full max-w-md bg-white border border-brand-dark p-6 sm:p-8 space-y-6 shadow-[0_20px_50px_rgba(0,0,0,0.3)] animate-slide-up max-h-[90vh] overflow-y-auto">
             
             {/* Close Button X */}
             <button
@@ -797,13 +798,14 @@ The Royal Clay Oven`);
             </div>
 
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* Custom Table Reservations Suspended Warning Modal Dialog */}
-      {showReservationsWarningModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-brand-dark/70 backdrop-blur-sm animate-fade-in" id="reservations-disabled-modal">
-          <div className="relative w-full max-w-sm sm:max-w-md bg-white border border-brand-dark p-5 sm:p-6 space-y-4 sm:space-y-5 shadow-[0_20px_50px_rgba(0,0,0,0.3)] animate-slide-up">
+      {showReservationsWarningModal && createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-4 bg-brand-dark/70 backdrop-blur-xs animate-fade-in overflow-y-auto" id="reservations-disabled-modal">
+          <div className="relative my-auto w-full max-w-sm sm:max-w-md bg-white border border-brand-dark p-5 sm:p-6 space-y-4 sm:space-y-5 shadow-[0_20px_50px_rgba(0,0,0,0.3)] animate-slide-up max-h-[90vh] overflow-y-auto">
             
             {/* Close Button X */}
             <button
@@ -853,7 +855,8 @@ The Royal Clay Oven`);
             </div>
 
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
     </div>

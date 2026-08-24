@@ -6,7 +6,7 @@
 import React from 'react';
 import { Navbar } from './components/Navbar';
 import { CartItem, MenuItem } from './types';
-import { Plus, Minus, Trash2, X, ShoppingBag, Send, PhoneCall, MessageCircle } from 'lucide-react';
+import { Plus, Minus, Trash2, X, ShoppingBag, Send, PhoneCall, MessageCircle, CookingPot } from 'lucide-react';
 import { useGoogleOneTapLogin } from '@react-oauth/google';
 import { jwtDecode } from 'jwt-decode';
 import { CookieConsent } from './components/CookieConsent';
@@ -338,7 +338,7 @@ export default function App() {
 
       {/* Main Responsive Canvas */}
       <main id="main-content" className="flex-grow pt-0 font-sans">
-        <div key={currentTab} className="w-full animate-slide-up">
+        <div key={currentTab} className="w-full animate-fade-in">
           <React.Suspense fallback={<BrandLoader />}>
             {currentTab === 'home' && <HomeView setCurrentTab={setCurrentTab} businessInfo={businessInfo} storeSettings={storeSettings} />}
             {currentTab === 'menu' && <MenuView storeSettings={storeSettings} />}
@@ -380,7 +380,7 @@ export default function App() {
                 {/* Header title */}
                 <div className="flex items-center justify-between border-b border-brand-dark/15 pb-4 mb-6">
                   <h3 className="font-serif text-lg font-bold text-brand-dark flex items-center">
-                    <ShoppingBag className="w-5 h-5 mr-2" />
+                    <CookingPot className="w-5 h-5 mr-2" />
                     Shopping Basket
                   </h3>
                   <button
@@ -396,7 +396,7 @@ export default function App() {
                 {/* Basket List list */}
                 {cart.length === 0 ? (
                   <div className="text-center py-20 text-brand-muted space-y-3">
-                    <ShoppingBag className="w-8 h-8 mx-auto stroke-[1.5] text-brand-muted/70" />
+                    <CookingPot className="w-8 h-8 mx-auto stroke-[1.5] text-brand-muted/70" />
                     <p className="font-serif text-base">Your basket is standardly empty.</p>
                     <button
                       type="button"

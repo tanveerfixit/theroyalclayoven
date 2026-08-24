@@ -57,43 +57,43 @@ export const MenuView: React.FC<MenuViewProps> = ({ storeSettings }) => {
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-20 space-y-12 animate-fade-in" id="menu-view">
       
       {/* Title & Introduction */}
-      <div className="text-center max-w-2xl mx-auto pt-8 space-y-4">
-        <span className="font-mono text-sm tracking-widest text-brand-accent uppercase font-bold px-2 py-1 bg-brand-dark/5 inline-block">
+      <div className="text-center max-w-2xl mx-auto pt-6 sm:pt-8 space-y-3">
+        <span className="text-xs tracking-widest text-brand-accent uppercase font-bold px-2.5 py-1 bg-brand-dark/5 rounded-full inline-block">
           THE BOOKLET
         </span>
-        <h1 className="font-serif text-3xl sm:text-5xl font-bold tracking-tight text-brand-dark">Our Traditional Menu</h1>
-        <p className="text-sm sm:text-base text-brand-muted leading-relaxed font-normal">
+        <h1 className="text-2xl sm:text-4xl font-bold tracking-tight text-brand-dark">Our Traditional Menu</h1>
+        <p className="text-xs sm:text-sm text-brand-muted leading-relaxed font-normal">
           Everything prepared freshly in-house. Standard main dishes are served with authentic basmati rice or fresh naans baked immediately in our high-fire clay oven.
         </p>
       </div>
 
       {/* Filter and Search Bar Assembly */}
-      <div className="border border-brand-dark/10 bg-white p-6 grid grid-cols-1 lg:grid-cols-12 gap-4">
+      <div className="bg-white p-4 sm:p-6 rounded-2xl shadow-sm grid grid-cols-1 lg:grid-cols-12 gap-3 sm:gap-4">
         
         {/* Search */}
         <div className="lg:col-span-4 relative">
           <label htmlFor="menu-search-input" className="sr-only">Search dishes...</label>
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-brand-muted" />
+          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-brand-muted" />
           <input
             id="menu-search-input"
             type="text"
             placeholder="Search dishes (e.g. Biryani)..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-4 py-2.5 text-sm font-mono border border-brand-dark/10 focus:border-brand-dark focus:ring-0 outline-none placeholder:text-brand-muted/70 rounded-none bg-brand-beige/20"
+            className="w-full pl-10 pr-4 py-2.5 text-sm bg-brand-dark/[0.03] focus:bg-white focus:ring-2 focus:ring-brand-accent/20 outline-none placeholder:text-brand-muted/70 rounded-xl transition-all"
           />
         </div>
 
         {/* Veg Flag Toggle */}
         <div className="lg:col-span-3 flex items-center justify-start lg:justify-center">
-          <label className="flex items-center space-x-3 cursor-pointer select-none">
+          <label className="flex items-center space-x-2.5 cursor-pointer select-none">
             <input
               type="checkbox"
               checked={vegetarianFilter}
               onChange={(e) => setVegetarianFilter(e.target.checked)}
-              className="w-4 h-4 text-brand-accent focus:ring-0 rounded-none accent-brand-accent border-brand-dark/10"
+              className="w-4 h-4 text-brand-accent focus:ring-0 rounded-md accent-brand-accent"
             />
-            <span className="font-mono text-sm text-brand-dark tracking-wider font-medium">VEGETARIAN ONLY</span>
+            <span className="text-xs sm:text-sm text-brand-dark tracking-wider font-semibold">VEGETARIAN ONLY</span>
           </label>
         </div>
 
@@ -103,7 +103,7 @@ export const MenuView: React.FC<MenuViewProps> = ({ storeSettings }) => {
             type="button"
             id="toggle-allergens-key-btn"
             onClick={() => setShowAllergensKey(!showAllergensKey)}
-            className="w-full lg:w-auto inline-flex items-center justify-center space-x-2 px-4 py-2.5 bg-brand-dark/5 hover:bg-brand-dark text-brand-dark hover:text-white transition-all font-mono text-sm tracking-wider font-medium border border-brand-dark/10 rounded-none"
+            className="w-full lg:w-auto inline-flex items-center justify-center space-x-2 px-4 py-2.5 bg-brand-dark/5 hover:bg-brand-dark text-brand-dark hover:text-white transition-all text-xs sm:text-sm tracking-wider font-semibold rounded-xl active:scale-95"
           >
             <Info className="w-3.5 h-3.5" />
             <span>{showAllergensKey ? 'HIDE ALLERGEN LEGEND' : 'SHOW ALLERGEN LEGEND'}</span>
@@ -113,36 +113,36 @@ export const MenuView: React.FC<MenuViewProps> = ({ storeSettings }) => {
 
       {/* Allergens Information Drawer (In-line layout) */}
       {showAllergensKey && (
-        <div id="allergens-legend-drawer" className="bg-white border border-brand-accent/30 p-6 space-y-4 animate-fade-in">
-          <h3 className="font-mono text-sm font-bold text-brand-accent tracking-widest uppercase">
+        <div id="allergens-legend-drawer" className="bg-white rounded-2xl p-5 sm:p-6 space-y-4 animate-fade-in shadow-sm">
+          <h3 className="text-xs font-bold text-brand-accent tracking-widest uppercase">
             REGULATORY ALLERGEN CHART KEYS
           </h3>
-          <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3 text-sm font-mono text-brand-muted">
+          <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2.5 text-xs text-brand-muted">
             {ALLERGENS.map((all) => (
-              <div key={all.index} className="flex items-center space-x-2 border border-brand-dark/5 p-2 bg-brand-beige">
-                <span className="bg-brand-dark text-white w-4 h-4 text-xs flex items-center justify-center font-bold">
+              <div key={all.index} className="flex items-center space-x-2 p-2 bg-brand-dark/[0.03] rounded-xl">
+                <span className="bg-brand-dark text-white w-4 h-4 text-[10px] flex items-center justify-center font-bold rounded-md">
                   {all.index}
                 </span>
                 <span className="font-medium text-brand-dark truncate">{all.name}</span>
               </div>
             ))}
           </div>
-          <p className="text-sm text-brand-muted italic leading-relaxed font-normal">
+          <p className="text-xs text-brand-muted italic leading-relaxed font-normal">
             * Please inform our floor service or kitchen team during table layout booking or order checkout if you have extreme allergy requirements.
           </p>
         </div>
       )}
 
       {/* Category Scroll Segment tabs */}
-      <div className="border-b border-brand-dark/10 flex overflow-x-auto pb-px scrollbar-none">
+      <div className="flex overflow-x-auto pb-1 scrollbar-none gap-2 px-1">
         <button
           type="button"
           id="category-tab-all"
           onClick={() => setSelectedCategory('All')}
-          className={`px-6 py-4 text-sm font-mono tracking-wider space-x-2 whitespace-nowrap border-b-2 uppercase transition-all duration-150 ${
+          className={`px-5 py-2.5 text-xs tracking-wider whitespace-nowrap uppercase transition-all rounded-full font-bold active:scale-95 ${
             selectedCategory === 'All'
-              ? 'border-brand-dark font-bold text-brand-dark'
-              : 'border-transparent text-brand-muted hover:text-brand-dark'
+              ? 'bg-brand-dark text-white shadow-sm'
+              : 'bg-white text-brand-muted hover:text-brand-dark hover:bg-brand-dark/5 shadow-xs'
           }`}
         >
           ALL CATEGORIES
@@ -153,10 +153,10 @@ export const MenuView: React.FC<MenuViewProps> = ({ storeSettings }) => {
             id={`category-tab-${cat.replace(/\s+/g, '-').toLowerCase()}`}
             key={cat}
             onClick={() => setSelectedCategory(cat)}
-            className={`px-6 py-4 text-sm font-mono tracking-wider whitespace-nowrap border-b-2 uppercase transition-all duration-150 ${
+            className={`px-5 py-2.5 text-xs tracking-wider whitespace-nowrap uppercase transition-all rounded-full font-bold active:scale-95 ${
               selectedCategory === cat
-                ? 'border-brand-dark font-bold text-brand-dark'
-                : 'border-transparent text-brand-muted hover:text-brand-dark'
+                ? 'bg-brand-dark text-white shadow-sm'
+                : 'bg-white text-brand-muted hover:text-brand-dark hover:bg-brand-dark/5 shadow-xs'
             }`}
           >
             {cat}
@@ -166,19 +166,19 @@ export const MenuView: React.FC<MenuViewProps> = ({ storeSettings }) => {
 
       {/* Menu items display row */}
       {filteredItems.length === 0 ? (
-        <div id="no-menu-items-alert" className="text-center py-20 border border-dashed border-brand-dark/15">
+        <div id="no-menu-items-alert" className="text-center py-16 bg-white rounded-2xl shadow-sm">
           <HelpCircle className="w-8 h-8 text-brand-muted mx-auto mb-3" />
-          <p className="font-mono text-sm text-brand-muted">NO ITEMS MATCHED YOUR SEARCH OR CHOSEN FILTER.</p>
+          <p className="text-xs sm:text-sm font-semibold text-brand-muted">NO ITEMS MATCHED YOUR SEARCH OR CHOSEN FILTER.</p>
         </div>
       ) : (
-        <div id="filtered-items-grid" className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <div id="filtered-items-grid" className="grid grid-cols-1 md:grid-cols-2 gap-5 sm:gap-6">
           {filteredItems.map((item) => (
             <div 
               key={item.id} 
-              className="bg-white p-6 sm:p-8 border border-brand-dark/15 flex flex-col justify-between hover:border-brand-dark/40 transition-colors bg-gradient-to-br from-white to-brand-beige/10"
+              className="bg-white p-5 sm:p-7 rounded-2xl shadow-[0_2px_12px_rgba(0,0,0,0.03)] hover:shadow-[0_8px_24px_rgba(0,0,0,0.06)] flex flex-col justify-between transition-all space-y-3"
             >
               {dishImages[`clay_oven_dish_image_${item.id}`] && (
-                <div className="w-full h-48 mb-4 border border-brand-dark/10 bg-brand-beige/5 overflow-hidden">
+                <div className="w-full h-48 mb-2 rounded-xl bg-brand-beige/5 overflow-hidden">
                   <img
                     src={dishImages[`clay_oven_dish_image_${item.id}`]}
                     alt={item.name}
@@ -187,28 +187,27 @@ export const MenuView: React.FC<MenuViewProps> = ({ storeSettings }) => {
                   />
                 </div>
               )}
-              <div className="space-y-3">
+              <div className="space-y-2">
                 
                 {/* Header item */}
-                <div className="flex items-baseline justify-between gap-4">
-                  <h3 className="font-serif text-lg font-bold text-brand-dark flex items-center gap-2">
+                <div className="flex items-baseline justify-between gap-3">
+                  <h3 className="text-base sm:text-lg font-bold text-brand-dark flex items-center gap-1.5 leading-snug">
                     {item.name}
                     {item.isVeg && (
-                      <span className="w-2 h-2 bg-emerald-600 inline-block rounded-none ring-2 ring-emerald-100" title="Vegetarian Available"></span>
+                      <span className="w-2 h-2 bg-emerald-500 inline-block rounded-full ring-2 ring-emerald-100" title="Vegetarian Available"></span>
                     )}
                   </h3>
-                  <div className="h-px bg-dotted flex-grow border-b border-brand-dark/10 max-w-xs hidden sm:block"></div>
-                  <span className="font-mono text-sm font-bold text-brand-dark text-right tracking-wider">
+                  <span className="text-sm sm:text-base font-extrabold text-brand-dark text-right tracking-wider shrink-0">
                     &euro;{item.price.toFixed(2)}
                   </span>
                 </div>
 
                 {/* Sizes option representation */}
                 {item.sizeOptions && (
-                  <div className="flex items-center space-x-2 py-0.5">
-                    <span className="font-mono text-xs text-brand-muted uppercase tracking-wider">SIZES:</span>
+                  <div className="flex items-center space-x-2 py-0.5 flex-wrap gap-y-1">
+                    <span className="text-xs text-brand-accent uppercase tracking-wider font-bold">SIZES:</span>
                     {item.sizeOptions.map((opt) => (
-                      <span key={opt.name} className="font-mono text-xs bg-brand-dark/5 px-1.5 py-0.5 border border-brand-dark/5 text-brand-dark">
+                      <span key={opt.name} className="text-xs bg-brand-dark/5 px-2 py-0.5 rounded-md font-semibold text-brand-dark">
                         {opt.name} (&euro;{opt.price.toFixed(2)})
                       </span>
                     ))}
@@ -217,7 +216,7 @@ export const MenuView: React.FC<MenuViewProps> = ({ storeSettings }) => {
 
                 {/* Description info */}
                 {item.description && (
-                  <p className="text-sm text-brand-muted leading-relaxed font-normal">
+                  <p className="text-xs sm:text-sm text-brand-muted leading-relaxed font-normal">
                     {item.description}
                   </p>
                 )}
@@ -226,8 +225,8 @@ export const MenuView: React.FC<MenuViewProps> = ({ storeSettings }) => {
 
               {/* Footer item: Allergens list */}
               {item.allergens && item.allergens.length > 0 && (
-                <div className="mt-4 pt-3 border-t border-brand-dark/5 flex items-center space-x-2">
-                  <span className="font-mono text-xs text-brand-muted uppercase tracking-wider">ALLERGENS:</span>
+                <div className="mt-3 pt-2.5 border-t border-brand-dark/5 flex items-center space-x-2">
+                  <span className="text-xs text-brand-muted uppercase tracking-wider font-semibold">ALLERGENS:</span>
                   <div className="flex space-x-1">
                     {item.allergens.map((algIndex) => {
                       const allergenName = ALLERGENS.find((a) => a.index === algIndex)?.name || '';
@@ -235,7 +234,7 @@ export const MenuView: React.FC<MenuViewProps> = ({ storeSettings }) => {
                         <span 
                           key={algIndex} 
                           title={allergenName}
-                          className="bg-brand-dark text-brand-beige w-4 h-4 text-[8px] font-mono font-bold flex items-center justify-center cursor-help rounded-none"
+                          className="bg-brand-dark text-white w-4 h-4 text-[10px] font-bold flex items-center justify-center cursor-help rounded-md"
                         >
                           {algIndex}
                         </span>

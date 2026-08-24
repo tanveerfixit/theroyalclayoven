@@ -4,7 +4,8 @@
  */
 
 import React from 'react';
-import { ShoppingCart, Plus, Minus, Trash2, Check, ArrowRight, ArrowLeft, Clock, MapPin, Sparkles, ShoppingBag, ChevronLeft, ChevronRight, Phone, X } from 'lucide-react';
+import { createPortal } from 'react-dom';
+import { ShoppingCart, Plus, Minus, Trash2, Check, ArrowRight, ArrowLeft, Clock, MapPin, Sparkles, ShoppingBag, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, Phone, X, CookingPot } from 'lucide-react';
 import { MenuItem, CartItem, Order } from '../types';
 import { MENU_ITEMS, CATEGORIES } from '../data/menu';
 import {
@@ -51,6 +52,7 @@ export const OrderView: React.FC<OrderViewProps> = ({
   
   // Checkout journey steps
   const [isCheckoutMode, setIsCheckoutMode] = React.useState(false);
+  const [showMobileOrderSummary, setShowMobileOrderSummary] = React.useState(false);
   const [showWarningModal, setShowWarningModal] = React.useState(false);
   const [serviceType, setServiceType] = React.useState<'takeaway' | 'delivery'>('takeaway');
 
@@ -218,6 +220,16 @@ export const OrderView: React.FC<OrderViewProps> = ({
     setSelectedSizes(initialSizes);
   }, []);
 
+  // Pakistani Cuisine side choice modal state
+  const [pakistaniSideModalItem, setPakistaniSideModalItem] = React.useState<MenuItem | null>(null);
+  const [selectedSideChoice, setSelectedSideChoice] = React.useState<'Naan Bread' | 'White Rice'>('Naan Bread');
+  const [modalChefNotes, setModalChefNotes] = React.useState<string>('');
+
+  // Free Cold Drink modal state for Burgers, Wraps & Sandwiches
+  const [drinkModalItem, setDrinkModalItem] = React.useState<MenuItem | null>(null);
+  const [selectedDrinkChoice, setSelectedDrinkChoice] = React.useState<string>('Cola');
+  const [drinkModalNotes, setDrinkModalNotes] = React.useState<string>('');
+
   const handleSizeChange = (itemId: string, sizeName: string) => {
     const item = MENU_ITEMS.find((i) => i.id === itemId);
     if (item && item.sizeOptions) {
@@ -228,9 +240,7 @@ export const OrderView: React.FC<OrderViewProps> = ({
     }
   };
 
-  const handleAddWithDetails = (item: MenuItem) => {
-    const size = selectedSizes[item.id];
-    const notes = customNotes[item.id] || '';
+  const executeAddToCart = (item: MenuItem, size?: { name: string; price: number }, notes?: string) => {
     addToCart(item, size, notes);
 
     // Clear notes for this item once added to improve UX
@@ -246,6 +256,48 @@ export const OrderView: React.FC<OrderViewProps> = ({
         notification.classList.add('opacity-0');
       }, 2000);
     }
+  };
+
+  const handleAddWithDetails = (item: MenuItem) => {
+    if (item.category === 'Pakistani Cuisine') {
+      setPakistaniSideModalItem(item);
+      setSelectedSideChoice('Naan Bread');
+      setModalChefNotes(customNotes[item.id] || '');
+      return;
+    }
+
+    if (item.category === 'Burgers' || item.category === 'Wraps & Sandwiches') {
+      setDrinkModalItem(item);
+      setSelectedDrinkChoice('Cola');
+      setDrinkModalNotes(customNotes[item.id] || '');
+      return;
+    }
+
+    const size = selectedSizes[item.id];
+    const notes = customNotes[item.id] || '';
+    executeAddToCart(item, size, notes);
+  };
+
+  const handleConfirmPakistaniSide = () => {
+    if (!pakistaniSideModalItem) return;
+    const size = selectedSizes[pakistaniSideModalItem.id];
+    const sideNote = `Side: ${selectedSideChoice}`;
+    const fullNotes = [sideNote, modalChefNotes.trim()].filter(Boolean).join(' | ');
+
+    executeAddToCart(pakistaniSideModalItem, size, fullNotes);
+    setPakistaniSideModalItem(null);
+    setModalChefNotes('');
+  };
+
+  const handleConfirmDrinkChoice = () => {
+    if (!drinkModalItem) return;
+    const size = selectedSizes[drinkModalItem.id];
+    const drinkNote = `Free Drink: ${selectedDrinkChoice}`;
+    const fullNotes = [drinkNote, drinkModalNotes.trim()].filter(Boolean).join(' | ');
+
+    executeAddToCart(drinkModalItem, size, fullNotes);
+    setDrinkModalItem(null);
+    setDrinkModalNotes('');
   };
 
   // Calculations
@@ -462,71 +514,71 @@ export const OrderView: React.FC<OrderViewProps> = ({
             </div>
             
             <div className="space-y-2">
-              <span className="font-mono text-sm tracking-widest text-brand-accent uppercase font-bold">
+              <span className="text-xs tracking-widest text-brand-accent uppercase font-bold px-2.5 py-1 bg-brand-accent/10 rounded-full inline-block">
                 PAKISTANI KITCHEN ORDER CONFIRMED
               </span>
-              <h2 className="font-serif text-2xl sm:text-3xl font-bold tracking-tight text-brand-dark">
+              <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-brand-dark">
                 Thank You For Your Order!
               </h2>
-              <p className="font-mono text-sm text-brand-muted uppercase">
+              <p className="text-xs sm:text-sm text-brand-muted font-medium uppercase">
                 Ref ID: <span className="text-brand-dark font-bold">{placedOrder.id}</span>
               </p>
             </div>
 
-            <div className="border-t border-b border-brand-dark/10 py-6 text-left space-y-3 font-mono text-sm text-brand-muted">
+            <div className="border-t border-b border-brand-dark/10 py-5 text-left space-y-2.5 text-xs sm:text-sm text-brand-muted">
               <div className="flex justify-between font-bold text-brand-dark">
                 <span>Fulfillment Type</span>
                 <span className="uppercase">{placedOrder.serviceType}</span>
               </div>
               <div className="flex justify-between">
                 <span>Customer Name</span>
-                <span className="text-brand-dark">{placedOrder.customerInfo.name}</span>
+                <span className="text-brand-dark font-medium">{placedOrder.customerInfo.name}</span>
               </div>
               <div className="flex justify-between">
                 <span>Fulfillment Time</span>
-                <span className="text-brand-dark">{placedOrder.customerInfo.preferredTime}</span>
+                <span className="text-brand-dark font-medium">{placedOrder.customerInfo.preferredTime}</span>
               </div>
               
               {placedOrder.customerInfo.address && (
                 <div className="border-t border-dashed border-brand-dark/5 pt-2">
-                  <span className="font-semibold text-brand-dark block mb-1">Deliver To:</span>
+                  <span className="font-semibold text-brand-dark block mb-0.5">Deliver To:</span>
                   <span className="text-brand-muted">{placedOrder.customerInfo.address}</span>
                 </div>
               )}
             </div>
 
-          <div className="space-y-3 text-left">
-            <h4 className="font-serif text-base font-bold text-brand-dark">Order Items Summarized:</h4>
-            <div className="text-sm font-mono border border-brand-dark/5 bg-brand-beige/30 p-4 space-y-2">
+          <div className="space-y-2.5 text-left">
+            <h4 className="text-sm font-bold text-brand-dark">Order Items Summarized:</h4>
+            <div className="text-xs sm:text-sm bg-brand-dark/[0.02] p-4 rounded-2xl space-y-2">
               {placedOrder.items.map((it, idx) => (
                 <div key={idx} className="flex justify-between text-brand-muted">
                   <span>
                     {it.quantity}x {it.name} {it.size ? `(${it.size})` : ''}
                     {it.notes && (
-                      <span className="block text-sm text-brand-accent italic font-sans">
+                      <span className="block text-xs text-brand-accent italic">
                         &ldquo;{it.notes}&rdquo;
                       </span>
                     )}
                   </span>
-                  <span className="text-brand-dark">&euro;{(it.price * it.quantity).toFixed(2)}</span>
+                  <span className="text-brand-dark font-bold">&euro;{(it.price * it.quantity).toFixed(2)}</span>
                 </div>
               ))}
-              <div className="border-t border-dashed border-brand-dark/10 pt-2 font-semibold flex justify-between text-brand-dark">
+              <div className="border-t border-dashed border-brand-dark/10 pt-2 font-bold flex justify-between text-brand-dark text-sm sm:text-base">
                 <span>TOTAL PAID</span>
                 <span>&euro;{placedOrder.total.toFixed(2)}</span>
               </div>
             </div>
           </div>
 
-          <p className="text-sm text-brand-muted leading-relaxed font-normal">
-            We are now preparing your authentic dishes using traditional charcoal fires. Standard turnaround time is 35 mins. If you have immediate inquiries, phone our line at <span className="font-semibold text-brand-dark">{businessInfo.phone}</span>.
+          <p className="text-xs sm:text-sm text-brand-muted leading-relaxed font-normal">
+            We are now preparing your authentic dishes using traditional charcoal fires. Standard turnaround time is 35 mins. If you have immediate inquiries, phone our line at <span className="font-bold text-brand-dark">{businessInfo.phone}</span>.
           </p>
 
           <button
             type="button"
             id="order-again-btn"
             onClick={handleOrderAgain}
-            className="w-full bg-brand-dark hover:bg-brand-accent text-white py-3.5 text-sm font-mono uppercase tracking-widest font-bold transition-colors"
+            className="w-full bg-brand-dark hover:bg-brand-accent text-white py-3.5 text-xs sm:text-sm uppercase tracking-wider font-bold rounded-full shadow-md transition-all active:scale-[0.98]"
           >
             START A NEW ORDER
           </button>
@@ -539,39 +591,33 @@ export const OrderView: React.FC<OrderViewProps> = ({
   // Takeaway configurations are handled via synchronized React state hooks defined at the top of the view.
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-20 animate-fade-in" id="order-takeaway-view">
+    <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 pb-28 lg:pb-20 animate-fade-in" id="order-takeaway-view">
       
-      {/* Editorial Header - Only displayed when online takeaway is active and not in checkout mode */}
+      {/* Short Mobile-Responsive Header */}
       {!isCheckoutMode && takeawayEnabled && (
-        <div className="text-center max-w-xl mx-auto pt-4 sm:pt-8 space-y-2 mb-6 sm:mb-10">
-          <span className="font-mono text-xs sm:text-sm tracking-widest text-brand-accent uppercase font-bold">
-            FAST ONLINE ORDER
-          </span>
-          <h1 className="font-serif text-2xl sm:text-4xl font-bold tracking-tight text-brand-dark">
-            Order &amp; Takeaway Service
+        <div className="text-center max-w-xl mx-auto pt-2 sm:pt-4 mb-3 sm:mb-5">
+          <h1 className="text-xl sm:text-3xl font-bold tracking-tight text-brand-dark">
+            Order Online
           </h1>
-          <p className="text-xs sm:text-sm text-brand-muted leading-relaxed font-normal px-2 sm:px-0">
-            Enjoy the same high-grade clay oven flavor at home. Choose self-collection or speedy delivery inside our local radius. A statutory €{takeawayCharges.toFixed(2)} packaging fee applies.
-          </p>
         </div>
       )}
 
       {!takeawayEnabled && (
-        <div className="mb-6 border border-brand-accent/30 bg-brand-accent/5 p-3.5 text-left animate-fade-in" id="takeaway-disabled-banner">
+        <div className="mb-6 rounded-2xl bg-amber-500/10 p-4 sm:p-5 text-left animate-fade-in shadow-xs" id="takeaway-disabled-banner">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
-            <div className="space-y-0.5">
-              <span className="font-mono text-[9px] text-brand-accent font-extrabold uppercase tracking-widest block">★ ONLINE ORDERING PAUSED</span>
-              <h2 className="font-serif text-base sm:text-lg font-bold tracking-tight text-brand-dark">
+            <div className="space-y-1">
+              <span className="text-xs text-brand-accent font-extrabold uppercase tracking-widest block">★ ONLINE ORDERING PAUSED</span>
+              <h2 className="text-base sm:text-lg font-bold tracking-tight text-brand-dark">
                 We are actively taking orders over the phone!
               </h2>
-              <p className="text-[11px] sm:text-xs text-brand-muted leading-normal font-sans font-medium">
+              <p className="text-xs sm:text-sm text-brand-muted leading-normal font-medium">
                 {takeawayNotice}
               </p>
             </div>
             <div className="shrink-0 pt-1 md:pt-0">
               <a
                 href={`tel:${noticePhone.replace(/\s+/g, '')}`}
-                className="w-max max-w-full inline-flex items-center justify-center bg-brand-accent hover:bg-brand-dark text-white font-mono font-bold text-xs uppercase tracking-wider px-3.5 py-2.5 transition-colors"
+                className="w-max max-w-full inline-flex items-center justify-center bg-brand-accent hover:bg-brand-dark text-white font-bold text-xs uppercase tracking-wider px-4 py-2.5 rounded-full shadow-sm active:scale-95 transition-all"
               >
                 <Phone className="w-3.5 h-3.5 mr-1.5" />
                 Call to Order Now: {noticePhone}
@@ -582,7 +628,7 @@ export const OrderView: React.FC<OrderViewProps> = ({
       )}     {isCheckoutMode ? (
         
         /* CHECKOUT EXPERIENCE STEP */
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start max-w-5xl mx-auto pt-4 sm:pt-6" id="checkout-container">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 sm:gap-6 items-start max-w-5xl mx-auto pt-2 sm:pt-6" id="checkout-container">
           
           {/* Back button */}
           <div className="lg:col-span-12">
@@ -590,39 +636,111 @@ export const OrderView: React.FC<OrderViewProps> = ({
               type="button"
               id="back-to-shop-btn"
               onClick={() => setIsCheckoutMode(false)}
-              className="inline-flex items-center text-sm font-mono font-bold tracking-wider text-brand-dark hover:text-brand-accent uppercase space-x-1"
+              className="inline-flex items-center text-xs sm:text-sm font-bold tracking-wider text-brand-dark hover:text-brand-accent uppercase space-x-2 py-1.5 px-3.5 bg-white shadow-xs rounded-full hover:shadow-sm active:scale-95 transition-all"
             >
               <ArrowLeft className="w-4 h-4" />
-              <span>Back To Menu Selection</span>
+              <span>Back To Menu</span>
             </button>
           </div>
 
-          {/* Form Side - Decreased gaps and optimized padding for mobile centering */}
-          <form onSubmit={handlePlaceOrderSubmit} className="lg:col-span-7 bg-white border border-brand-dark/10 p-5 sm:p-8 space-y-4">
-            <h2 className="font-serif text-xl sm:text-2xl font-bold tracking-tight border-b border-brand-dark/10 pb-3">
+          {/* Mobile Order Summary Accordion (Top on Mobile) */}
+          <div className="lg:hidden col-span-1 bg-white rounded-2xl shadow-sm p-4 space-y-3">
+            <button
+              type="button"
+              onClick={() => setShowMobileOrderSummary(prev => !prev)}
+              className="w-full flex items-center justify-between text-base font-bold text-brand-dark cursor-pointer text-left"
+              aria-expanded={showMobileOrderSummary}
+            >
+              <span className="flex items-center gap-2">
+                <div className="w-7 h-7 rounded-lg bg-brand-accent/10 text-brand-accent flex items-center justify-center">
+                  <CookingPot className="w-3.5 h-3.5" />
+                </div>
+                <span>Order Summary ({cart.reduce((acc, curr) => acc + curr.quantity, 0)} items)</span>
+              </span>
+              <span className="flex items-center gap-1.5 text-sm text-brand-dark font-extrabold">
+                <span>&euro;{total.toFixed(2)}</span>
+                {showMobileOrderSummary ? <ChevronUp className="w-4 h-4 text-brand-accent" /> : <ChevronDown className="w-4 h-4 text-brand-accent" />}
+              </span>
+            </button>
+
+            {showMobileOrderSummary && (
+              <div className="pt-3 border-t border-brand-dark/5 space-y-3 animate-fade-in">
+                <div className="divide-y divide-brand-dark/5 max-h-56 overflow-y-auto space-y-2.5 pr-1">
+                  {cart.map((item) => {
+                    const itemPrice = item.selectedSize ? item.selectedSize.price : item.menuItem.price;
+                    return (
+                      <div key={item.id} className="pt-2 flex justify-between items-start gap-3 text-xs sm:text-sm">
+                        <div>
+                          <span className="font-bold text-brand-dark block">
+                            {item.quantity}x {item.menuItem.name}
+                          </span>
+                          {item.selectedSize && (
+                            <span className="block text-xs text-brand-muted">
+                              Size: {item.selectedSize.name}
+                            </span>
+                          )}
+                          {item.notes && (
+                            <span className="block text-xs text-brand-accent italic truncate max-w-[200px]">
+                              &ldquo;{item.notes}&rdquo;
+                            </span>
+                          )}
+                        </div>
+                        <span className="text-brand-dark font-bold shrink-0">&euro;{(itemPrice * item.quantity).toFixed(2)}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                <div className="border-t border-brand-dark/5 pt-2.5 space-y-1.5 text-xs sm:text-sm text-brand-muted">
+                  <div className="flex justify-between">
+                    <span>Menu Subtotal</span>
+                    <span className="text-brand-dark font-semibold">&euro;{subtotal.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Statutory Packaging Fee</span>
+                    <span className="text-brand-dark font-semibold">&euro;{packagingFee.toFixed(2)}</span>
+                  </div>
+                  {serviceType === 'delivery' && (
+                    <div className="flex justify-between">
+                      <span>Delivery Charge</span>
+                      <span className="text-brand-dark font-semibold">&euro;{deliveryCharges.toFixed(2)}</span>
+                    </div>
+                  )}
+                  <div className="border-t border-dashed border-brand-dark/10 pt-2 font-bold text-sm sm:text-base flex justify-between text-brand-dark">
+                    <span>TOTAL</span>
+                    <span>&euro;{total.toFixed(2)}</span>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Form Side - Balanced authentic typography card */}
+          <form onSubmit={handlePlaceOrderSubmit} className="lg:col-span-7 bg-white rounded-3xl shadow-[0_4px_20px_rgba(0,0,0,0.03)] p-5 sm:p-8 space-y-5">
+            <h2 className="text-lg sm:text-xl font-bold tracking-tight text-brand-dark pb-1">
               Fulfillment &amp; Customer Details
             </h2>
 
             {validationError && (
-              <div className="p-4 bg-red-50 text-red-800 text-sm font-mono border border-red-200" id="checkout-error-banner">
+              <div className="p-3.5 sm:p-4 bg-red-50 text-red-800 text-xs sm:text-sm font-semibold rounded-2xl" id="checkout-error-banner">
                 {validationError}
               </div>
             )}
 
             {/* Service Selection */}
-            <div className="space-y-1.5">
-              <span className="block font-mono text-xs text-brand-accent uppercase tracking-widest font-bold">
+            <div className="space-y-2">
+              <span className="block text-xs font-bold text-brand-accent uppercase tracking-wider">
                 FULFILLMENT METHOD
               </span>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-2.5 sm:gap-3">
                 <button
                   type="button"
                   id="checkout-option-takeaway"
                   onClick={() => setServiceType('takeaway')}
-                  className={`py-3 px-4 border text-sm font-mono font-bold uppercase transition-all flex flex-col items-center justify-center space-y-1.5 ${
+                  className={`py-3.5 px-4 rounded-full text-xs sm:text-sm font-bold uppercase transition-all flex flex-col items-center justify-center space-y-1 min-h-[54px] active:scale-[0.98] ${
                     serviceType === 'takeaway'
-                      ? 'border-brand-dark bg-brand-dark text-white'
-                      : 'border-brand-dark/15 text-brand-dark hover:bg-brand-dark/5'
+                      ? 'bg-brand-dark text-white shadow-md'
+                      : 'bg-brand-dark/[0.04] text-brand-dark hover:bg-brand-dark/[0.08]'
                   }`}
                 >
                   <ShoppingBag className="w-4 h-4" />
@@ -632,16 +750,16 @@ export const OrderView: React.FC<OrderViewProps> = ({
                   type="button"
                   id="checkout-option-delivery"
                   onClick={() => setServiceType('delivery')}
-                  className={`py-3 px-4 border text-sm font-mono font-bold uppercase transition-all flex flex-col items-center justify-center space-y-1 ${
+                  className={`py-3.5 px-4 rounded-full text-xs sm:text-sm font-bold uppercase transition-all flex flex-col items-center justify-center space-y-1 min-h-[54px] active:scale-[0.98] ${
                     serviceType === 'delivery'
-                      ? 'border-brand-dark bg-brand-dark text-white'
-                      : 'border-brand-dark/15 text-brand-dark hover:bg-brand-dark/5'
+                      ? 'bg-brand-dark text-white shadow-md'
+                      : 'bg-brand-dark/[0.04] text-brand-dark hover:bg-brand-dark/[0.08]'
                   }`}
                 >
                   <MapPin className="w-4 h-4" />
                   <span>Delivery</span>
                   {!deliveryStatusToday.isDeliveryDay && (
-                    <span className={`text-[10px] lowercase font-normal tracking-tight ${serviceType === 'delivery' ? 'text-white/80' : 'text-brand-muted'}`}>
+                    <span className={`text-xs lowercase font-normal tracking-tight ${serviceType === 'delivery' ? 'text-white/80' : 'text-brand-muted'}`}>
                       ({deliveryStatusToday.activeDaysLabel})
                     </span>
                   )}
@@ -649,10 +767,10 @@ export const OrderView: React.FC<OrderViewProps> = ({
               </div>
             </div>
 
-            {/* Text Inputs */}
+            {/* Text Inputs with text-base to prevent iOS mobile auto-zoom */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-              <div className="space-y-1">
-                <label htmlFor="chk-custname" className="block font-mono text-xs text-brand-accent uppercase tracking-widest font-bold">
+              <div className="space-y-1.5">
+                <label htmlFor="chk-custname" className="block text-xs font-bold text-brand-accent uppercase tracking-wider">
                   NAME
                 </label>
                 <input
@@ -662,12 +780,12 @@ export const OrderView: React.FC<OrderViewProps> = ({
                   placeholder="e.g. Liam O'Brien"
                   value={customerName}
                   onChange={(e) => setCustomerName(e.target.value)}
-                  className="w-full border border-brand-dark/10 p-2.5 text-sm font-mono focus:border-brand-dark outline-none bg-brand-beige/10 rounded-none"
+                  className="w-full bg-brand-dark/[0.03] focus:bg-white focus:ring-2 focus:ring-brand-accent/20 p-3 sm:p-3.5 text-sm sm:text-base outline-none rounded-xl transition-all"
                 />
               </div>
 
-              <div className="space-y-1">
-                <label htmlFor="chk-custphone" className="block font-mono text-xs text-brand-accent uppercase tracking-widest font-bold">
+              <div className="space-y-1.5">
+                <label htmlFor="chk-custphone" className="block text-xs font-bold text-brand-accent uppercase tracking-wider">
                   TELEPHONE NUMBER
                 </label>
                 <input
@@ -677,13 +795,13 @@ export const OrderView: React.FC<OrderViewProps> = ({
                   placeholder="e.g. 087 123 4567"
                   value={customerPhone}
                   onChange={(e) => setCustomerPhone(e.target.value)}
-                  className="w-full border border-brand-dark/10 p-2.5 text-sm font-mono focus:border-brand-dark outline-none bg-brand-beige/10 rounded-none"
+                  className="w-full bg-brand-dark/[0.03] focus:bg-white focus:ring-2 focus:ring-brand-accent/20 p-3 sm:p-3.5 text-sm sm:text-base outline-none rounded-xl transition-all"
                 />
               </div>
             </div>
 
-            <div className="space-y-1">
-              <label htmlFor="chk-custemail" className="block font-mono text-xs text-brand-accent uppercase tracking-widest font-bold">
+            <div className="space-y-1.5">
+              <label htmlFor="chk-custemail" className="block text-xs font-bold text-brand-accent uppercase tracking-wider">
                 EMAIL ADDRESS
               </label>
               <input
@@ -693,14 +811,14 @@ export const OrderView: React.FC<OrderViewProps> = ({
                 placeholder="e.g. liam@example.ie"
                 value={customerEmail}
                 onChange={(e) => setCustomerEmail(e.target.value)}
-                className="w-full border border-brand-dark/10 p-2.5 text-sm font-mono focus:border-brand-dark outline-none bg-brand-beige/10 rounded-none"
+                className="w-full bg-brand-dark/[0.03] focus:bg-white focus:ring-2 focus:ring-brand-accent/20 p-3 sm:p-3.5 text-sm sm:text-base outline-none rounded-xl transition-all"
               />
             </div>
 
             {serviceType === 'delivery' && (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 animate-fade-in" id="delivery-address-area">
-                <div className="space-y-1">
-                  <label htmlFor="chk-custaddress" className="block font-mono text-xs text-brand-accent uppercase tracking-widest font-bold">
+                <div className="space-y-1.5">
+                  <label htmlFor="chk-custaddress" className="block text-xs font-bold text-brand-accent uppercase tracking-wider">
                     STREET ADDRESS (LIMERICK CITY ONLY)
                   </label>
                   <textarea
@@ -710,11 +828,11 @@ export const OrderView: React.FC<OrderViewProps> = ({
                     placeholder="Street Address, Apartment or Suite number"
                     value={deliveryAddress}
                     onChange={(e) => setDeliveryAddress(e.target.value)}
-                    className="w-full border border-brand-dark/10 p-2.5 text-sm font-mono focus:border-brand-dark outline-none bg-brand-beige/10 rounded-none resize-none"
+                    className="w-full bg-brand-dark/[0.03] focus:bg-white focus:ring-2 focus:ring-brand-accent/20 p-3 sm:p-3.5 text-sm sm:text-base outline-none rounded-xl resize-none transition-all"
                   ></textarea>
                 </div>
-                <div className="space-y-1">
-                  <label htmlFor="chk-custeircode" className="block font-mono text-xs text-brand-accent uppercase tracking-widest font-bold">
+                <div className="space-y-1.5">
+                  <label htmlFor="chk-custeircode" className="block text-xs font-bold text-brand-accent uppercase tracking-wider">
                     EIR CODE
                   </label>
                   <input
@@ -724,7 +842,7 @@ export const OrderView: React.FC<OrderViewProps> = ({
                     placeholder="e.g. V14 AW71"
                     value={eirCode}
                     onChange={(e) => setEirCode(e.target.value)}
-                    className="w-full border border-brand-dark/10 p-2.5 text-sm font-mono focus:border-brand-dark outline-none bg-brand-beige/10 uppercase rounded-none"
+                    className="w-full bg-brand-dark/[0.03] focus:bg-white focus:ring-2 focus:ring-brand-accent/20 p-3 sm:p-3.5 text-sm sm:text-base outline-none uppercase rounded-xl transition-all"
                   />
                 </div>
               </div>
@@ -732,32 +850,32 @@ export const OrderView: React.FC<OrderViewProps> = ({
 
             {serviceType === 'delivery' ? (
               !deliveryStatusToday.isDeliveryDay ? (
-                <div className="p-3.5 bg-amber-50 border border-amber-200 text-xs font-mono text-amber-900 space-y-1">
+                <div className="p-4 bg-amber-500/10 rounded-2xl text-xs sm:text-sm text-amber-900 space-y-1">
                   <div className="font-bold uppercase tracking-wider flex items-center gap-1.5 text-amber-900">
                     <Clock className="w-3.5 h-3.5 text-amber-700" />
                     <span>Home Delivery Unavailable Today</span>
                   </div>
-                  <p className="text-[11px] text-amber-800 leading-relaxed font-sans">
+                  <p className="text-xs sm:text-sm text-amber-800 leading-relaxed font-medium">
                     Home delivery runs on <strong>{deliveryStatusToday.activeDaysLabel}</strong> ({deliveryStatusToday.startTimeLabel || '4:30 PM'} – {deliveryStatusToday.endTimeLabel || '9:00 PM'}). Please switch to <strong>Collection</strong> for your order today!
                   </p>
                 </div>
               ) : deliveryStatusToday.isAfterClose ? (
-                <div className="p-3 bg-rose-50 border border-rose-200 text-xs font-mono text-rose-800 text-center">
+                <div className="p-3.5 bg-rose-50 rounded-2xl text-xs sm:text-sm font-semibold text-rose-800 text-center">
                   Delivery has ended for tonight (closed at {deliveryStatusToday.endTimeLabel}). Please select Collection or order on our next delivery day.
                 </div>
               ) : (
                 <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <label htmlFor="chk-custtime" className="block font-mono text-xs text-brand-accent uppercase tracking-widest font-bold">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+                    <label htmlFor="chk-custtime" className="block text-xs font-bold text-brand-accent uppercase tracking-wider">
                       PREFERRED DELIVERY TIME
                     </label>
-                    <span className="text-[10px] font-mono text-brand-muted">
+                    <span className="text-xs text-brand-muted">
                       Delivery hours: {deliveryStatusToday.startTimeLabel} – {deliveryStatusToday.endTimeLabel}
                     </span>
                   </div>
 
                   {deliveryStatusToday.isBeforeOpen && (
-                    <div className="p-2.5 bg-amber-50 border border-amber-200 text-[11px] font-mono text-amber-900 flex items-center gap-2">
+                    <div className="p-3 bg-amber-500/10 rounded-xl text-xs sm:text-sm text-amber-900 flex items-center gap-2">
                       <Clock className="w-3.5 h-3.5 text-amber-700 shrink-0" />
                       <span>Delivery starts at <strong>{deliveryStatusToday.startTimeLabel}</strong> today. Select your delivery time below:</span>
                     </div>
@@ -767,7 +885,7 @@ export const OrderView: React.FC<OrderViewProps> = ({
                     id="chk-custtime"
                     value={preferredTime}
                     onChange={(e) => setPreferredTime(e.target.value)}
-                    className="w-full border border-brand-dark/10 p-2.5 text-sm font-mono focus:border-brand-dark outline-none bg-brand-beige/10 bg-white rounded-none"
+                    className="w-full bg-brand-dark/[0.03] focus:bg-white focus:ring-2 focus:ring-brand-accent/20 p-3 sm:p-3.5 text-sm sm:text-base outline-none rounded-xl min-h-[48px] transition-all"
                   >
                     {deliveryTimeOptions.map((opt) => (
                       <option key={opt.value} value={opt.value} disabled={!opt.isAvailable}>
@@ -779,24 +897,24 @@ export const OrderView: React.FC<OrderViewProps> = ({
               )
             ) : (
               <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <label htmlFor="chk-custtime" className="block font-mono text-xs text-brand-accent uppercase tracking-widest font-bold">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+                  <label htmlFor="chk-custtime" className="block text-xs font-bold text-brand-accent uppercase tracking-wider">
                     PREFERRED COLLECTION TIME
                   </label>
-                  <span className="text-[10px] font-mono text-brand-muted">
+                  <span className="text-xs text-brand-muted">
                     Kitchen hours: {storeStatus.todayTiming}
                   </span>
                 </div>
 
                 {storeStatus.isBeforeOpen && (
-                  <div className="p-2.5 bg-amber-50 border border-amber-200 text-[11px] font-mono text-amber-900 flex items-center gap-2">
+                  <div className="p-3 bg-amber-500/10 rounded-xl text-xs sm:text-sm text-amber-900 flex items-center gap-2">
                     <Clock className="w-3.5 h-3.5 text-amber-700 shrink-0" />
                     <span>Kitchen opens at <strong>{storeStatus.opensAtLabel}</strong> today. Select your collection time below:</span>
                   </div>
                 )}
 
                 {storeStatus.isAfterClose ? (
-                  <div className="p-3 bg-rose-50 border border-rose-200 text-xs font-mono text-rose-800 text-center">
+                  <div className="p-3.5 bg-rose-50 rounded-2xl text-xs sm:text-sm font-semibold text-rose-800 text-center">
                     Kitchen is closed for collection today (closed at {storeStatus.closesAtLabel}).
                   </div>
                 ) : (
@@ -804,7 +922,7 @@ export const OrderView: React.FC<OrderViewProps> = ({
                     id="chk-custtime"
                     value={preferredTime}
                     onChange={(e) => setPreferredTime(e.target.value)}
-                    className="w-full border border-brand-dark/10 p-2.5 text-sm font-mono focus:border-brand-dark outline-none bg-brand-beige/10 bg-white rounded-none"
+                    className="w-full bg-brand-dark/[0.03] focus:bg-white focus:ring-2 focus:ring-brand-accent/20 p-3 sm:p-3.5 text-sm sm:text-base outline-none rounded-xl min-h-[48px] transition-all"
                   >
                     {takeawayTimeOptions.map((opt) => (
                       <option key={opt.value} value={opt.value} disabled={!opt.isAvailable}>
@@ -816,8 +934,8 @@ export const OrderView: React.FC<OrderViewProps> = ({
               </div>
             )}
 
-            <div className="space-y-1">
-              <label htmlFor="chk-custnotes" className="block font-mono text-xs text-brand-accent uppercase tracking-widest font-bold">
+            <div className="space-y-1.5">
+              <label htmlFor="chk-custnotes" className="block text-xs font-bold text-brand-accent uppercase tracking-wider">
                 SPECIAL INSTRUCTIONS (E.G. ALLERGIES, CHILI LEVEL)
               </label>
               <textarea
@@ -826,68 +944,68 @@ export const OrderView: React.FC<OrderViewProps> = ({
                 placeholder="Spiciness requests, gate codes, etc."
                 value={checkoutNotes}
                 onChange={(e) => setCheckoutNotes(e.target.value)}
-                className="w-full border border-brand-dark/10 p-2.5 text-sm font-mono focus:border-brand-dark outline-none bg-brand-beige/10 rounded-none resize-none"
+                className="w-full bg-brand-dark/[0.03] focus:bg-white focus:ring-2 focus:ring-brand-accent/20 p-3 sm:p-3.5 text-sm sm:text-base outline-none rounded-xl resize-none transition-all"
               ></textarea>
             </div>
 
             <button
               type="submit"
               id="confirm-checkout-btn"
-              className="w-full bg-brand-accent text-white hover:bg-brand-dark py-3.5 text-sm font-mono uppercase tracking-widest font-bold transition-colors rounded-none"
+              className="w-full bg-brand-accent text-white hover:bg-brand-dark py-4 text-xs sm:text-sm uppercase tracking-widest font-bold transition-all rounded-full min-h-[50px] shadow-md hover:shadow-lg active:scale-[0.98] flex items-center justify-center space-x-2"
             >
-              CONFIRM ORDER &amp; COMMENCE PREPARATION
+              <span>CONFIRM ORDER &amp; COMMENCE PREPARATION</span>
             </button>
           </form>
 
-          {/* Cart Summary Side */}
-          <div className="lg:col-span-5 bg-brand-beige border border-brand-dark/15 p-6 space-y-6">
-            <h3 className="font-serif text-lg font-bold text-brand-dark">Order Breakdown</h3>
+          {/* Cart Summary Side (Desktop) */}
+          <div className="hidden lg:block lg:col-span-5 bg-white rounded-3xl shadow-[0_4px_20px_rgba(0,0,0,0.03)] p-6 sm:p-8 space-y-6">
+            <h3 className="text-base sm:text-lg font-bold text-brand-dark">Order Breakdown</h3>
             
             <div className="divide-y divide-brand-dark/5 space-y-3">
               {cart.map((item) => {
                 const itemPrice = item.selectedSize ? item.selectedSize.price : item.menuItem.price;
                 return (
-                  <div key={item.id} className="pt-3 flex justify-between gap-4 font-mono text-sm">
+                  <div key={item.id} className="pt-3 flex justify-between gap-4 text-sm">
                     <div>
                       <span className="font-bold text-brand-dark">
                         {item.quantity}x {item.menuItem.name}
                       </span>
                       {item.selectedSize && (
-                        <span className="block text-sm text-brand-muted italic">
+                        <span className="block text-xs text-brand-muted italic mt-0.5">
                           Size: {item.selectedSize.name}
                         </span>
                       )}
                       {item.notes && (
-                        <span className="block text-sm text-brand-accent italic font-sans truncate max-w-[200px]">
+                        <span className="block text-xs text-brand-accent italic truncate max-w-[200px] mt-0.5">
                           &ldquo;{item.notes}&rdquo;
                         </span>
                       )}
                     </div>
-                    <span className="text-brand-dark">&euro;{(itemPrice * item.quantity).toFixed(2)}</span>
+                    <span className="text-brand-dark font-bold">&euro;{(itemPrice * item.quantity).toFixed(2)}</span>
                   </div>
                 );
               })}
             </div>
 
             {/* Calculations block */}
-            <div className="border-t border-brand-dark/10 pt-4 space-y-2 font-mono text-sm text-brand-muted">
+            <div className="border-t border-brand-dark/5 pt-4 space-y-2 text-xs sm:text-sm text-brand-muted">
               <div className="flex justify-between">
                 <span>Subtotal</span>
-                <span className="text-brand-dark">&euro;{subtotal.toFixed(2)}</span>
+                <span className="text-brand-dark font-semibold">&euro;{subtotal.toFixed(2)}</span>
               </div>
               <div className="flex justify-between">
                 <span className="flex items-center">
-                  Packaging Fee <span className="ml-1 text-xs bg-brand-dark/5 px-1 font-sans">Statutory</span>
+                  Packaging Fee <span className="ml-1 text-[11px] bg-brand-dark/5 px-1.5 py-0.5 rounded-md font-sans">Statutory</span>
                 </span>
-                <span className="text-brand-dark">&euro;{packagingFee.toFixed(2)}</span>
+                <span className="text-brand-dark font-semibold">&euro;{packagingFee.toFixed(2)}</span>
               </div>
               {serviceType === 'delivery' && (
                 <div className="flex justify-between">
                   <span>Local Delivery Charge</span>
-                  <span className="text-brand-dark">&euro;{deliveryCharges.toFixed(2)}</span>
+                  <span className="text-brand-dark font-semibold">&euro;{deliveryCharges.toFixed(2)}</span>
                 </div>
               )}
-              <div className="border-t border-brand-dark/15 pt-3 font-semibold text-base flex justify-between text-brand-dark">
+              <div className="border-t border-dashed border-brand-dark/10 pt-3 font-bold text-base flex justify-between text-brand-dark">
                 <span>GRAND TOTAL</span>
                 <span>&euro;{total.toFixed(2)}</span>
               </div>
@@ -899,17 +1017,17 @@ export const OrderView: React.FC<OrderViewProps> = ({
       ) : (
 
         /* MENU SELECTION & ACTIVE CART SPLIT SCREEN */
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-start">
           
           {/* Categories Sidebar navigation - Desktop & Mobile with horizontal scroll arrows */}
           <div className="lg:col-span-3 space-y-2">
-            <span className="block font-sans text-xs text-brand-accent tracking-wider font-extrabold uppercase mb-4 pl-3 lg:pl-0">
+            <span className="block font-sans text-xs text-brand-accent tracking-wider font-extrabold uppercase mb-2 sm:mb-4 pl-1 lg:pl-0">
               Menu Sections
             </span>
             <div className="relative flex items-center lg:block">
               {/* Left Gradient Fade Mask - Mobile only */}
               {showLeftArrow && (
-                <div className="pointer-events-none absolute left-0 top-0 bottom-0 w-16 bg-gradient-to-r from-brand-beige to-transparent z-10 lg:hidden animate-fade-in" />
+                <div className="pointer-events-none absolute left-0 top-0 bottom-0 w-10 bg-gradient-to-r from-brand-beige to-transparent z-10 lg:hidden animate-fade-in" />
               )}
               
               {/* Left Arrow Button */}
@@ -917,10 +1035,10 @@ export const OrderView: React.FC<OrderViewProps> = ({
                 <button
                   type="button"
                   onClick={() => scrollCategories('left')}
-                  className="absolute left-1 z-20 bg-transparent text-brand-dark hover:text-brand-accent w-9 h-9 flex items-center justify-center lg:hidden hover:scale-125 active:scale-90 transition-all duration-300"
+                  className="absolute left-0 z-20 bg-brand-dark/90 text-white hover:bg-brand-dark w-8 h-8 rounded-full flex items-center justify-center lg:hidden shadow-md active:scale-90 transition-all"
                   aria-label="Scroll categories left"
                 >
-                  <ChevronLeft className="w-6 h-6 stroke-[3]" />
+                  <ChevronLeft className="w-4 h-4 stroke-[2.5]" />
                 </button>
               )}
 
@@ -928,7 +1046,7 @@ export const OrderView: React.FC<OrderViewProps> = ({
               <div 
                 ref={categoriesRef}
                 onScroll={updateArrows}
-                className="flex lg:flex-col overflow-x-auto lg:overflow-visible gap-2 pb-3 lg:pb-0 scrollbar-none w-full scroll-smooth px-3 lg:px-0"
+                className="flex lg:flex-col overflow-x-auto lg:overflow-visible gap-2 pb-2 lg:pb-0 scrollbar-none w-full scroll-smooth px-1 lg:px-0 py-1"
               >
                 {CATEGORIES.map((cat) => {
                   const isActive = selectedCategory === cat;
@@ -945,15 +1063,15 @@ export const OrderView: React.FC<OrderViewProps> = ({
                           inline: 'center'
                         });
                       }}
-                      className={`text-left px-5 py-3 text-xs font-sans tracking-wider uppercase transition-all duration-500 ease-out lg:w-full whitespace-nowrap lg:whitespace-normal border-l-4 font-bold group relative flex items-center justify-between ${
+                      className={`text-left px-4 py-2.5 lg:px-5 lg:py-3 text-xs font-sans tracking-wider uppercase transition-all duration-200 lg:w-full whitespace-nowrap lg:whitespace-normal font-bold group relative flex items-center justify-between shrink-0 rounded-full active:scale-95 ${
                         isActive
-                          ? 'bg-brand-dark text-white border-brand-accent shadow-md'
-                          : 'bg-white border-transparent text-brand-muted hover:text-brand-dark hover:bg-brand-dark/5 hover:translate-x-1 hover:border-brand-dark/20'
+                          ? 'bg-brand-dark text-white shadow-md'
+                          : 'bg-white text-brand-muted hover:text-brand-dark hover:bg-brand-dark/5 shadow-xs'
                       }`}
                     >
                       <span>{cat}</span>
                       {isActive && (
-                        <span className="w-1.5 h-1.5 bg-brand-accent shrink-0 ml-2 hidden lg:inline-block animate-pulse"></span>
+                        <span className="w-2 h-2 rounded-full bg-brand-accent shrink-0 ml-2 hidden lg:inline-block animate-pulse"></span>
                       )}
                     </button>
                   );
@@ -962,7 +1080,7 @@ export const OrderView: React.FC<OrderViewProps> = ({
 
               {/* Right Gradient Fade Mask - Mobile only */}
               {showRightArrow && (
-                <div className="pointer-events-none absolute right-0 top-0 bottom-0 w-16 bg-gradient-to-l from-brand-beige to-transparent z-10 lg:hidden animate-fade-in" />
+                <div className="pointer-events-none absolute right-0 top-0 bottom-0 w-10 bg-gradient-to-l from-brand-beige to-transparent z-10 lg:hidden animate-fade-in" />
               )}
 
               {/* Right Arrow Button */}
@@ -970,27 +1088,27 @@ export const OrderView: React.FC<OrderViewProps> = ({
                 <button
                   type="button"
                   onClick={() => scrollCategories('right')}
-                  className="absolute right-1 z-20 bg-transparent text-brand-dark hover:text-brand-accent w-9 h-9 flex items-center justify-center lg:hidden hover:scale-125 active:scale-90 transition-all duration-300"
+                  className="absolute right-0 z-20 bg-brand-dark/90 text-white hover:bg-brand-dark w-8 h-8 rounded-full flex items-center justify-center lg:hidden shadow-md active:scale-90 transition-all"
                   aria-label="Scroll categories right"
                 >
-                  <ChevronRight className="w-6 h-6 stroke-[3]" />
+                  <ChevronRight className="w-4 h-4 stroke-[2.5]" />
                 </button>
               )}
             </div>
           </div>
 
           {/* Menu Items Grid Column */}
-          <div className="lg:col-span-5 space-y-6">
-            <div className="border-b border-brand-dark/10 pb-4 flex justify-between items-baseline">
-              <h2 className="font-serif text-2xl font-bold tracking-tight text-brand-dark">
+          <div className="lg:col-span-5 space-y-4 sm:space-y-5">
+            <div className="pb-1.5 flex justify-between items-baseline">
+              <h2 className="text-lg sm:text-xl font-bold tracking-tight text-brand-dark">
                 {selectedCategory}
               </h2>
-              <span className="font-mono text-sm text-brand-muted">
+              <span className="text-xs text-brand-muted font-medium">
                 {filteredItems.length} items
               </span>
             </div>
 
-            <div className="space-y-6 animate-slide-up" key={selectedCategory} id="order-items-scrollable">
+            <div className="space-y-3.5 sm:space-y-4 animate-slide-up" key={selectedCategory} id="order-items-scrollable">
               {filteredItems.map((item) => {
                 const activeSize = selectedSizes[item.id];
                 const activePrice = activeSize ? activeSize.price : item.price;
@@ -999,23 +1117,23 @@ export const OrderView: React.FC<OrderViewProps> = ({
                 return (
                   <div 
                     key={item.id} 
-                    className="p-6 bg-white hover:bg-brand-beige/30 border-t border-brand-dark/10 hover:border-brand-dark/30 transition-all duration-300 flex flex-col justify-between space-y-5 shadow-[0_4px_16px_rgba(44,38,33,0.015)] hover:shadow-[0_6px_20px_rgba(44,38,33,0.03)]"
+                    className="p-4 sm:p-6 bg-white hover:bg-white rounded-2xl shadow-[0_2px_12px_rgba(0,0,0,0.03)] hover:shadow-[0_8px_24px_rgba(0,0,0,0.06)] transition-all duration-200 flex flex-col justify-between space-y-3.5 sm:space-y-4"
                   >
-                    <div className="space-y-2">
-                      <div className="flex justify-between items-start gap-4">
-                        <h3 className="font-serif text-lg font-bold text-brand-dark flex items-center gap-1.5">
+                    <div className="space-y-1.5 sm:space-y-2">
+                      <div className="flex justify-between items-start gap-3">
+                        <h3 className="text-base sm:text-lg font-bold text-brand-dark flex items-center gap-1.5 leading-snug">
                           {item.name}
                           {item.isVeg && (
-                            <span className="w-1.5 h-1.5 bg-emerald-600 inline-block rounded-none ring-1" title="Veg Available"></span>
+                            <span className="w-2 h-2 bg-emerald-500 inline-block rounded-full ring-2 ring-emerald-100" title="Veg Available"></span>
                           )}
                         </h3>
-                        <span className="font-mono text-base font-semibold text-brand-dark">
+                        <span className="text-sm sm:text-base font-extrabold text-brand-dark shrink-0">
                           &euro;{activePrice.toFixed(2)}
                         </span>
                       </div>
 
                       {item.description && (
-                        <p className="text-sm text-brand-muted leading-relaxed font-normal">
+                        <p className="text-xs sm:text-sm text-brand-muted leading-relaxed font-normal">
                           {item.description}
                         </p>
                       )}
@@ -1023,8 +1141,8 @@ export const OrderView: React.FC<OrderViewProps> = ({
 
                     {/* Options area: size selector if any */}
                     {item.sizeOptions && item.sizeOptions.length > 0 && (
-                      <div className="space-y-1">
-                        <span className="block font-mono text-xs text-brand-accent tracking-widest font-bold">
+                      <div className="space-y-1.5">
+                        <span className="block text-xs text-brand-accent tracking-wider font-bold uppercase">
                           CHOOSE SIZE:
                         </span>
                         <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
@@ -1034,10 +1152,10 @@ export const OrderView: React.FC<OrderViewProps> = ({
                               id={`size-opt-${item.id}-${opt.name.replace(/\s+/g, '-').toLowerCase()}`}
                               key={opt.name}
                               onClick={() => handleSizeChange(item.id, opt.name)}
-                              className={`py-1.5 px-3 text-sm font-mono border transition-all truncate text-center ${
+                              className={`py-2 px-3 text-xs sm:text-sm font-semibold transition-all truncate text-center min-h-[40px] rounded-full active:scale-95 ${
                                 activeSize?.name === opt.name
-                                  ? 'bg-brand-dark text-white border-brand-dark font-bold'
-                                  : 'border-brand-dark/15 text-brand-muted hover:border-brand-dark'
+                                  ? 'bg-brand-dark text-white shadow-xs'
+                                  : 'bg-brand-dark/[0.04] text-brand-dark hover:bg-brand-dark/[0.08]'
                               }`}
                             >
                               {opt.name}
@@ -1049,25 +1167,24 @@ export const OrderView: React.FC<OrderViewProps> = ({
 
                     {/* Inline special chefs notes */}
                     <div className="space-y-1">
-                      <label htmlFor={`custom-notes-${item.id}`} className="block font-mono text-xs text-brand-accent tracking-widest font-bold">
+                      <label htmlFor={`custom-notes-${item.id}`} className="block text-xs text-brand-accent tracking-wider font-bold uppercase">
                         ADD SPECIAL NOTES FOR CHEF (OPTIONAL)
                       </label>
                       <input
                         id={`custom-notes-${item.id}`}
                         type="text"
-                        placeholder="e.g., extra hot, garlic sauce on top, no salad..."
+                        placeholder="e.g., extra hot, garlic sauce on top..."
                         value={notes}
                         onChange={(e) => setCustomNotes((prev) => ({ ...prev, [item.id]: e.target.value }))}
-                        className="w-full text-sm font-mono border border-brand-dark/10 px-3 py-2 bg-brand-beige/25 outline-none focus:border-brand-dark placeholder:text-brand-muted/50 rounded-none"
+                        className="w-full text-sm sm:text-base px-3.5 py-2.5 bg-brand-dark/[0.03] focus:bg-white focus:ring-2 focus:ring-brand-accent/20 outline-none placeholder:text-brand-muted/50 rounded-xl transition-all"
                       />
                     </div>
 
                     {/* Core action button */}
-                    <div className="pt-2 flex items-center justify-between">
-                      {/* Temporary indicator on addition */}
+                    <div className="pt-1 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                       <span 
                         id={`added-notif-${item.id}`}
-                        className="text-sm font-mono text-emerald-600 font-bold opacity-0 transition-opacity duration-300 flex items-center"
+                        className="text-xs font-bold text-emerald-600 opacity-0 transition-opacity duration-300 flex items-center"
                       >
                         ✓ ADDED TO BASKET
                       </span>
@@ -1076,9 +1193,11 @@ export const OrderView: React.FC<OrderViewProps> = ({
                         type="button"
                         id={`add-to-cart-btn-${item.id}`}
                         onClick={() => handleAddWithDetails(item)}
-                        className="bg-brand-dark text-white hover:bg-brand-accent px-6 py-2.5 text-sm font-mono font-bold uppercase tracking-wider transition-colors"
+                        className="w-full sm:w-auto bg-brand-dark text-white hover:bg-brand-accent px-6 py-3 sm:py-2.5 text-xs sm:text-sm font-bold uppercase tracking-wider transition-all rounded-full shadow-sm hover:shadow-md active:scale-[0.98] flex items-center justify-center space-x-2 min-h-[44px]"
                       >
-                        ADD TO CART &bull; &euro;{activePrice.toFixed(2)}
+                        <span>ADD TO CART</span>
+                        <span>&bull;</span>
+                        <span>&euro;{activePrice.toFixed(2)}</span>
                       </button>
                     </div>
 
@@ -1088,87 +1207,116 @@ export const OrderView: React.FC<OrderViewProps> = ({
             </div>
           </div>
 
-          {/* Right Checkout Basket Column */}
-          <div className="lg:col-span-4 bg-white border border-brand-dark/10 p-6 space-y-6 lg:sticky lg:top-24">
-            <div className="flex items-center justify-between border-b border-brand-dark/10 pb-4">
-              <h3 className="font-serif text-lg font-bold text-brand-dark flex items-center">
-                <ShoppingCart className="w-4 h-4 mr-2" />
-                Shopping Basket
-              </h3>
-              <span className="font-mono text-sm bg-brand-dark text-white px-2 py-0.5 rounded-none font-semibold">
-                {cart.reduce((acc, curr) => acc + curr.quantity, 0)} items
-              </span>
+          {/* Right Checkout Basket Column (Desktop) */}
+          <div className="lg:col-span-4 bg-white rounded-3xl shadow-[0_4px_20px_rgba(0,0,0,0.03)] p-6 space-y-5 lg:sticky lg:top-24">
+            <div className="flex items-center justify-between border-b border-brand-dark/5 pb-3.5">
+              <div className="flex items-center space-x-2.5">
+                <div className="w-8 h-8 rounded-xl bg-brand-accent/10 text-brand-accent flex items-center justify-center">
+                  <CookingPot className="w-4 h-4" />
+                </div>
+                <h3 className="text-base font-bold text-brand-dark">
+                  Shopping Basket
+                </h3>
+              </div>
+              
+              <div className="flex items-center space-x-2">
+                <span className="text-xs bg-brand-dark text-white px-2.5 py-1 rounded-full font-bold">
+                  {cart.reduce((acc, curr) => acc + curr.quantity, 0)}
+                </span>
+                {cart.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setCart([])}
+                    className="text-xs text-brand-muted hover:text-red-600 font-medium px-2.5 py-1 rounded-full hover:bg-red-50 transition-colors"
+                    title="Clear entire basket"
+                  >
+                    Clear
+                  </button>
+                )}
+              </div>
             </div>
 
             {cart.length === 0 ? (
-              <div className="text-center py-16 text-brand-muted space-y-3" id="empty-basket-message">
-                <p className="font-serif text-base">Your basket is empty.</p>
-                <p className="font-mono text-sm text-brand-accent font-normal uppercase">
-                  Select item options on the left to build your feast.
-                </p>
+              <div className="text-center py-12 px-4 space-y-3" id="empty-basket-message">
+                <div className="w-14 h-14 rounded-2xl bg-brand-dark/[0.03] text-brand-muted flex items-center justify-center mx-auto">
+                  <CookingPot className="w-7 h-7 stroke-[1.5]" />
+                </div>
+                <div className="space-y-1">
+                  <p className="text-sm font-bold text-brand-dark">Your basket is empty</p>
+                  <p className="text-xs text-brand-muted leading-relaxed max-w-[200px] mx-auto">
+                    Select dishes on the left to start building your feast.
+                  </p>
+                </div>
               </div>
             ) : (
-              <div className="space-y-6">
+              <div className="space-y-5">
                 
-                {/* Active items scroll box */}
-                <div className="max-h-[320px] overflow-y-auto space-y-4 pr-1 divide-y divide-brand-dark/5" id="cart-items-scroller">
-                  {cart.map((cartItem, idx) => {
+                {/* Active items scroll box with modern cardlets */}
+                <div className="max-h-[340px] overflow-y-auto space-y-2.5 pr-1 scrollbar-thin" id="cart-items-scroller">
+                  {cart.map((cartItem) => {
                     const price = cartItem.selectedSize ? cartItem.selectedSize.price : cartItem.menuItem.price;
                     return (
-                      <div key={cartItem.id} className={`pt-3 space-y-1.5 ${idx === 0 ? 'border-t-0 pt-0' : ''}`}>
-                        <div className="flex justify-between items-start gap-4">
-                          <div className="space-y-0.5">
-                            <span className="font-serif text-sm font-bold text-brand-dark block">
+                      <div 
+                        key={cartItem.id} 
+                        className="bg-brand-dark/[0.02] hover:bg-brand-dark/[0.04] p-3.5 rounded-2xl space-y-2.5 transition-all"
+                      >
+                        <div className="flex justify-between items-start gap-3">
+                          <div className="space-y-1 flex-1 min-w-0">
+                            <span className="text-sm font-bold text-brand-dark block truncate">
                               {cartItem.menuItem.name}
                             </span>
-                            {cartItem.selectedSize && (
-                              <span className="font-mono text-xs bg-brand-dark/5 px-1 py-0.5 border border-brand-dark/5 text-brand-dark block w-max">
-                                Size: {cartItem.selectedSize.name}
-                              </span>
-                            )}
-                            {cartItem.notes && (
-                              <span className="block text-sm text-brand-accent italic font-sans max-w-[160px] truncate">
-                                Notes: &ldquo;{cartItem.notes}&rdquo;
-                              </span>
-                            )}
+                            
+                            <div className="flex flex-wrap gap-1 items-center">
+                              {cartItem.selectedSize && (
+                                <span className="text-[11px] font-semibold bg-brand-dark/5 text-brand-dark px-2 py-0.5 rounded-md">
+                                  {cartItem.selectedSize.name}
+                                </span>
+                              )}
+                              {cartItem.notes && (
+                                <span className="text-xs text-brand-accent italic truncate max-w-[160px] block">
+                                  &ldquo;{cartItem.notes}&rdquo;
+                                </span>
+                              )}
+                            </div>
                           </div>
-                          <span className="font-mono text-sm font-bold text-brand-dark">
+                          
+                          <span className="text-sm font-extrabold text-brand-dark shrink-0">
                             &euro;{(price * cartItem.quantity).toFixed(2)}
                           </span>
                         </div>
 
-                        {/* Adjust qty panel */}
-                        <div className="flex items-center justify-between">
+                        {/* Adjust qty panel with capsule stepper */}
+                        <div className="flex items-center justify-between pt-1 border-t border-brand-dark/5">
                           <button
                             type="button"
                             id={`remove-cart-item-btn-${cartItem.id}`}
                             onClick={() => removeFromCart(cartItem.id)}
-                            className="text-sm text-red-600 hover:text-red-800 font-mono flex items-center space-x-1"
+                            className="text-xs text-brand-muted hover:text-red-600 font-medium flex items-center space-x-1 px-2 py-1 rounded-full hover:bg-red-50 transition-all"
                             aria-label={`Remove ${cartItem.menuItem.name} from cart`}
                           >
                             <Trash2 className="w-3.5 h-3.5" />
                             <span>Remove</span>
                           </button>
 
-                          <div className="flex items-center space-x-2 border border-brand-dark/10 p-0.5">
+                          <div className="flex items-center space-x-1.5 bg-brand-dark/[0.06] p-1 rounded-full">
                             <button
                               type="button"
                               id={`decrease-qty-btn-${cartItem.id}`}
                               onClick={() => updateQuantity(cartItem.id, -1)}
-                              className="p-1 text-brand-dark hover:bg-brand-dark/5"
+                              className="w-6 h-6 rounded-full flex items-center justify-center text-brand-dark hover:bg-white active:scale-90 transition-all"
                               disabled={cartItem.quantity <= 1}
                               aria-label="Decrease quantity"
                             >
                               <Minus className="w-3 h-3" />
                             </button>
-                            <span className="font-mono text-sm font-bold text-brand-dark px-1.5">
+                            <span className="text-xs font-bold text-brand-dark px-1.5 min-w-[20px] text-center">
                               {cartItem.quantity}
                             </span>
                             <button
                               type="button"
                               id={`increase-qty-btn-${cartItem.id}`}
                               onClick={() => updateQuantity(cartItem.id, 1)}
-                              className="p-1 text-brand-dark hover:bg-brand-dark/5"
+                              className="w-6 h-6 rounded-full flex items-center justify-center text-brand-dark hover:bg-white active:scale-90 transition-all"
                               aria-label="Increase quantity"
                             >
                               <Plus className="w-3 h-3" />
@@ -1181,24 +1329,24 @@ export const OrderView: React.FC<OrderViewProps> = ({
                 </div>
 
                 {/* Calculation breakdown */}
-                <div className="border-t border-brand-dark/15 pt-4 space-y-2 font-mono text-sm text-brand-muted">
+                <div className="bg-brand-dark/[0.02] p-4 rounded-2xl space-y-2 text-xs text-brand-muted">
                   <div className="flex justify-between">
-                    <span>Menu Subtotal</span>
-                    <span className="text-brand-dark">&euro;{subtotal.toFixed(2)}</span>
+                    <span className="font-medium">Menu Subtotal</span>
+                    <span className="text-brand-dark font-bold">&euro;{subtotal.toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="flex items-center">
-                      Statutory Packaging Fee
+                    <span className="flex items-center font-medium">
+                      Packaging Fee <span className="ml-1 text-[10px] bg-brand-dark/5 px-1.5 py-0.2 rounded font-sans">Statutory</span>
                     </span>
-                    <span className="text-brand-dark">&euro;{packagingFee.toFixed(2)}</span>
+                    <span className="text-brand-dark font-bold">&euro;{packagingFee.toFixed(2)}</span>
                   </div>
-                  <div className="border-t border-dashed border-brand-dark/10 pt-2 font-bold text-base flex justify-between text-brand-dark">
-                    <span>ESTIMATED TOTAL</span>
-                    <span>&euro;{total.toFixed(2)}</span>
+                  <div className="border-t border-brand-dark/5 pt-2.5 flex justify-between items-baseline text-brand-dark">
+                    <span className="font-bold text-sm">Total</span>
+                    <span className="font-extrabold text-base">&euro;{total.toFixed(2)}</span>
                   </div>
                 </div>
 
-                {/* Continue checkout path trigger */}
+                {/* Apple Pay / Samsung style checkout pill button */}
                 <button
                   type="button"
                   id="start-checkout-btn"
@@ -1207,16 +1355,20 @@ export const OrderView: React.FC<OrderViewProps> = ({
                       setShowTakeawayWarningModal(true);
                     } else {
                       setIsCheckoutMode(true);
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
                     }
                   }}
-                  className={`w-full py-4 text-sm font-mono font-bold uppercase tracking-widest text-center transition-all flex items-center justify-center space-x-2 ${
+                  className={`w-full py-4 px-6 font-bold text-xs sm:text-sm uppercase tracking-wider text-center transition-all rounded-full flex items-center justify-between shadow-md hover:shadow-lg active:scale-[0.98] ${
                     !takeawayEnabled
                       ? 'bg-red-700 hover:bg-red-800 text-white'
-                      : 'bg-brand-dark text-white hover:bg-brand-accent'
+                      : 'bg-brand-accent text-white hover:bg-brand-dark'
                   }`}
                 >
                   <span>{!takeawayEnabled ? 'ONLINE ORDER CLOSED' : 'PROCEED TO DETAILS'}</span>
-                  <ArrowRight className="w-4 h-4" />
+                  <span className="bg-white/20 px-3 py-1 rounded-full text-xs font-extrabold flex items-center gap-1.5">
+                    <span>&euro;{total.toFixed(2)}</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </span>
                 </button>
 
               </div>
@@ -1227,76 +1379,42 @@ export const OrderView: React.FC<OrderViewProps> = ({
         </div>
       )}
 
-      {/* Mobile Floating Action Checkout Button */}
-      {cart.length > 0 && !isCheckoutMode && (
-        <div className="fixed bottom-6 left-4 right-4 z-40 lg:hidden animate-slide-up">
-          <button
-            type="button"
-            onClick={() => {
-              if (!takeawayEnabled) {
-                setShowTakeawayWarningModal(true);
-              } else {
-                setIsCheckoutMode(true);
-              }
-            }}
-            className={`w-full backdrop-blur-md px-5 py-4 flex items-center justify-between border border-brand-dark shadow-[0_12px_40px_-6px_rgba(44,38,33,0.15),inset_0_1px_1px_rgba(255,255,255,0.8)] active:scale-98 transition-all duration-300 ${
-              !takeawayEnabled
-                ? 'bg-gradient-to-b from-red-50/95 to-red-100/80 text-red-900 border-red-800'
-                : 'bg-gradient-to-b from-white/95 to-white/80 text-brand-dark'
-            }`}
-          >
-            <div className="flex items-center space-x-3">
-              <span className={`font-mono text-xs w-5 h-5 flex items-center justify-center font-bold ${!takeawayEnabled ? 'bg-red-800 text-white' : 'bg-brand-dark text-white'}`}>
-                {cart.reduce((acc, curr) => acc + curr.quantity, 0)}
-              </span>
-              <span className="font-mono text-xs uppercase font-bold tracking-widest">FEAST SELECTED</span>
-            </div>
-            <div className="flex items-center space-x-2">
-              <span className="font-mono text-sm font-bold">&euro;{total.toFixed(2)}</span>
-              <span className={`font-mono text-xs uppercase font-bold tracking-widest border-l pl-3 ${!takeawayEnabled ? 'border-red-900/20' : 'border-brand-dark/20'}`}>
-                {!takeawayEnabled ? 'ORDER CLOSED →' : 'PROCEED →'}
-              </span>
-            </div>
-          </button>
-        </div>
-      )}
-
       {/* Custom Warning Modal Dialog */}
-      {showWarningModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-brand-dark/70 backdrop-blur-sm animate-fade-in">
-          <div className="relative w-full max-w-md bg-white border border-brand-dark p-6 sm:p-8 space-y-6 shadow-[0_20px_50px_rgba(0,0,0,0.3)] animate-slide-up">
+      {showWarningModal && createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-fade-in overflow-y-auto">
+          <div className="relative my-auto w-full max-w-md bg-white rounded-3xl p-6 sm:p-8 space-y-4 shadow-2xl animate-scale-up max-h-[90vh] overflow-y-auto">
             
             {/* Close Button X */}
             <button
               type="button"
               onClick={() => setShowWarningModal(false)}
-              className="absolute top-4 right-4 p-1.5 text-brand-muted hover:text-brand-dark hover:bg-brand-dark/5 transition-colors border border-transparent hover:border-brand-dark/10"
+              className="absolute top-4 right-4 p-2 text-brand-muted hover:text-brand-dark rounded-full hover:bg-brand-dark/5 transition-all"
               aria-label="Close warning"
             >
               <X className="w-5 h-5" />
             </button>
 
             {/* Warning Content */}
-            <div className="text-center space-y-4 pt-2">
-              <div className="w-12 h-12 bg-brand-accent/10 text-brand-accent flex items-center justify-center mx-auto">
+            <div className="text-center space-y-2.5 pt-1">
+              <div className="w-12 h-12 bg-brand-accent/10 text-brand-accent flex items-center justify-center rounded-2xl mx-auto">
                 <Sparkles className="w-6 h-6 animate-pulse" />
               </div>
-              <h3 className="font-sans text-xl sm:text-2xl font-bold tracking-tight text-brand-dark">
+              <h3 className="text-lg sm:text-xl font-bold tracking-tight text-brand-dark">
                 Online Ordering Notice
               </h3>
-              <p className="font-sans text-base text-brand-muted leading-relaxed font-medium text-center">
+              <p className="text-xs sm:text-sm text-brand-muted leading-relaxed font-normal text-center">
                 {noticeText}
               </p>
-              <p className="font-sans text-3xl font-extrabold text-brand-dark tracking-tight">
+              <p className="text-xl sm:text-2xl font-extrabold text-brand-dark tracking-tight">
                 {noticePhone}
               </p>
             </div>
 
             {/* Action Buttons */}
-            <div className="flex flex-col sm:flex-row gap-3 pt-2">
+            <div className="flex flex-col sm:flex-row gap-2.5 pt-1">
               <a
                 href={`tel:${noticePhone.replace(/\s+/g, '')}`}
-                className="flex-1 bg-brand-accent hover:bg-brand-dark text-white py-3.5 text-sm font-sans font-bold uppercase tracking-wider text-center transition-colors flex items-center justify-center space-x-2"
+                className="flex-1 bg-brand-accent hover:bg-brand-dark text-white py-3 text-xs sm:text-sm font-bold uppercase tracking-wider text-center rounded-full shadow-sm active:scale-95 transition-all flex items-center justify-center space-x-2"
               >
                 <Phone className="w-4 h-4" />
                 <span>Call Now</span>
@@ -1304,46 +1422,47 @@ export const OrderView: React.FC<OrderViewProps> = ({
               <button
                 type="button"
                 onClick={() => setShowWarningModal(false)}
-                className="flex-1 border border-brand-dark/15 hover:border-brand-dark text-brand-dark py-3.5 text-sm font-sans font-bold uppercase tracking-wider text-center transition-colors"
+                className="flex-1 bg-brand-dark/5 hover:bg-brand-dark/10 text-brand-dark py-3 text-xs sm:text-sm font-bold uppercase tracking-wider text-center rounded-full transition-all"
               >
                 Dismiss
               </button>
             </div>
 
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* Custom Takeaway Closed Warning Modal Dialog */}
-      {showTakeawayWarningModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-brand-dark/70 backdrop-blur-sm animate-fade-in" id="takeaway-disabled-modal">
-          <div className="relative w-full max-w-sm sm:max-w-md bg-white border border-brand-dark p-5 sm:p-6 space-y-4 sm:space-y-5 shadow-[0_20px_50px_rgba(0,0,0,0.3)] animate-slide-up">
+      {showTakeawayWarningModal && createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-xs animate-fade-in overflow-y-auto" id="takeaway-disabled-modal">
+          <div className="relative my-auto w-full max-w-sm sm:max-w-md bg-white rounded-3xl p-5 sm:p-6 space-y-4 shadow-2xl animate-scale-up max-h-[90vh] overflow-y-auto">
             
             {/* Close Button X */}
             <button
               type="button"
               onClick={() => setShowTakeawayWarningModal(false)}
-              className="absolute top-3 right-3 p-1 text-brand-muted hover:text-brand-dark hover:bg-brand-dark/5 transition-colors border border-transparent hover:border-brand-dark/10"
+              className="absolute top-3 right-3 p-2 text-brand-muted hover:text-brand-dark rounded-full hover:bg-brand-dark/5 transition-all"
               aria-label="Close warning"
             >
               <X className="w-4 h-4" />
             </button>
 
             {/* Warning Content */}
-            <div className="text-center space-y-3 pt-1">
-              <div className="w-10 h-10 bg-red-100 text-red-700 flex items-center justify-center mx-auto">
+            <div className="text-center space-y-2.5 pt-1">
+              <div className="w-10 h-10 bg-red-100 text-red-700 flex items-center justify-center rounded-2xl mx-auto">
                 <ShoppingBag className="w-5 h-5 animate-pulse" />
               </div>
-              <h3 className="font-sans text-lg sm:text-xl font-bold tracking-tight text-brand-dark">
+              <h3 className="text-base sm:text-lg font-bold tracking-tight text-brand-dark">
                 Online Ordering Paused
               </h3>
-              <p className="font-sans text-xs sm:text-sm text-brand-muted leading-relaxed font-medium text-center">
+              <p className="text-xs sm:text-sm text-brand-muted leading-relaxed font-normal text-center">
                 {takeawayNotice}
               </p>
-              <p className="font-sans text-[10px] sm:text-xs text-brand-accent font-bold uppercase tracking-wider">
+              <p className="text-xs text-brand-accent font-bold uppercase tracking-wider">
                 We are actively taking orders by phone! Please dial:
               </p>
-              <p className="font-sans text-2xl sm:text-3xl font-extrabold text-brand-dark tracking-tight">
+              <p className="text-xl sm:text-2xl font-extrabold text-brand-dark tracking-tight">
                 {noticePhone}
               </p>
             </div>
@@ -1352,7 +1471,7 @@ export const OrderView: React.FC<OrderViewProps> = ({
             <div className="flex flex-col sm:flex-row gap-2 pt-1">
               <a
                 href={`tel:${noticePhone.replace(/\s+/g, '')}`}
-                className="flex-1 bg-brand-accent hover:bg-brand-dark text-white py-2.5 sm:py-3 text-xs sm:text-sm font-sans font-bold uppercase tracking-wider text-center transition-colors flex items-center justify-center space-x-2"
+                className="flex-1 bg-brand-accent hover:bg-brand-dark text-white py-3 text-xs sm:text-sm font-bold uppercase tracking-wider text-center rounded-full shadow-sm active:scale-95 transition-all flex items-center justify-center space-x-2"
               >
                 <Phone className="w-3.5 h-3.5" />
                 <span>Call Us Now</span>
@@ -1360,13 +1479,287 @@ export const OrderView: React.FC<OrderViewProps> = ({
               <button
                 type="button"
                 onClick={() => setShowTakeawayWarningModal(false)}
-                className="flex-1 border border-brand-dark/15 hover:border-brand-dark text-brand-dark py-2.5 sm:py-3 text-xs sm:text-sm font-sans font-bold uppercase tracking-wider text-center transition-colors"
+                className="flex-1 bg-brand-dark/5 hover:bg-brand-dark/10 text-brand-dark py-3 text-xs sm:text-sm font-bold uppercase tracking-wider text-center rounded-full transition-all"
               >
                 Browse Menu
               </button>
             </div>
 
           </div>
+        </div>,
+        document.body
+      )}
+
+      {/* Pakistani Cuisine Included Side Selection Popup */}
+      {pakistaniSideModalItem && createPortal(
+        <div 
+          className="fixed inset-0 bg-black/60 z-[9999] flex items-center justify-center p-4 backdrop-blur-xs animate-fade-in overflow-y-auto"
+          onClick={() => setPakistaniSideModalItem(null)}
+        >
+          <div 
+            className="relative my-auto bg-white max-w-md w-full p-5 sm:p-6 shadow-2xl rounded-3xl text-left space-y-4 animate-scale-up max-h-[90vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-start justify-between border-b border-brand-dark/5 pb-3">
+              <div>
+                <span className="text-xs text-brand-accent uppercase font-bold tracking-wider block">
+                  ★ INCLUDED SIDE SELECTION
+                </span>
+                <h3 className="text-base sm:text-lg font-bold text-brand-dark mt-0.5">
+                  {pakistaniSideModalItem.name}
+                </h3>
+                <p className="text-xs text-brand-muted mt-0.5 font-medium">
+                  &euro;{pakistaniSideModalItem.price.toFixed(2)} &bull; Served with your choice of side
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setPakistaniSideModalItem(null)}
+                className="text-brand-muted hover:text-brand-dark p-2 rounded-full hover:bg-brand-dark/5 transition-colors"
+                aria-label="Close modal"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-2">
+              <label className="block text-xs text-brand-dark tracking-wider font-bold uppercase">
+                Choose 1 Included Side <span className="text-red-500">*</span>
+              </label>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                {/* Naan Bread Option */}
+                <button
+                  type="button"
+                  onClick={() => setSelectedSideChoice('Naan Bread')}
+                  className={`flex flex-col text-left p-3.5 rounded-2xl transition-all cursor-pointer active:scale-95 ${
+                    selectedSideChoice === 'Naan Bread'
+                      ? 'bg-brand-dark text-white shadow-md'
+                      : 'bg-brand-dark/[0.04] text-brand-dark hover:bg-brand-dark/[0.08]'
+                  }`}
+                >
+                  <div className="flex items-center justify-between w-full mb-1">
+                    <span className="font-bold text-sm">Naan Bread</span>
+                    <span className={`w-4 h-4 rounded-full flex items-center justify-center text-[10px] ${
+                      selectedSideChoice === 'Naan Bread' ? 'bg-white text-brand-dark font-bold' : 'bg-brand-dark/10 text-transparent'
+                    }`}>
+                      ✓
+                    </span>
+                  </div>
+                  <span className={`text-xs ${selectedSideChoice === 'Naan Bread' ? 'text-white/80' : 'text-brand-muted'}`}>
+                    Fresh clay oven baked naan
+                  </span>
+                </button>
+
+                {/* White Rice Option */}
+                <button
+                  type="button"
+                  onClick={() => setSelectedSideChoice('White Rice')}
+                  className={`flex flex-col text-left p-3.5 rounded-2xl transition-all cursor-pointer active:scale-95 ${
+                    selectedSideChoice === 'White Rice'
+                      ? 'bg-brand-dark text-white shadow-md'
+                      : 'bg-brand-dark/[0.04] text-brand-dark hover:bg-brand-dark/[0.08]'
+                  }`}
+                >
+                  <div className="flex items-center justify-between w-full mb-1">
+                    <span className="font-bold text-sm">White Rice</span>
+                    <span className={`w-4 h-4 rounded-full flex items-center justify-center text-[10px] ${
+                      selectedSideChoice === 'White Rice' ? 'bg-white text-brand-dark font-bold' : 'bg-brand-dark/10 text-transparent'
+                    }`}>
+                      ✓
+                    </span>
+                  </div>
+                  <span className={`text-xs ${selectedSideChoice === 'White Rice' ? 'text-white/80' : 'text-brand-muted'}`}>
+                    Fragrant steamed basmati rice
+                  </span>
+                </button>
+              </div>
+            </div>
+
+            {/* Special Instructions for Chef */}
+            <div className="space-y-1.5 pt-1">
+              <label htmlFor="pakistani-modal-notes" className="block text-xs text-brand-accent tracking-wider font-bold uppercase">
+                Special Instructions for Chef (Optional)
+              </label>
+              <input
+                id="pakistani-modal-notes"
+                type="text"
+                placeholder="e.g., extra spicy, mild, sauce on side..."
+                value={modalChefNotes}
+                onChange={(e) => setModalChefNotes(e.target.value)}
+                className="w-full text-sm sm:text-base px-3.5 py-2.5 bg-brand-dark/[0.03] focus:bg-white focus:ring-2 focus:ring-brand-accent/20 outline-none rounded-xl placeholder:text-brand-muted/50 transition-all"
+              />
+            </div>
+
+            {/* Modal Actions */}
+            <div className="pt-2 flex items-center gap-2.5">
+              <button
+                type="button"
+                onClick={() => setPakistaniSideModalItem(null)}
+                className="flex-1 py-3 px-4 text-xs sm:text-sm font-bold uppercase tracking-wider bg-brand-dark/5 hover:bg-brand-dark/10 text-brand-dark rounded-full transition-colors min-h-[44px]"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmPakistaniSide}
+                className="flex-2 py-3 px-4 text-xs sm:text-sm font-bold uppercase tracking-wider bg-brand-dark text-white hover:bg-brand-accent rounded-full shadow-sm active:scale-95 transition-all flex items-center justify-center gap-1.5 min-h-[44px]"
+              >
+                <span>Add to Cart</span>
+                <span>&bull;</span>
+                <span>&euro;{pakistaniSideModalItem.price.toFixed(2)}</span>
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* Free Cold Drink Selection Modal Dialog for Burgers, Wraps & Sandwiches */}
+      {drinkModalItem && createPortal(
+        <div 
+          className="fixed inset-0 bg-black/60 z-[9999] flex items-center justify-center p-4 backdrop-blur-xs animate-fade-in overflow-y-auto"
+          onClick={() => setDrinkModalItem(null)}
+        >
+          <div 
+            className="relative my-auto bg-white max-w-lg w-full p-5 sm:p-6 shadow-2xl rounded-3xl text-left space-y-4 animate-scale-up max-h-[90vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-start justify-between border-b border-brand-dark/5 pb-3">
+              <div>
+                <span className="text-xs text-emerald-700 uppercase font-bold tracking-wider block">
+                  ★ INCLUDED FREE COLD DRINK
+                </span>
+                <h3 className="text-base sm:text-lg font-bold text-brand-dark mt-0.5">
+                  {drinkModalItem.name}
+                </h3>
+                <p className="text-xs text-brand-muted mt-0.5 font-medium">
+                  &euro;{drinkModalItem.price.toFixed(2)} &bull; Includes 1 complimentary cold beverage
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setDrinkModalItem(null)}
+                className="text-brand-muted hover:text-brand-dark p-2 rounded-full hover:bg-brand-dark/5 transition-colors"
+                aria-label="Close modal"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-2">
+              <label className="block text-xs text-brand-dark tracking-wider font-bold uppercase">
+                Select Your Free Cold Drink <span className="text-red-500">*</span>
+              </label>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                {[
+                  { name: 'Cola', desc: 'Classic cold soft drink' },
+                  { name: 'Lemon & Lime', desc: 'Crisp citrus soft drink' },
+                  { name: 'Orange Soft Drink', desc: 'Refreshing orange soft drink' }
+                ].map((drink) => {
+                  const isSelected = selectedDrinkChoice === drink.name;
+                  return (
+                    <button
+                      key={drink.name}
+                      type="button"
+                      onClick={() => setSelectedDrinkChoice(drink.name)}
+                      className={`flex flex-col text-left p-3.5 rounded-2xl transition-all cursor-pointer active:scale-95 ${
+                        isSelected
+                          ? 'bg-brand-dark text-white shadow-md'
+                          : 'bg-brand-dark/[0.04] text-brand-dark hover:bg-brand-dark/[0.08]'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between w-full mb-1">
+                        <span className="font-bold text-xs sm:text-sm">{drink.name}</span>
+                        <span className={`w-4 h-4 rounded-full flex items-center justify-center text-[10px] ${
+                          isSelected ? 'bg-white text-brand-dark font-bold' : 'bg-brand-dark/10 text-transparent'
+                        }`}>
+                          ✓
+                        </span>
+                      </div>
+                      <span className={`text-xs leading-tight ${isSelected ? 'text-white/80' : 'text-brand-muted'}`}>
+                        {drink.desc}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Special Instructions for Chef */}
+            <div className="space-y-1.5 pt-1">
+              <label htmlFor="drink-modal-notes" className="block text-xs text-brand-accent tracking-wider font-bold uppercase">
+                Special Instructions for Chef (Optional)
+              </label>
+              <input
+                id="drink-modal-notes"
+                type="text"
+                placeholder="e.g., extra sauce, no onions, no ice..."
+                value={drinkModalNotes}
+                onChange={(e) => setDrinkModalNotes(e.target.value)}
+                className="w-full text-sm sm:text-base px-3.5 py-2.5 bg-brand-dark/[0.03] focus:bg-white focus:ring-2 focus:ring-brand-accent/20 outline-none rounded-xl placeholder:text-brand-muted/50 transition-all"
+              />
+            </div>
+
+            {/* Modal Actions */}
+            <div className="pt-2 flex items-center gap-2.5">
+              <button
+                type="button"
+                onClick={() => setDrinkModalItem(null)}
+                className="flex-1 py-3 px-4 text-xs sm:text-sm font-bold uppercase tracking-wider bg-brand-dark/5 hover:bg-brand-dark/10 text-brand-dark rounded-full transition-colors min-h-[44px]"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmDrinkChoice}
+                className="flex-2 py-3 px-4 text-xs sm:text-sm font-bold uppercase tracking-wider bg-brand-dark text-white hover:bg-brand-accent rounded-full shadow-sm active:scale-95 transition-all flex items-center justify-center gap-1.5 min-h-[44px]"
+              >
+                <span>Add to Cart</span>
+                <span>&bull;</span>
+                <span>&euro;{drinkModalItem.price.toFixed(2)}</span>
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* Floating Apple/Samsung Mobile Dock Cart */}
+      {cart.length > 0 && !isCheckoutMode && (
+        <div className="lg:hidden fixed bottom-4 left-3.5 right-3.5 z-40 bg-brand-dark/95 backdrop-blur-md text-white px-4 py-3 rounded-full shadow-[0_10px_35px_rgba(0,0,0,0.3)] animate-slide-up flex items-center justify-between gap-3">
+          <div className="flex items-center space-x-3 pl-1">
+            <div className="relative">
+              <div className="w-10 h-10 bg-brand-accent text-white flex items-center justify-center rounded-full font-bold shadow-xs">
+                <CookingPot className="w-5 h-5" />
+              </div>
+              <span className="absolute -top-1.5 -right-1.5 bg-white text-brand-dark text-[10px] font-extrabold w-5 h-5 rounded-full flex items-center justify-center shadow-sm">
+                {cart.reduce((acc, curr) => acc + curr.quantity, 0)}
+              </span>
+            </div>
+            <div>
+              <span className="text-[10px] text-brand-beige/70 uppercase block tracking-wider font-semibold">Estimated Total</span>
+              <span className="text-base font-extrabold text-white tracking-tight">&euro;{total.toFixed(2)}</span>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            id="mobile-sticky-checkout-btn"
+            onClick={() => {
+              if (!takeawayEnabled) {
+                setShowTakeawayWarningModal(true);
+              } else {
+                setIsCheckoutMode(true);
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }
+            }}
+            className="bg-brand-accent hover:bg-white hover:text-brand-dark text-white font-bold text-xs uppercase tracking-wider px-5 py-2.5 rounded-full shadow-sm active:scale-95 transition-all flex items-center space-x-1.5 shrink-0 min-h-[44px]"
+          >
+            <span>Checkout</span>
+            <ArrowRight className="w-4 h-4" />
+          </button>
         </div>
       )}
 

@@ -63,7 +63,7 @@ export const MENU_ITEMS: MenuItem[] = [
   {
     id: 'pk-lamb-karhai',
     name: 'Lamb Karhai',
-    price: 21.95,
+    price: 24.95,
     description: 'A fragrant slow cooked curry featuring tender bone in lamb simmered in rich, deeply spiced traditional gravy.',
     category: 'Pakistani Cuisine'
   },
@@ -229,7 +229,7 @@ export const MENU_ITEMS: MenuItem[] = [
     id: 'bg-veg',
     name: 'Vegetable Burger',
     price: 13.95,
-    description: 'Vegetable patty with salad and burger sauce in a toasted bun.',
+    description: 'Vegetable patty with salad and burger sauce in a toasted bun. Served with a free cold drink.',
     allergens: [1, 3, 11],
     isVeg: true,
     category: 'Burgers'
@@ -238,7 +238,7 @@ export const MENU_ITEMS: MenuItem[] = [
     id: 'bg-steak',
     name: 'Steak Burger',
     price: 15.95,
-    description: 'Sirloin steak strips with cheese, lettuce and burger sauce.',
+    description: 'Sirloin steak strips with cheese, lettuce and burger sauce. Served with a free cold drink.',
     allergens: [1, 3, 7, 11],
     category: 'Burgers'
   },
@@ -246,7 +246,7 @@ export const MENU_ITEMS: MenuItem[] = [
     id: 'bg-smash',
     name: 'Smash Burger',
     price: 14.95,
-    description: 'Smashed beef patties with cheese, salad, grilled onions and burger sauce.',
+    description: 'Smashed beef patties with cheese, salad, grilled onions and burger sauce. Served with a free cold drink.',
     allergens: [1, 3, 7, 11],
     category: 'Burgers'
   },
@@ -254,7 +254,7 @@ export const MENU_ITEMS: MenuItem[] = [
     id: 'bg-peri',
     name: 'Peri-Peri Chicken Burger',
     price: 14.95,
-    description: 'Peri-peri chicken fillet with lettuce and mayo.',
+    description: 'Peri-peri chicken fillet with lettuce and mayo. Served with a free cold drink.',
     allergens: [1, 3, 7, 11],
     category: 'Burgers'
   },
@@ -262,7 +262,7 @@ export const MENU_ITEMS: MenuItem[] = [
     id: 'bg-korean',
     name: 'Korean-Style Chicken Burger',
     price: 14.95,
-    description: 'Crispy chicken fillet with Korean-style glaze and salad.',
+    description: 'Crispy chicken fillet with Korean-style glaze and salad. Served with a free cold drink.',
     allergens: [1, 3, 6, 11],
     category: 'Burgers'
   },
@@ -272,7 +272,7 @@ export const MENU_ITEMS: MenuItem[] = [
     id: 'ws-grilled-wrap',
     name: 'Grilled Chicken Wrap',
     price: 12.95,
-    description: 'Grilled chicken with salad and sweet chilli sauce in a tortilla wrap.',
+    description: 'Grilled chicken with salad and sweet chilli sauce in a tortilla wrap. Served with a free cold drink.',
     allergens: [1, 3, 6, 11],
     category: 'Wraps & Sandwiches'
   },
@@ -280,7 +280,7 @@ export const MENU_ITEMS: MenuItem[] = [
     id: 'ws-crispy-wrap',
     name: 'Crispy Chicken Wrap',
     price: 12.95,
-    description: 'Crispy chicken with salad and sweet chilli sauce in a tortilla wrap.',
+    description: 'Crispy chicken with salad and sweet chilli sauce in a tortilla wrap. Served with a free cold drink.',
     allergens: [1, 3, 6, 10, 11, 14],
     category: 'Wraps & Sandwiches'
   },
@@ -288,7 +288,7 @@ export const MENU_ITEMS: MenuItem[] = [
     id: 'ws-spicy-ciabatta',
     name: 'Spicy Chicken Ciabatta',
     price: 13.95,
-    description: 'Peri-peri chicken with salad and sweet chilli sauce in toasted ciabatta.',
+    description: 'Peri-peri chicken with salad and sweet chilli sauce in toasted ciabatta. Served with a free cold drink.',
     allergens: [1, 3, 11, 14],
     category: 'Wraps & Sandwiches'
   },
@@ -296,7 +296,7 @@ export const MENU_ITEMS: MenuItem[] = [
     id: 'ws-falafel-wrap',
     name: 'Falafel Wrap',
     price: 12.95,
-    description: 'Falafel with salad and sweet chilli sauce in a tortilla wrap.',
+    description: 'Falafel with salad and sweet chilli sauce in a tortilla wrap. Served with a free cold drink.',
     allergens: [1, 6, 10, 14],
     isVeg: true,
     category: 'Wraps & Sandwiches'
@@ -305,7 +305,7 @@ export const MENU_ITEMS: MenuItem[] = [
     id: 'ws-steak-sandwich',
     name: 'Steak Sandwich',
     price: 15.95,
-    description: 'Sirloin steak with mushrooms, onions and pepper sauce in toasted ciabatta.',
+    description: 'Sirloin steak with mushrooms, onions and pepper sauce in toasted ciabatta. Served with a free cold drink.',
     allergens: [1, 3, 7, 11],
     category: 'Wraps & Sandwiches'
   },
