@@ -17,12 +17,33 @@ export const MenuView: React.FC<MenuViewProps> = ({ storeSettings }) => {
   const [vegetarianFilter, setVegetarianFilter] = React.useState(false);
   const [showAllergensKey, setShowAllergensKey] = React.useState(false);
   const [dishImages, setDishImages] = React.useState<any>({});
+  const [categories, setCategories] = React.useState<string[]>(CATEGORIES);
+  const [products, setProducts] = React.useState<any[]>(MENU_ITEMS);
+
+  React.useEffect(() => {
+    const fetchFullMenu = async () => {
+      try {
+        const res = await fetch('/api/menu/full');
+        if (res.ok) {
+          const data = await res.json();
+          if (data.categories && data.categories.length > 0) {
+            setCategories(data.categories.map((c: any) => c.name));
+          }
+          if (data.products && data.products.length > 0) {
+            setProducts(data.products.filter((p: any) => p.isActive !== false));
+          }
+        }
+      } catch (err) {
+        console.warn('Falling back to static menu catalog:', err);
+      }
+    };
+    fetchFullMenu();
+  }, []);
 
   React.useEffect(() => {
     const fetchDishImages = async () => {
       try {
-        // Build list of expected dish image keys from MENU_ITEMS
-        const imagePromises = MENU_ITEMS.map(async (item) => {
+        const imagePromises = products.map(async (item) => {
           const key = `clay_oven_dish_image_${item.id}`;
           try {
             const res = await fetch(`/api/settings/images/${key}`);
@@ -42,10 +63,10 @@ export const MenuView: React.FC<MenuViewProps> = ({ storeSettings }) => {
       }
     };
     fetchDishImages();
-  }, []);
+  }, [products]);
 
   // Filter items
-  const filteredItems = MENU_ITEMS.filter((item) => {
+  const filteredItems = products.filter((item) => {
     const matchesSearch = item.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
                           (item.description && item.description.toLowerCase().includes(searchTerm.toLowerCase()));
     const matchesCategory = selectedCategory === 'All' || item.category === selectedCategory;
@@ -147,7 +168,7 @@ export const MenuView: React.FC<MenuViewProps> = ({ storeSettings }) => {
         >
           ALL CATEGORIES
         </button>
-        {CATEGORIES.map((cat) => (
+        {categories.map((cat) => (
           <button
             type="button"
             id={`category-tab-${cat.replace(/\s+/g, '-').toLowerCase()}`}

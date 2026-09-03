@@ -1,0 +1,904 @@
+/**
+ * @license
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+export const ALLERGENS = [
+  { index: 1, name: 'Gluten' },
+  { index: 2, name: 'Crustaceans' },
+  { index: 3, name: 'Eggs' },
+  { index: 4, name: 'Fish' },
+  { index: 5, name: 'Peanuts' },
+  { index: 6, name: 'Soya' },
+  { index: 7, name: 'Milk' },
+  { index: 8, name: 'Nuts' },
+  { index: 9, name: 'Celery' },
+  { index: 10, name: 'Sesame' },
+  { index: 11, name: 'Mustard' },
+  { index: 12, name: 'Shellfish' },
+  { index: 13, name: 'Lupins' },
+  { index: 14, name: 'Sulphite' }
+];
+
+export const CATEGORIES = [
+  'Pakistani Cuisine',
+  'Clay Oven Specials',
+  'Kebabs',
+  'Burgers',
+  'Wraps & Sandwiches',
+  'Wings',
+  'Fries',
+  'Light Bites',
+  'Salads',
+  'Pizza',
+  'Pizza Deals',
+  'Kids Meal',
+  'Sides',
+  'Dips',
+  'Dessert Menu',
+  'Milkshakes',
+  'Drinks'
+];
+
+export const MENU_ITEMS = [
+  // --- PAKISTANI CUISINE ---
+  {
+    id: 'pk-butter-chicken',
+    name: 'Butter Chicken',
+    price: 14.95,
+    description: 'Chicken cooked in a creamy tomato butter sauce. Served with basmati rice/naan',
+    allergens: [7, 11],
+    category: 'Pakistani Cuisine'
+  },
+  {
+    id: 'pk-tikka-masala',
+    name: 'Chicken Tikka Masala',
+    price: 14.95,
+    description: 'Grilled chicken cooked in a rich spiced tomato sauce. Served with basmati rice/naan',
+    allergens: [7, 11],
+    category: 'Pakistani Cuisine'
+  },
+  {
+    id: 'pk-lamb-karhai',
+    name: 'Lamb Karhai',
+    price: 24.95,
+    description: 'A fragrant slow cooked curry featuring tender bone in lamb simmered in rich, deeply spiced traditional gravy.',
+    category: 'Pakistani Cuisine'
+  },
+  {
+    id: 'pk-biryani',
+    name: 'Chicken Biryani',
+    price: 14.95,
+    description: 'Fragrant basmati rice layered with spiced chicken.',
+    allergens: [11],
+    category: 'Pakistani Cuisine'
+  },
+  {
+    id: 'pk-channa-masala',
+    name: 'Channa Masala',
+    price: 14.95,
+    description: 'Chickpeas cooked in a rich spiced curry sauce. Served with basmati rice/naan',
+    allergens: [11],
+    isVeg: true,
+    category: 'Pakistani Cuisine'
+  },
+  {
+    id: 'pk-bbq-platter',
+    name: 'Pakistani Barbeque Platter',
+    price: 25.95,
+    description: 'Mixed grilled kebabs and wings served with fresh naan and mint yoghurt.',
+    allergens: [7, 11],
+    category: 'Pakistani Cuisine'
+  },
+  {
+    id: 'pk-white-qorma',
+    name: 'White Qorma',
+    price: 14.95,
+    description: 'Mild creamy chicken curry with delicate spices. Served with basmati rice/naan',
+    allergens: [7, 8],
+    category: 'Pakistani Cuisine'
+  },
+  {
+    id: 'pk-jalfrezi',
+    name: 'Chicken Jalfrezi',
+    price: 14.95,
+    description: 'Chicken cooked with peppers and onions in a spicy sauce. Served with basmati rice/naan',
+    allergens: [11],
+    category: 'Pakistani Cuisine'
+  },
+  {
+    id: 'pk-bhuna',
+    name: 'Chicken Bhuna',
+    price: 14.95,
+    description: 'Chicken tikka cooked in a rich onion and tomato curry. Served with basmati rice/naan',
+    allergens: [7, 11],
+    category: 'Pakistani Cuisine'
+  },
+  {
+    id: 'pk-madras',
+    name: 'Chicken Madras',
+    price: 14.95,
+    description: 'Hot and spicy chicken curry cooked in a rich aromatic sauce. Served with basmati rice/naan',
+    allergens: [7, 11],
+    category: 'Pakistani Cuisine'
+  },
+  {
+    id: 'pk-rogan-josh',
+    name: 'Rogan Josh',
+    price: 14.95,
+    description: 'Slow-cooked chicken curry in a rich aromatic sauce. Served with basmati rice/naan',
+    allergens: [7, 11],
+    category: 'Pakistani Cuisine'
+  },
+
+  // --- CLAY OVEN SPECIALS ---
+  {
+    id: 'co-peppercorn',
+    name: 'Grilled Peppercorn Chicken',
+    price: 16.95,
+    description: 'Grilled chicken breast topped with creamy peppercorn sauce. Served with chips.',
+    allergens: [7, 11],
+    category: 'Clay Oven Specials'
+  },
+  {
+    id: 'co-sirloin',
+    name: 'Sirloin Steak',
+    price: 24.95,
+    description: 'Sirloin steak with mushrooms, onions and peppercorn sauce. Served with chips.',
+    allergens: [7, 11],
+    category: 'Clay Oven Specials'
+  },
+  {
+    id: 'co-lamb-chops',
+    name: 'Lamb Chops',
+    price: 21.95,
+    description: 'Flame-grilled lamb chops marinated in aromatic spices. Served with chips.',
+    allergens: [11],
+    category: 'Clay Oven Specials'
+  },
+  {
+    id: 'co-mixed-grill',
+    name: 'Mixed Grill',
+    price: 25.95,
+    description: 'A selection of grilled meats served with mushrooms and onions. Served with chips.',
+    allergens: [7, 11],
+    category: 'Clay Oven Specials'
+  },
+  {
+    id: 'co-ravioli',
+    name: 'Ravioli with Tomato Sauce',
+    price: 15.95,
+    description: 'Tender Ravioli pasta pillows served in a rich, slow simmered tomato and herb sauce',
+    isVeg: true,
+    category: 'Clay Oven Specials'
+  },
+  {
+    id: 'co-combi-sizzler',
+    name: 'Combi Sizzler',
+    price: 19.95,
+    description: 'Tender marinated chicken and juicy beef sauteed with crisp peppers and onions in salsa served with a wrap and chips OR rice of your choice.',
+    category: 'Clay Oven Specials'
+  },
+
+  // --- KEBABS ---
+  {
+    id: 'kb-shish',
+    name: 'Chicken Shish Kebab',
+    price: 14.95,
+    description: 'Grilled chicken skewers with fresh naan, salad and sauce.',
+    allergens: [1, 7, 11],
+    category: 'Kebabs'
+  },
+  {
+    id: 'kb-malai',
+    name: 'Chicken Malai Tikka Kebab',
+    price: 14.95,
+    description: 'Creamy marinated chicken with fresh naan, salad and sauce.',
+    allergens: [1, 7, 11],
+    category: 'Kebabs'
+  },
+  {
+    id: 'kb-seekh',
+    name: 'Lamb Seekh Kebab',
+    price: 14.95,
+    description: 'Minced lamb with spices, fresh naan, salad and sauce.',
+    allergens: [1, 7, 11],
+    category: 'Kebabs'
+  },
+  {
+    id: 'kb-tikka',
+    name: 'Chicken Tikka Kebab',
+    price: 14.95,
+    description: 'Spiced chicken tikka with fresh naan, salad and sauce.',
+    allergens: [1, 7, 11],
+    category: 'Kebabs'
+  },
+  {
+    id: 'kb-lamb',
+    name: 'Fresh Lamb Kebab',
+    price: 15.95,
+    description: 'Seasoned chunks of leg of lamb with fresh naan, salad and sauce.',
+    allergens: [1, 7, 11],
+    category: 'Kebabs'
+  },
+  {
+    id: 'kb-shawarma',
+    name: 'Chicken Shawarma Kebab',
+    price: 14.95,
+    description: 'Marinated chicken with fresh naan, salad and sauce.',
+    allergens: [1, 7, 11],
+    category: 'Kebabs'
+  },
+
+  // --- BURGERS ---
+  {
+    id: 'bg-veg',
+    name: 'Vegetable Burger',
+    price: 13.95,
+    description: 'Vegetable patty with salad and burger sauce in a toasted bun. Served with a free cold drink.',
+    allergens: [1, 3, 11],
+    isVeg: true,
+    category: 'Burgers'
+  },
+  {
+    id: 'bg-steak',
+    name: 'Steak Burger',
+    price: 15.95,
+    description: 'Sirloin steak strips with cheese, lettuce and burger sauce. Served with a free cold drink.',
+    allergens: [1, 3, 7, 11],
+    category: 'Burgers'
+  },
+  {
+    id: 'bg-smash',
+    name: 'Smash Burger',
+    price: 14.95,
+    description: 'Smashed beef patties with cheese, salad, grilled onions and burger sauce. Served with a free cold drink.',
+    allergens: [1, 3, 7, 11],
+    category: 'Burgers'
+  },
+  {
+    id: 'bg-peri',
+    name: 'Peri-Peri Chicken Burger',
+    price: 14.95,
+    description: 'Peri-peri chicken fillet with lettuce and mayo. Served with a free cold drink.',
+    allergens: [1, 3, 7, 11],
+    category: 'Burgers'
+  },
+  {
+    id: 'bg-korean',
+    name: 'Korean-Style Chicken Burger',
+    price: 14.95,
+    description: 'Crispy chicken fillet with Korean-style glaze and salad. Served with a free cold drink.',
+    allergens: [1, 3, 6, 11],
+    category: 'Burgers'
+  },
+
+  // --- WRAPS & SANDWICHES ---
+  {
+    id: 'ws-grilled-wrap',
+    name: 'Grilled Chicken Wrap',
+    price: 12.95,
+    description: 'Grilled chicken with salad and sweet chilli sauce in a tortilla wrap. Served with a free cold drink.',
+    allergens: [1, 3, 6, 11],
+    category: 'Wraps & Sandwiches'
+  },
+  {
+    id: 'ws-crispy-wrap',
+    name: 'Crispy Chicken Wrap',
+    price: 12.95,
+    description: 'Crispy chicken with salad and sweet chilli sauce in a tortilla wrap. Served with a free cold drink.',
+    allergens: [1, 3, 6, 10, 11, 14],
+    category: 'Wraps & Sandwiches'
+  },
+  {
+    id: 'ws-spicy-ciabatta',
+    name: 'Spicy Chicken Ciabatta',
+    price: 13.95,
+    description: 'Peri-peri chicken with salad and sweet chilli sauce in toasted ciabatta. Served with a free cold drink.',
+    allergens: [1, 3, 11, 14],
+    category: 'Wraps & Sandwiches'
+  },
+  {
+    id: 'ws-falafel-wrap',
+    name: 'Falafel Wrap',
+    price: 12.95,
+    description: 'Falafel with salad and sweet chilli sauce in a tortilla wrap. Served with a free cold drink.',
+    allergens: [1, 6, 10, 14],
+    isVeg: true,
+    category: 'Wraps & Sandwiches'
+  },
+  {
+    id: 'ws-steak-sandwich',
+    name: 'Steak Sandwich',
+    price: 15.95,
+    description: 'Sirloin steak with mushrooms, onions and pepper sauce in toasted ciabatta. Served with a free cold drink.',
+    allergens: [1, 3, 7, 11],
+    category: 'Wraps & Sandwiches'
+  },
+
+  // --- WINGS ---
+  {
+    id: 'ww-wings',
+    name: 'Chicken Wings',
+    price: 7.95,
+    description: 'Juicy, tender wings tossed in your favourite sauce. (6 or 10 pieces)',
+    sizeOptions: [
+      { name: '6 Pieces', price: 7.95 },
+      { name: '10 Pieces', price: 10.95 }
+    ],
+    category: 'Wings'
+  },
+  {
+    id: 'ww-boneless',
+    name: 'Crispy Boneless Wings',
+    price: 7.95,
+    description: 'Crispy breaded chicken bites tossed in your choice of sauce. (6 or 10 pieces)',
+    allergens: [1, 3, 6, 11],
+    sizeOptions: [
+      { name: '6 Pieces', price: 7.95 },
+      { name: '10 Pieces', price: 10.95 }
+    ],
+    category: 'Wings'
+  },
+
+  // --- FRIES ---
+  {
+    id: 'fr-loaded-fries',
+    name: 'Loaded Fries',
+    price: 12.95,
+    description: 'Fries topped with peri-peri chicken, peppers, onions, jalapeños and peri mayo.',
+    allergens: [3, 7, 11],
+    category: 'Fries'
+  },
+  {
+    id: 'fr-garlic-chips',
+    name: 'Garlic Chips',
+    price: 5.95,
+    description: 'Crispy chips drizzled with garlic sauce.',
+    allergens: [7],
+    category: 'Fries'
+  },
+  {
+    id: 'fr-curry-chips',
+    name: 'Curry Chips',
+    price: 5.95,
+    description: 'Crispy chips topped with warm curry sauce.',
+    allergens: [1, 9, 11],
+    category: 'Fries'
+  },
+  {
+    id: 'fr-beef-nachos',
+    name: 'Beef Nachos',
+    price: 6.95,
+    description: 'Tortilla chips topped with seasoned beef, cheese and taco mayo.',
+    allergens: [1, 3, 7, 11],
+    category: 'Fries'
+  },
+  {
+    id: 'fr-taco-fries',
+    name: 'Taco Fries',
+    price: 6.95,
+    description: 'Fries topped with taco beef, cheese and taco mayo.',
+    allergens: [1, 3, 7, 11],
+    category: 'Fries'
+  },
+  {
+    id: 'fr-spice-bag',
+    name: 'Spice Bag',
+    price: 9.95,
+    description: 'Salt and chilli chicken tossed with chips, peppers and onions.',
+    allergens: [1, 11],
+    category: 'Fries'
+  },
+  {
+    id: 'fr-chicken-tender-meal',
+    name: 'Chicken Tender Meal',
+    price: 14.95,
+    description: 'Five crispy chicken tenders served with fries and a drink.',
+    allergens: [1, 7],
+    category: 'Fries'
+  },
+
+  // --- LIGHT BITES ---
+  {
+    id: 'lb-peri-strips',
+    name: 'Peri-Peri Chicken Strips',
+    price: 6.95,
+    description: 'Chicken strips served with creamy peri-peri mayo.',
+    allergens: [1, 3, 7, 11],
+    category: 'Light Bites'
+  },
+  {
+    id: 'lb-shish',
+    name: 'Chicken Shish Kebab',
+    price: 7.95,
+    description: 'Flame grilled kebab, served with charred peppers and onions.',
+    allergens: [11],
+    category: 'Light Bites'
+  },
+  {
+    id: 'lb-malai-tikka',
+    name: 'Chicken Malai Tikka',
+    price: 7.95,
+    description: 'Creamy marinated chicken with peppers and onions.',
+    allergens: [7, 8, 11],
+    category: 'Light Bites'
+  },
+  {
+    id: 'lb-chicken-tikka',
+    name: 'Chicken Tikka',
+    price: 7.95,
+    description: 'Spiced chicken pieces with peppers and onions.',
+    allergens: [7, 11],
+    category: 'Light Bites'
+  },
+  {
+    id: 'lb-onion-bhaji',
+    name: 'Onion Bhaji',
+    price: 6.95,
+    description: 'Crispy spiced onion fritters.',
+    allergens: [1, 11],
+    isVeg: true,
+    category: 'Light Bites'
+  },
+  {
+    id: 'lb-spring-roll',
+    name: 'Oriental Spring Roll',
+    price: 6.95,
+    description: 'Crispy rolls filled with vegetables or chicken, served with sweet chilli dip.',
+    allergens: [1, 6, 10, 11],
+    category: 'Light Bites'
+  },
+  {
+    id: 'lb-falafel-hummus',
+    name: 'Falafel & Hummus',
+    price: 6.95,
+    description: 'Crispy falafel served with hummus and salad.',
+    allergens: [1, 6, 10, 14],
+    isVeg: true,
+    category: 'Light Bites'
+  },
+
+  // --- SALADS ---
+  {
+    id: 'sl-caesar-salad',
+    name: 'Chicken Caesar Salad',
+    price: 10.95,
+    description: 'Grilled chicken with lettuce, parmesan, croutons and Caesar dressing.',
+    allergens: [1, 3, 4, 7, 11],
+    category: 'Salads'
+  },
+  {
+    id: 'sl-greek-salad',
+    name: 'Greek Salad',
+    price: 7.95,
+    description: 'Tomato, cucumber, onion, olives and feta with light dressing.',
+    allergens: [7],
+    isVeg: true,
+    category: 'Salads'
+  },
+
+  // --- PIZZA ---
+  {
+    id: 'pz-margherita',
+    name: 'Margherita Pizza',
+    price: 11.95,
+    description: 'Classic tomato and mozzarella pizza.',
+    allergens: [1, 7],
+    sizeOptions: [
+      { name: '10 inch', price: 11.95 },
+      { name: '12 inch', price: 14.95 }
+    ],
+    category: 'Pizza'
+  },
+  {
+    id: 'pz-hawaiian',
+    name: 'Hawaiian Pizza',
+    price: 12.95,
+    description: 'Turkey ham and pineapple pizza with mozzarella.',
+    allergens: [1, 7],
+    sizeOptions: [
+      { name: '10 inch', price: 12.95 },
+      { name: '12 inch', price: 15.95 }
+    ],
+    category: 'Pizza'
+  },
+  {
+    id: 'pz-allmeat',
+    name: 'All Meat Pizza',
+    price: 13.95,
+    description: 'Pepperoni, turkey ham and spiced chicken pizza.',
+    allergens: [1, 7],
+    sizeOptions: [
+      { name: '10 inch', price: 13.95 },
+      { name: '12 inch', price: 16.95 }
+    ],
+    category: 'Pizza'
+  },
+  {
+    id: 'pz-pepperoni',
+    name: 'Hot Pepperoni Pizza',
+    price: 12.95,
+    description: 'Pepperoni and jalapeño pizza with mozzarella.',
+    allergens: [1, 7],
+    sizeOptions: [
+      { name: '10 inch', price: 12.95 },
+      { name: '12 inch', price: 15.95 }
+    ],
+    category: 'Pizza'
+  },
+  {
+    id: 'pz-garlic',
+    name: 'Garlic Bread (10")',
+    price: 9.95,
+    description: 'Fresh baked garlic bread with herbs.',
+    allergens: [1, 7],
+    category: 'Pizza'
+  },
+
+  // --- PIZZA DEALS ---
+  {
+    id: 'dl-one',
+    name: 'Deal 1',
+    price: 14.95,
+    description: '10 inch with chips and drink',
+    category: 'Pizza Deals'
+  },
+  {
+    id: 'dl-two',
+    name: 'Deal 2',
+    price: 19.95,
+    description: '12 inch with chips and drink',
+    category: 'Pizza Deals'
+  },
+  {
+    id: 'dl-family',
+    name: 'Family Deal',
+    price: 39.95,
+    description: '2x 12 inch with 2 large chips and 2 drink, 2 juice, 2 dips (any) and 10 inch garlic bread with cheese',
+    category: 'Pizza Deals'
+  },
+
+  // --- KIDS MEAL ---
+  {
+    id: 'km-chicken-burger',
+    name: 'Chicken Burger',
+    price: 9.95,
+    description: 'Simple chicken burger served in a brioche bun.',
+    allergens: [1, 3, 7, 11],
+    category: 'Kids Meal'
+  },
+  {
+    id: 'km-chicken-wrap',
+    name: 'Chicken Wrap',
+    price: 9.95,
+    description: 'Chicken with fresh salad in a tortilla wrap.',
+    allergens: [1, 3, 11],
+    category: 'Kids Meal'
+  },
+  {
+    id: 'km-chicken-tenders',
+    name: 'Chicken Tenders / Nuggets',
+    price: 9.95,
+    description: 'Crispy chicken tenders (3 piece).',
+    allergens: [1, 3, 11],
+    category: 'Kids Meal'
+  },
+  {
+    id: 'km-mini-cheeseburger',
+    name: 'Mini Cheeseburger',
+    price: 9.95,
+    description: 'Mini beef burger with melted cheese.',
+    allergens: [1, 3, 7, 11],
+    category: 'Kids Meal'
+  },
+  {
+    id: 'km-mini-margherita',
+    name: 'Mini Margherita',
+    price: 9.95,
+    description: 'Mini tomato and mozzarella pizza.',
+    allergens: [1, 7],
+    category: 'Kids Meal'
+  },
+
+  // --- SIDES ---
+  {
+    id: 'sd-naan',
+    name: 'Naan Bread',
+    price: 2.50,
+    description: 'Fresh baked clay oven naan bread.',
+    allergens: [1, 7],
+    category: 'Sides'
+  },
+  {
+    id: 'sd-coriander-naan',
+    name: 'Coriander Naan Bread',
+    price: 2.95,
+    description: 'Fresh clay oven naan topped with aromatic coriander.',
+    allergens: [1, 7],
+    category: 'Sides'
+  },
+  {
+    id: 'sd-garlic-naan',
+    name: 'Garlic Naan Bread',
+    price: 2.95,
+    description: 'Clay oven baked naan infused with fresh minced garlic.',
+    allergens: [1, 7],
+    category: 'Sides'
+  },
+  {
+    id: 'sd-white-rice',
+    name: 'White Rice',
+    price: 2.95,
+    description: 'Fragrant steamed white basmati rice.',
+    category: 'Sides'
+  },
+  {
+    id: 'sd-fried-onions-mushrooms',
+    name: 'Fried Onions & Mushrooms',
+    price: 3.50,
+    description: 'Sauteed onions and pan-fried mushrooms.',
+    allergens: [1, 11],
+    category: 'Sides'
+  },
+  {
+    id: 'sd-fries',
+    name: 'Fries',
+    price: 2.95,
+    description: 'Fresh cut crisp golden potato fries.',
+    allergens: [1],
+    category: 'Sides'
+  },
+  {
+    id: 'sd-sweet-potato-fries',
+    name: 'Sweet Potato Fries',
+    price: 3.50,
+    description: 'Crisp fried sweet potato strips.',
+    category: 'Sides'
+  },
+  {
+    id: 'sd-onion-rings',
+    name: 'Onion Rings',
+    price: 2.95,
+    description: 'Crispy golden battered onion rings.',
+    allergens: [1],
+    category: 'Sides'
+  },
+  {
+    id: 'sd-mixed-salad',
+    name: 'Mixed Salad',
+    price: 3.50,
+    description: 'Fresh crisp garden salad bowl.',
+    allergens: [11],
+    category: 'Sides'
+  },
+  {
+    id: 'sd-cheddar-slice',
+    name: 'Cheddar Slice',
+    price: 1.00,
+    description: 'Extra melted cheddar cheese slice.',
+    allergens: [7],
+    category: 'Sides'
+  },
+  {
+    id: 'sd-fried-egg',
+    name: 'Fried Egg',
+    price: 1.50,
+    description: 'Freshly fried egg.',
+    allergens: [3],
+    category: 'Sides'
+  },
+
+  // --- DIPS ---
+  {
+    id: 'dp-peri-mayo',
+    name: 'Peri Peri Mayonnaise',
+    price: 1.50,
+    description: 'Creamy spicy peri-peri mayo.',
+    category: 'Dips'
+  },
+  {
+    id: 'dp-bbq-sauce',
+    name: 'Barbecue Sauce',
+    price: 1.50,
+    description: 'Smoky sweet barbecue dipping sauce.',
+    category: 'Dips'
+  },
+  {
+    id: 'dp-garlic-mayo',
+    name: 'Garlic Mayonnaise',
+    price: 1.50,
+    description: 'Rich creamy garlic mayo.',
+    category: 'Dips'
+  },
+  {
+    id: 'dp-green-chutney',
+    name: 'Green Chutney',
+    price: 1.50,
+    description: 'Traditional spiced mint and coriander chutney.',
+    category: 'Dips'
+  },
+  {
+    id: 'dp-ranch',
+    name: 'Ranch',
+    price: 1.50,
+    description: 'Cool herb buttermilk ranch dressing.',
+    category: 'Dips'
+  },
+  {
+    id: 'dp-mint-yoghurt',
+    name: 'Mint Yoghurt',
+    price: 1.50,
+    description: 'Refreshing cool mint yoghurt dip.',
+    category: 'Dips'
+  },
+  {
+    id: 'dp-ketchup',
+    name: 'Ketchup',
+    price: 1.50,
+    description: 'Classic tomato ketchup.',
+    category: 'Dips'
+  },
+  {
+    id: 'dp-mango-chutney',
+    name: 'Mango Chutney',
+    price: 1.50,
+    description: 'Sweet and tangy spiced mango chutney.',
+    category: 'Dips'
+  },
+  {
+    id: 'dp-curry-sauce',
+    name: 'Curry Sauce',
+    price: 1.50,
+    description: 'Warm aromatic curry dipping sauce.',
+    category: 'Dips'
+  },
+  {
+    id: 'dp-peppercorn-sauce',
+    name: 'Peppercorn Sauce',
+    price: 1.50,
+    description: 'Creamy crushed peppercorn steak sauce.',
+    category: 'Dips'
+  },
+
+  // --- DESSERT MENU ---
+  {
+    id: 'ds-toffee-pudding',
+    name: 'Sticky Toffee Pudding',
+    price: 7.95,
+    description: 'Warm sticky toffee pudding served with ice cream.',
+    allergens: [1, 3, 7],
+    category: 'Dessert Menu'
+  },
+  {
+    id: 'ds-belgian-waffle',
+    name: 'Belgian Waffle',
+    price: 7.95,
+    description: 'Warm Belgian waffle served with ice cream.',
+    allergens: [1, 3, 7],
+    category: 'Dessert Menu'
+  },
+  {
+    id: 'ds-warm-brownie',
+    name: 'Warm Brownie',
+    price: 7.95,
+    description: 'Warm chocolate brownie served with vanilla ice cream.',
+    allergens: [1, 3, 7],
+    category: 'Dessert Menu'
+  },
+  {
+    id: 'ds-ice-cream',
+    name: 'Ice-Cream',
+    price: 5.95,
+    description: 'Soft serve ice cream with your choice of toppings.',
+    allergens: [7, 8],
+    category: 'Dessert Menu'
+  },
+  {
+    id: 'ds-falooda',
+    name: 'Falooda',
+    price: 7.95,
+    description: 'A refreshing layered dessert drink with rose syrup, vermicilli noodles and chilled milk, topped with a scoop of ice cream and jelly.',
+    category: 'Dessert Menu'
+  },
+  {
+    id: 'ds-gulab-jamun',
+    name: 'Gulab Jamun',
+    price: 7.95,
+    description: 'Two soft, golden milk solid dumplings soaked in a warm, fragrant cardamom sugar syrup, paired perfectly with a scoop of ice cream.',
+    category: 'Dessert Menu'
+  },
+
+  // --- MILKSHAKES ---
+  {
+    id: 'ms-strawberry',
+    name: 'Strawberry',
+    price: 4.95,
+    description: 'Fresh creamy strawberry milkshake.',
+    allergens: [7],
+    category: 'Milkshakes'
+  },
+  {
+    id: 'ms-chocolate',
+    name: 'Chocolate',
+    price: 4.95,
+    description: 'Rich decadent chocolate milkshake.',
+    allergens: [7],
+    category: 'Milkshakes'
+  },
+  {
+    id: 'ms-vanilla',
+    name: 'Vanilla',
+    price: 4.95,
+    description: 'Classic smooth vanilla bean milkshake.',
+    allergens: [7],
+    category: 'Milkshakes'
+  },
+  {
+    id: 'ms-oreo',
+    name: 'Oreo',
+    price: 4.95,
+    description: 'Creamy shake blended with crushed Oreo cookies and chocolate drizzle.',
+    allergens: [1, 7],
+    category: 'Milkshakes'
+  },
+  {
+    id: 'ms-biscoff',
+    name: 'Biscoff',
+    price: 4.95,
+    description: 'Creamy milkshake loaded with authentic Lotus Biscoff cookie spread.',
+    allergens: [1, 7],
+    category: 'Milkshakes'
+  },
+
+  // --- DRINKS ---
+  {
+    id: 'dr-soft-drink',
+    name: 'Cola / Lemon & Lime / Orange Soft Drink',
+    price: 2.95,
+    description: 'Refreshing cold soft drink can (Cola, Lemon & Lime, or Orange).',
+    category: 'Drinks'
+  },
+  {
+    id: 'dr-tea',
+    name: 'Tea',
+    price: 2.50,
+    description: 'Freshly brewed hot traditional tea.',
+    category: 'Drinks'
+  },
+  {
+    id: 'dr-coffee',
+    name: 'Coffee',
+    price: 2.50,
+    description: 'Freshly brewed aromatic hot coffee.',
+    category: 'Drinks'
+  },
+  {
+    id: 'dr-cappucino',
+    name: 'Cappucino',
+    price: 3.95,
+    description: 'Rich espresso with steamed milk and velvety foam dusted with cocoa.',
+    category: 'Drinks'
+  },
+  {
+    id: 'dr-latte',
+    name: 'Latte',
+    price: 3.95,
+    description: 'Smooth espresso with creamy steamed milk.',
+    category: 'Drinks'
+  },
+  {
+    id: 'dr-flat-white',
+    name: 'Flat white',
+    price: 2.50,
+    description: 'Double shot espresso balanced with microfoam milk.',
+    category: 'Drinks'
+  },
+  {
+    id: 'dr-hot-chocolate',
+    name: 'Hot Chocolate',
+    price: 3.95,
+    description: 'Rich warm cocoa topped with velvety whipped cream.',
+    category: 'Drinks'
+  }
+];

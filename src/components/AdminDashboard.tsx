@@ -1,8 +1,14 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { Play, Check, X, ShieldAlert, ShoppingBag, Calendar, ListFilter, Search, RefreshCw, Volume2, ShieldCheck, Clock, Settings, Sparkles, Mail, KeyRound, Loader2, Ban, XCircle, AlertTriangle, Trash2, Filter, CheckCircle2, HelpCircle, Info, Save } from 'lucide-react';
-import { Order, Reservation } from '../types';
-import { MENU_ITEMS, CATEGORIES } from '../data/menu';
+import { 
+  Play, Check, X, ShieldAlert, ShoppingBag, Calendar, ListFilter, Search, RefreshCw, 
+  Volume2, ShieldCheck, Clock, Settings, Sparkles, Mail, KeyRound, Loader2, Ban, 
+  XCircle, AlertTriangle, Trash2, Filter, CheckCircle2, HelpCircle, Info, Save,
+  Plus, Edit3, ArrowUpDown, ChevronUp, ChevronDown, Layers, Tag, Eye, EyeOff,
+  Sliders, CookingPot, UtensilsCrossed, AlertCircle, CheckSquare, Square
+} from 'lucide-react';
+import { Order, Reservation, MenuCategory, MenuItem, OptionGroup, OptionItem, MenuDeal } from '../types';
+import { ALLERGENS, MENU_ITEMS, CATEGORIES } from '../data/menu';
 import {
   DeliverySchedule,
   DayOfWeek,
@@ -138,6 +144,63 @@ The Royal Clay Oven`);
   useEffect(() => {
     localStorage.setItem('admin_notification_tone', notificationTone);
   }, [notificationTone]);
+
+  // --- MENU CATALOG, MODIFIERS & DEALS STUDIO STATES ---
+  const [catalogSubTab, setCatalogSubTab] = useState<'dishes' | 'categories' | 'modifiers' | 'deals'>('dishes');
+  const [catalogCategories, setCatalogCategories] = useState<MenuCategory[]>([]);
+  const [catalogProducts, setCatalogProducts] = useState<MenuItem[]>([]);
+  const [catalogOptionGroups, setCatalogOptionGroups] = useState<OptionGroup[]>([]);
+  const [catalogDeals, setCatalogDeals] = useState<MenuDeal[]>([]);
+  const [catalogLoading, setCatalogLoading] = useState(false);
+
+  // Search & Filter in Dish manager
+  const [dishSearch, setDishSearch] = useState('');
+  const [dishCategoryFilter, setDishCategoryFilter] = useState<string>('ALL');
+  const [dishStockFilter, setDishStockFilter] = useState<'ALL' | 'IN_STOCK' | 'SOLD_OUT'>('ALL');
+
+  // Dish Modal States
+  const [editingDish, setEditingDish] = useState<MenuItem | null>(null);
+  const [isDishModalOpen, setIsDishModalOpen] = useState(false);
+  const [dishFormId, setDishFormId] = useState('');
+  const [dishFormName, setDishFormName] = useState('');
+  const [dishFormCategoryId, setDishFormCategoryId] = useState<number | string>('');
+  const [dishFormPrice, setDishFormPrice] = useState('14.95');
+  const [dishFormDescription, setDishFormDescription] = useState('');
+  const [dishFormIsVeg, setDishFormIsVeg] = useState(false);
+  const [dishFormAllergens, setDishFormAllergens] = useState<number[]>([]);
+  const [dishFormSizes, setDishFormSizes] = useState<{ name: string; price: number }[]>([]);
+  const [dishFormOptionGroupIds, setDishFormOptionGroupIds] = useState<(number | string)[]>([]);
+  const [dishFormImageUrl, setDishFormImageUrl] = useState('');
+  const [dishFormSubmitting, setDishFormSubmitting] = useState(false);
+
+  // Category Modal States
+  const [editingCategory, setEditingCategory] = useState<MenuCategory | null>(null);
+  const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
+  const [categoryFormName, setCategoryFormName] = useState('');
+  const [categoryFormDescription, setCategoryFormDescription] = useState('');
+  const [categoryFormOptionGroupIds, setCategoryFormOptionGroupIds] = useState<(number | string)[]>([]);
+  const [categoryFormSubmitting, setCategoryFormSubmitting] = useState(false);
+
+  // Option Group Modal States
+  const [editingOptionGroup, setEditingOptionGroup] = useState<OptionGroup | null>(null);
+  const [isOptionGroupModalOpen, setIsOptionGroupModalOpen] = useState(false);
+  const [optionGroupFormTitle, setOptionGroupFormTitle] = useState('');
+  const [optionGroupFormMin, setOptionGroupFormMin] = useState(0);
+  const [optionGroupFormMax, setOptionGroupFormMax] = useState(1);
+  const [optionGroupFormItems, setOptionGroupFormItems] = useState<{ id?: number | string; name: string; priceModifier: number; isDefault: boolean }[]>([
+    { name: '', priceModifier: 0, isDefault: false }
+  ]);
+  const [optionGroupFormSubmitting, setOptionGroupFormSubmitting] = useState(false);
+
+  // Deal Modal States
+  const [editingDeal, setEditingDeal] = useState<MenuDeal | null>(null);
+  const [isDealModalOpen, setIsDealModalOpen] = useState(false);
+  const [dealFormTitle, setDealFormTitle] = useState('');
+  const [dealFormDescription, setDealFormDescription] = useState('');
+  const [dealFormBundlePrice, setDealFormBundlePrice] = useState('19.95');
+  const [dealFormBadge, setDealFormBadge] = useState('POPULAR');
+  const [dealFormSteps, setDealFormSteps] = useState<{ stepName: string; categoryId: number | string; count: number }[]>([]);
+  const [dealFormSubmitting, setDealFormSubmitting] = useState(false);
 
   // Order Notification Email States
   const [notificationEmails, setNotificationEmails] = useState<string[]>([]);
@@ -401,6 +464,490 @@ Beverages | Tea or Coffee`);
     setAuthStep('email');
     setAuthOtp('');
     setAuthError('Session expired. Please log in again.');
+  };
+
+  // --- MENU CATALOG STUDIO API HANDLERS ---
+  const fetchMenuCatalog = async () => {
+    setCatalogLoading(true);
+    try {
+      const response = await fetch('/api/menu/full');
+      if (response.ok) {
+        const data = await response.json();
+        setCatalogCategories(data.categories || []);
+        setCatalogProducts(data.products || []);
+        setCatalogOptionGroups(data.optionGroups || []);
+        setCatalogDeals(data.deals || []);
+      }
+    } catch (err) {
+      console.error('Failed to load menu catalog:', err);
+    } finally {
+      setCatalogLoading(false);
+    }
+  };
+
+  // Dish Handlers
+  const handleOpenCreateDishModal = () => {
+    setEditingDish(null);
+    setDishFormId('');
+    setDishFormName('');
+    setDishFormCategoryId(catalogCategories[0]?.id || '');
+    setDishFormPrice('14.95');
+    setDishFormDescription('');
+    setDishFormIsVeg(false);
+    setDishFormAllergens([]);
+    setDishFormSizes([]);
+    setDishFormOptionGroupIds([]);
+    setDishFormImageUrl('');
+    setIsDishModalOpen(true);
+  };
+
+  const handleOpenEditDishModal = (dish: MenuItem) => {
+    setEditingDish(dish);
+    setDishFormId(dish.id);
+    setDishFormName(dish.name);
+    setDishFormCategoryId(dish.categoryId || catalogCategories.find(c => c.name === dish.category)?.id || '');
+    setDishFormPrice(String(dish.price));
+    setDishFormDescription(dish.description || '');
+    setDishFormIsVeg(Boolean(dish.isVeg));
+    setDishFormAllergens(dish.allergens || []);
+    setDishFormSizes(dish.sizeOptions || []);
+    setDishFormOptionGroupIds(dish.optionGroupIds || []);
+    setDishFormImageUrl(dish.imageUrl || settingsData[`clay_oven_dish_image_${dish.id}`] || '');
+    setIsDishModalOpen(true);
+  };
+
+  const handleSaveDish = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!dishFormName.trim() || !dishFormCategoryId) return;
+    setDishFormSubmitting(true);
+
+    const payload = {
+      id: editingDish ? editingDish.id : (dishFormId.trim() || undefined),
+      category_id: dishFormCategoryId,
+      name: dishFormName.trim(),
+      description: dishFormDescription.trim(),
+      base_price: parseFloat(dishFormPrice) || 0,
+      is_veg: dishFormIsVeg,
+      allergens: dishFormAllergens,
+      size_options: dishFormSizes.filter(s => s.name.trim() && s.price > 0),
+      display_order: editingDish ? editingDish.displayOrder : undefined,
+      option_group_ids: dishFormOptionGroupIds,
+      image_url: dishFormImageUrl.trim() || undefined
+    };
+
+    try {
+      const url = editingDish ? `/api/admin/products/${editingDish.id}` : '/api/admin/products';
+      const method = editingDish ? 'PUT' : 'POST';
+      const response = await fetch(url, {
+        method,
+        headers: adminHeaders(),
+        body: JSON.stringify(payload)
+      });
+
+      if (response.status === 401) { handleUnauthorized(); return; }
+
+      if (response.ok) {
+        setIsDishModalOpen(false);
+        await fetchMenuCatalog();
+        setNotificationBox({
+          isOpen: true,
+          type: 'success',
+          title: editingDish ? 'Dish Updated' : 'Dish Created',
+          message: `"${dishFormName}" has been successfully saved.`
+        });
+      } else {
+        const data = await response.json();
+        setNotificationBox({
+          isOpen: true,
+          type: 'error',
+          title: 'Failed to Save Dish',
+          message: data.error || 'Server error saving dish.'
+        });
+      }
+    } catch (err) {
+      console.error('Error saving dish:', err);
+    } finally {
+      setDishFormSubmitting(false);
+    }
+  };
+
+  const handleToggleDishStock = async (dishId: string, currentSoldOut: boolean) => {
+    try {
+      const response = await fetch(`/api/admin/products/${dishId}/toggle-stock`, {
+        method: 'PATCH',
+        headers: adminHeaders(),
+        body: JSON.stringify({ is_sold_out: !currentSoldOut })
+      });
+      if (response.status === 401) { handleUnauthorized(); return; }
+      if (response.ok) {
+        setCatalogProducts(prev => prev.map(p => p.id === dishId ? { ...p, isSoldOut: !currentSoldOut } : p));
+        setNotificationBox({
+          isOpen: true,
+          type: 'info',
+          title: !currentSoldOut ? 'Marked as Sold Out' : 'Marked as In Stock',
+          message: `Item availability updated successfully.`
+        });
+      }
+    } catch (err) {
+      console.error('Error toggling dish stock:', err);
+    }
+  };
+
+  const handleToggleDishActive = async (dishId: string, currentActive: boolean) => {
+    try {
+      const response = await fetch(`/api/admin/products/${dishId}/toggle-active`, {
+        method: 'PATCH',
+        headers: adminHeaders(),
+        body: JSON.stringify({ is_active: !currentActive })
+      });
+      if (response.status === 401) { handleUnauthorized(); return; }
+      if (response.ok) {
+        setCatalogProducts(prev => prev.map(p => p.id === dishId ? { ...p, isActive: !currentActive } : p));
+        setNotificationBox({
+          isOpen: true,
+          type: 'info',
+          title: !currentActive ? 'Dish Published' : 'Dish Hidden',
+          message: `Storefront visibility updated.`
+        });
+      }
+    } catch (err) {
+      console.error('Error toggling dish active:', err);
+    }
+  };
+
+  const handleDeleteDish = (dishId: string, dishName: string) => {
+    setConfirmModal({
+      isOpen: true,
+      title: 'Delete Dish',
+      message: `Are you sure you want to permanently delete "${dishName}"?`,
+      detail: 'This will remove the item from online ordering and customer menus.',
+      confirmText: 'Yes, Delete Dish',
+      cancelText: 'Cancel',
+      isDanger: true,
+      onConfirm: async () => {
+        try {
+          const response = await fetch(`/api/admin/products/${dishId}`, {
+            method: 'DELETE',
+            headers: adminHeaders()
+          });
+          if (response.status === 401) { handleUnauthorized(); return; }
+          if (response.ok) {
+            await fetchMenuCatalog();
+            setNotificationBox({
+              isOpen: true,
+              type: 'success',
+              title: 'Dish Deleted',
+              message: `"${dishName}" was deleted.`
+            });
+          }
+        } catch (err) {
+          console.error('Failed to delete dish:', err);
+        }
+      }
+    });
+  };
+
+  // Category Handlers
+  const handleOpenCreateCategoryModal = () => {
+    setEditingCategory(null);
+    setCategoryFormName('');
+    setCategoryFormDescription('');
+    setCategoryFormOptionGroupIds([]);
+    setIsCategoryModalOpen(true);
+  };
+
+  const handleOpenEditCategoryModal = (cat: MenuCategory) => {
+    setEditingCategory(cat);
+    setCategoryFormName(cat.name);
+    setCategoryFormDescription(cat.description || '');
+    setCategoryFormOptionGroupIds(cat.optionGroupIds || []);
+    setIsCategoryModalOpen(true);
+  };
+
+  const handleSaveCategory = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!categoryFormName.trim()) return;
+    setCategoryFormSubmitting(true);
+
+    const payload = {
+      name: categoryFormName.trim(),
+      description: categoryFormDescription.trim(),
+      display_order: editingCategory ? editingCategory.displayOrder : undefined,
+      option_group_ids: categoryFormOptionGroupIds
+    };
+
+    try {
+      const url = editingCategory ? `/api/admin/categories/${editingCategory.id}` : '/api/admin/categories';
+      const method = editingCategory ? 'PUT' : 'POST';
+      const response = await fetch(url, {
+        method,
+        headers: adminHeaders(),
+        body: JSON.stringify(payload)
+      });
+      if (response.status === 401) { handleUnauthorized(); return; }
+      if (response.ok) {
+        setIsCategoryModalOpen(false);
+        await fetchMenuCatalog();
+        setNotificationBox({
+          isOpen: true,
+          type: 'success',
+          title: editingCategory ? 'Category Updated' : 'Category Created',
+          message: `Category "${categoryFormName}" saved successfully.`
+        });
+      }
+    } catch (err) {
+      console.error('Failed to save category:', err);
+    } finally {
+      setCategoryFormSubmitting(false);
+    }
+  };
+
+  const handleDeleteCategory = (catId: number | string, catName: string) => {
+    setConfirmModal({
+      isOpen: true,
+      title: 'Delete Category',
+      message: `Are you sure you want to delete category "${catName}"?`,
+      detail: 'Any dishes assigned to this category will also be removed.',
+      confirmText: 'Yes, Delete Category',
+      cancelText: 'Cancel',
+      isDanger: true,
+      onConfirm: async () => {
+        try {
+          const response = await fetch(`/api/admin/categories/${catId}`, {
+            method: 'DELETE',
+            headers: adminHeaders()
+          });
+          if (response.status === 401) { handleUnauthorized(); return; }
+          if (response.ok) {
+            await fetchMenuCatalog();
+            setNotificationBox({
+              isOpen: true,
+              type: 'success',
+              title: 'Category Deleted',
+              message: `Category "${catName}" was removed.`
+            });
+          }
+        } catch (err) {
+          console.error('Failed to delete category:', err);
+        }
+      }
+    });
+  };
+
+  const handleReorderCategory = async (catId: number | string, direction: 'up' | 'down') => {
+    const idx = catalogCategories.findIndex(c => String(c.id) === String(catId));
+    if (idx === -1) return;
+    if (direction === 'up' && idx === 0) return;
+    if (direction === 'down' && idx === catalogCategories.length - 1) return;
+
+    const newCats = [...catalogCategories];
+    const targetIdx = direction === 'up' ? idx - 1 : idx + 1;
+    const temp = newCats[idx];
+    newCats[idx] = newCats[targetIdx];
+    newCats[targetIdx] = temp;
+
+    setCatalogCategories(newCats);
+
+    try {
+      await fetch('/api/admin/categories/reorder', {
+        method: 'POST',
+        headers: adminHeaders(),
+        body: JSON.stringify({ orderedIds: newCats.map(c => c.id) })
+      });
+    } catch (err) {
+      console.error('Error reordering categories:', err);
+    }
+  };
+
+  // Option Group Handlers
+  const handleOpenCreateOptionGroupModal = () => {
+    setEditingOptionGroup(null);
+    setOptionGroupFormTitle('');
+    setOptionGroupFormMin(0);
+    setOptionGroupFormMax(1);
+    setOptionGroupFormItems([
+      { name: '', priceModifier: 0, isDefault: false },
+      { name: '', priceModifier: 0, isDefault: false }
+    ]);
+    setIsOptionGroupModalOpen(true);
+  };
+
+  const handleOpenEditOptionGroupModal = (grp: OptionGroup) => {
+    setEditingOptionGroup(grp);
+    setOptionGroupFormTitle(grp.title);
+    setOptionGroupFormMin(grp.minSelection);
+    setOptionGroupFormMax(grp.maxSelection);
+    setOptionGroupFormItems(
+      grp.options && grp.options.length > 0
+        ? grp.options.map(o => ({ id: o.id, name: o.name, priceModifier: o.priceModifier, isDefault: Boolean(o.isDefault) }))
+        : [{ name: '', priceModifier: 0, isDefault: false }]
+    );
+    setIsOptionGroupModalOpen(true);
+  };
+
+  const handleSaveOptionGroup = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!optionGroupFormTitle.trim()) return;
+    setOptionGroupFormSubmitting(true);
+
+    const validOptions = optionGroupFormItems.filter(it => it.name.trim().length > 0);
+    const payload = {
+      title: optionGroupFormTitle.trim(),
+      min_selection: parseInt(String(optionGroupFormMin)),
+      max_selection: parseInt(String(optionGroupFormMax)),
+      options: validOptions
+    };
+
+    try {
+      const url = editingOptionGroup ? `/api/admin/option-groups/${editingOptionGroup.id}` : '/api/admin/option-groups';
+      const method = editingOptionGroup ? 'PUT' : 'POST';
+      const response = await fetch(url, {
+        method,
+        headers: adminHeaders(),
+        body: JSON.stringify(payload)
+      });
+      if (response.status === 401) { handleUnauthorized(); return; }
+      if (response.ok) {
+        setIsOptionGroupModalOpen(false);
+        await fetchMenuCatalog();
+        setNotificationBox({
+          isOpen: true,
+          type: 'success',
+          title: editingOptionGroup ? 'Modifier Group Updated' : 'Modifier Group Created',
+          message: `Modifier group "${optionGroupFormTitle}" saved successfully.`
+        });
+      }
+    } catch (err) {
+      console.error('Failed to save modifier group:', err);
+    } finally {
+      setOptionGroupFormSubmitting(false);
+    }
+  };
+
+  const handleDeleteOptionGroup = (groupId: number | string, groupTitle: string) => {
+    setConfirmModal({
+      isOpen: true,
+      title: 'Delete Modifier Group',
+      message: `Are you sure you want to delete "${groupTitle}"?`,
+      detail: 'This option group will be unlinked from all categories and dishes.',
+      confirmText: 'Yes, Delete Group',
+      cancelText: 'Cancel',
+      isDanger: true,
+      onConfirm: async () => {
+        try {
+          const response = await fetch(`/api/admin/option-groups/${groupId}`, {
+            method: 'DELETE',
+            headers: adminHeaders()
+          });
+          if (response.status === 401) { handleUnauthorized(); return; }
+          if (response.ok) {
+            await fetchMenuCatalog();
+            setNotificationBox({
+              isOpen: true,
+              type: 'success',
+              title: 'Modifier Group Deleted',
+              message: `"${groupTitle}" was removed.`
+            });
+          }
+        } catch (err) {
+          console.error('Failed to delete option group:', err);
+        }
+      }
+    });
+  };
+
+  // Deals Handlers
+  const handleOpenCreateDealModal = () => {
+    setEditingDeal(null);
+    setDealFormTitle('');
+    setDealFormDescription('');
+    setDealFormBundlePrice('19.95');
+    setDealFormBadge('POPULAR');
+    setDealFormSteps([
+      { stepName: 'Choose Main Dish', categoryId: catalogCategories[0]?.id || '', count: 1 }
+    ]);
+    setIsDealModalOpen(true);
+  };
+
+  const handleOpenEditDealModal = (deal: MenuDeal) => {
+    setEditingDeal(deal);
+    setDealFormTitle(deal.title);
+    setDealFormDescription(deal.description || '');
+    setDealFormBundlePrice(String(deal.bundlePrice));
+    setDealFormBadge(deal.badgeText || '');
+    setDealFormSteps(deal.steps || []);
+    setIsDealModalOpen(true);
+  };
+
+  const handleSaveDeal = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!dealFormTitle.trim() || !dealFormBundlePrice) return;
+    setDealFormSubmitting(true);
+
+    const payload = {
+      title: dealFormTitle.trim(),
+      description: dealFormDescription.trim(),
+      bundle_price: parseFloat(dealFormBundlePrice) || 0,
+      badge_text: dealFormBadge.trim() || undefined,
+      steps: dealFormSteps.filter(s => s.stepName.trim())
+    };
+
+    try {
+      const url = editingDeal ? `/api/admin/deals/${editingDeal.id}` : '/api/admin/deals';
+      const method = editingDeal ? 'PUT' : 'POST';
+      const response = await fetch(url, {
+        method,
+        headers: adminHeaders(),
+        body: JSON.stringify(payload)
+      });
+      if (response.status === 401) { handleUnauthorized(); return; }
+      if (response.ok) {
+        setIsDealModalOpen(false);
+        await fetchMenuCatalog();
+        setNotificationBox({
+          isOpen: true,
+          type: 'success',
+          title: editingDeal ? 'Deal Updated' : 'Deal Created',
+          message: `Deal "${dealFormTitle}" saved successfully.`
+        });
+      }
+    } catch (err) {
+      console.error('Failed to save deal:', err);
+    } finally {
+      setDealFormSubmitting(false);
+    }
+  };
+
+  const handleDeleteDeal = (dealId: string, dealTitle: string) => {
+    setConfirmModal({
+      isOpen: true,
+      title: 'Delete Deal Package',
+      message: `Are you sure you want to delete deal "${dealTitle}"?`,
+      detail: 'This combo offer will be removed from customer ordering.',
+      confirmText: 'Yes, Delete Deal',
+      cancelText: 'Cancel',
+      isDanger: true,
+      onConfirm: async () => {
+        try {
+          const response = await fetch(`/api/admin/deals/${dealId}`, {
+            method: 'DELETE',
+            headers: adminHeaders()
+          });
+          if (response.status === 401) { handleUnauthorized(); return; }
+          if (response.ok) {
+            await fetchMenuCatalog();
+            setNotificationBox({
+              isOpen: true,
+              type: 'success',
+              title: 'Deal Deleted',
+              message: `"${dealTitle}" was deleted.`
+            });
+          }
+        } catch (err) {
+          console.error('Failed to delete deal:', err);
+        }
+      }
+    });
   };
 
   // Auto-verify existing token on component mount
@@ -973,6 +1520,7 @@ Beverages | Tea or Coffee`);
       fetchSettings();
       fetchNotificationEmails();
       fetchSmtpSettings();
+      fetchMenuCatalog();
     }
   }, [isAuthenticated]);
 
@@ -2567,175 +3115,623 @@ Beverages | Tea or Coffee`);
         </div>
       )}
 
-      {/* 3. TAB: CATALOG MENU DIRECTORY INSPECTOR */}
+      {/* 3. TAB: MENU, MODIFIERS & DEALS STUDIO */}
       {adminTab === 'catalog' && (
-        <div className="bg-white border border-brand-dark/10 p-6 space-y-8 animate-fade-in" id="admin-catalog-tab">
+        <div className="bg-white border border-brand-dark/10 p-4 sm:p-8 space-y-8 animate-fade-in text-left" id="admin-catalog-tab">
           
-          <div className="border-b border-brand-dark/5 pb-4 flex justify-between items-center">
-            <h2 className="font-serif text-xl font-bold text-brand-dark flex items-center">
-              <ListFilter className="w-5 h-5 mr-2 text-brand-accent" />
-              Restaurant Category Catalog
-            </h2>
-            <span className="font-mono text-xs text-brand-muted bg-brand-dark/5 px-2 py-0.5 border border-brand-dark/5">
-              {MENU_ITEMS.length} Active Dishes
-            </span>
+          {/* Studio Header & Stats */}
+          <div className="border-b border-brand-dark/10 pb-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+            <div>
+              <h2 className="font-serif text-2xl font-bold text-brand-dark flex items-center gap-2.5">
+                <CookingPot className="w-6 h-6 text-brand-accent" />
+                <span>Restaurant Menu &amp; Modifiers Studio</span>
+              </h2>
+              <p className="font-sans text-xs text-brand-muted mt-1">
+                Real-time control over categories, dishes, modifiers, dips, cold drinks, and combo packages.
+              </p>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onClick={fetchMenuCatalog}
+                disabled={catalogLoading}
+                className="border border-brand-dark/15 hover:border-brand-dark text-brand-dark px-3.5 py-2 font-mono text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 rounded-none transition-all active:scale-95"
+              >
+                <RefreshCw className={`w-3.5 h-3.5 ${catalogLoading ? 'animate-spin' : ''}`} />
+                <span>SYNC LIVE CATALOG</span>
+              </button>
+            </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            {CATEGORIES.map((category) => {
-              const categoryItems = MENU_ITEMS.filter(it => it.category === category);
-              return (
-                <div key={category} className="border border-brand-dark/10 p-4 space-y-4 bg-brand-beige/5 shadow-[0_2px_8px_rgba(44,38,33,0.005)]">
-                  <h3 className="font-serif text-lg font-bold text-brand-dark border-b border-brand-dark/5 pb-2 text-left uppercase flex justify-between items-center">
-                    <span>{category}</span>
-                    <span className="font-mono text-xs bg-brand-dark text-white px-2 py-0.5">{categoryItems.length}</span>
-                  </h3>
+          {/* Sub-Tabs: Dishes | Categories | Modifiers & Dips | Deals */}
+          <div className="flex space-x-2 border-b border-brand-dark/10 pb-2 overflow-x-auto whitespace-nowrap scrollbar-none">
+            <button
+              type="button"
+              onClick={() => setCatalogSubTab('dishes')}
+              className={`px-4 py-2 font-mono text-xs font-bold uppercase tracking-wider flex items-center gap-2 rounded-none transition-all ${
+                catalogSubTab === 'dishes'
+                  ? 'bg-brand-dark text-white shadow-sm'
+                  : 'bg-brand-dark/5 text-brand-muted hover:text-brand-dark hover:bg-brand-dark/10'
+              }`}
+            >
+              <UtensilsCrossed className="w-3.5 h-3.5" />
+              <span>Dishes &amp; Products ({catalogProducts.length})</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setCatalogSubTab('categories')}
+              className={`px-4 py-2 font-mono text-xs font-bold uppercase tracking-wider flex items-center gap-2 rounded-none transition-all ${
+                catalogSubTab === 'categories'
+                  ? 'bg-brand-dark text-white shadow-sm'
+                  : 'bg-brand-dark/5 text-brand-muted hover:text-brand-dark hover:bg-brand-dark/10'
+              }`}
+            >
+              <Layers className="w-3.5 h-3.5" />
+              <span>Categories ({catalogCategories.length})</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setCatalogSubTab('modifiers')}
+              className={`px-4 py-2 font-mono text-xs font-bold uppercase tracking-wider flex items-center gap-2 rounded-none transition-all ${
+                catalogSubTab === 'modifiers'
+                  ? 'bg-brand-dark text-white shadow-sm'
+                  : 'bg-brand-dark/5 text-brand-muted hover:text-brand-dark hover:bg-brand-dark/10'
+              }`}
+            >
+              <Sliders className="w-3.5 h-3.5" />
+              <span>Modifiers &amp; Dips ({catalogOptionGroups.length})</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setCatalogSubTab('deals')}
+              className={`px-4 py-2 font-mono text-xs font-bold uppercase tracking-wider flex items-center gap-2 rounded-none transition-all ${
+                catalogSubTab === 'deals'
+                  ? 'bg-brand-dark text-white shadow-sm'
+                  : 'bg-brand-dark/5 text-brand-muted hover:text-brand-dark hover:bg-brand-dark/10'
+              }`}
+            >
+              <Tag className="w-3.5 h-3.5" />
+              <span>Deals &amp; Combos ({catalogDeals.length})</span>
+            </button>
+          </div>
 
-                  <div className="divide-y divide-brand-dark/5 space-y-3 max-h-[400px] overflow-y-auto pr-1">
-                    {categoryItems.map((item, idx) => (
-                      <div key={item.id} className={`pt-3 space-y-1.5 ${idx === 0 ? 'border-t-0 pt-0' : ''}`}>
-                        <div className="flex justify-between items-start font-mono text-xs">
-                          <div>
-                            <span className="font-serif text-sm font-bold text-brand-dark flex items-center gap-1.5">
-                              {item.name}
-                              {item.isVeg && (
-                                <span className="w-1.5 h-1.5 bg-emerald-600 inline-block rounded-none ring-1" title="Veg Available"></span>
-                              )}
-                            </span>
-                            <span className="text-[10px] text-brand-muted block uppercase">DISh ID: {item.id}</span>
-                          </div>
-                          <span className="font-bold text-brand-dark">&euro;{item.price.toFixed(2)}</span>
-                        </div>
+          {/* 1. DISHES & PRODUCTS VIEW */}
+          {catalogSubTab === 'dishes' && (
+            <div className="space-y-6">
+              {/* Action Toolbar */}
+              <div className="flex flex-col md:flex-row justify-between items-stretch md:items-center gap-3 bg-brand-beige/10 p-3.5 border border-brand-dark/10">
+                <div className="flex flex-wrap items-center gap-2 flex-grow">
+                  {/* Search Bar */}
+                  <div className="relative min-w-[200px] flex-grow sm:flex-grow-0 sm:w-64">
+                    <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-brand-muted" />
+                    <input
+                      type="text"
+                      placeholder="Search dish by name or ID..."
+                      value={dishSearch}
+                      onChange={(e) => setDishSearch(e.target.value)}
+                      className="w-full pl-8 pr-3 py-1.5 text-xs font-mono border border-brand-dark/15 focus:border-brand-dark outline-none bg-white rounded-none"
+                    />
+                  </div>
+                  {/* Category Filter */}
+                  <select
+                    value={dishCategoryFilter}
+                    onChange={(e) => setDishCategoryFilter(e.target.value)}
+                    className="py-1.5 px-3 text-xs font-mono border border-brand-dark/15 focus:border-brand-dark outline-none bg-white rounded-none"
+                  >
+                    <option value="ALL">All Categories ({catalogProducts.length})</option>
+                    {catalogCategories.map(c => (
+                      <option key={c.id} value={c.name}>
+                        {c.name} ({catalogProducts.filter(p => p.category === c.name).length})
+                      </option>
+                    ))}
+                  </select>
+                  {/* Stock Filter */}
+                  <div className="flex items-center border border-brand-dark/15 bg-white p-0.5">
+                    <button
+                      type="button"
+                      onClick={() => setDishStockFilter('ALL')}
+                      className={`px-2.5 py-1 text-[10px] font-mono font-bold uppercase transition-colors ${
+                        dishStockFilter === 'ALL' ? 'bg-brand-dark text-white' : 'text-brand-muted hover:text-brand-dark'
+                      }`}
+                    >
+                      All
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setDishStockFilter('IN_STOCK')}
+                      className={`px-2.5 py-1 text-[10px] font-mono font-bold uppercase transition-colors ${
+                        dishStockFilter === 'IN_STOCK' ? 'bg-emerald-700 text-white' : 'text-brand-muted hover:text-brand-dark'
+                      }`}
+                    >
+                      In Stock
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setDishStockFilter('SOLD_OUT')}
+                      className={`px-2.5 py-1 text-[10px] font-mono font-bold uppercase transition-colors ${
+                        dishStockFilter === 'SOLD_OUT' ? 'bg-rose-700 text-white' : 'text-brand-muted hover:text-brand-dark'
+                      }`}
+                    >
+                      Sold Out
+                    </button>
+                  </div>
+                </div>
 
-                        {item.description && (
-                          <p className="text-xs text-brand-muted leading-relaxed font-sans font-normal text-left">
-                            {item.description}
-                          </p>
-                        )}
-                        
-                        {item.sizeOptions && item.sizeOptions.length > 0 && (
-                          <div className="flex flex-wrap items-center gap-1.5 pt-1">
-                            <span className="font-mono text-[9px] text-brand-accent tracking-widest font-bold uppercase">SIZES:</span>
-                            {item.sizeOptions.map(sz => (
-                              <span key={sz.name} className="bg-brand-dark/5 border border-brand-dark/5 px-1.5 py-0.5 text-[9px] font-mono text-brand-muted">
-                                {sz.name} (&euro;{sz.price.toFixed(2)})
+                <button
+                  type="button"
+                  onClick={handleOpenCreateDishModal}
+                  className="bg-brand-accent hover:bg-brand-dark text-white px-5 py-2 font-mono text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-1.5 rounded-none shadow-md transition-all active:scale-95"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>ADD NEW DISH</span>
+                </button>
+              </div>
+
+              {/* Dishes Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+                {catalogProducts
+                  .filter(p => {
+                    const matchesSearch = dishSearch.trim() === '' || 
+                      p.name.toLowerCase().includes(dishSearch.toLowerCase()) || 
+                      p.id.toLowerCase().includes(dishSearch.toLowerCase()) ||
+                      (p.description && p.description.toLowerCase().includes(dishSearch.toLowerCase()));
+                    const matchesCat = dishCategoryFilter === 'ALL' || p.category === dishCategoryFilter;
+                    const matchesStock = dishStockFilter === 'ALL' || 
+                      (dishStockFilter === 'IN_STOCK' && !p.isSoldOut) ||
+                      (dishStockFilter === 'SOLD_OUT' && p.isSoldOut);
+                    return matchesSearch && matchesCat && matchesStock;
+                  })
+                  .map((product) => {
+                    const dishImage = product.imageUrl || settingsData[`clay_oven_dish_image_${product.id}`];
+                    return (
+                      <div
+                        key={product.id}
+                        className={`border transition-all bg-white relative flex flex-col justify-between ${
+                          product.isSoldOut
+                            ? 'border-rose-300 bg-rose-50/10'
+                            : product.isActive === false
+                            ? 'border-brand-dark/10 opacity-60 bg-gray-50'
+                            : 'border-brand-dark/15 hover:border-brand-dark/40 shadow-sm'
+                        }`}
+                      >
+                        {/* Top Card Area */}
+                        <div className="p-4 space-y-3">
+                          <div className="flex justify-between items-start gap-2">
+                            <div className="flex-1 min-w-0">
+                              <span className="text-[10px] font-mono text-brand-muted uppercase tracking-wider block">
+                                {product.category} &bull; ID: {product.id}
                               </span>
-                            ))}
-                          </div>
-                        )}
-
-                        {/* Dish Photo Editor Section */}
-                        <div className="mt-2.5 pt-2.5 border-t border-dashed border-brand-dark/10 bg-brand-beige/25 p-2 space-y-3">
-                          <div className="flex items-center justify-between">
-                            <span className="text-[10px] font-mono text-brand-muted uppercase tracking-wider text-left">
-                              Dish Photo
-                            </span>
-                            {settingsData[`clay_oven_dish_image_${item.id}`] && (
-                              <button
-                                type="button"
-                                onClick={async () => {
-                                  try {
-                                    const response = await fetch('/api/settings', {
-                                      method: 'POST',
-                                      headers: { ...adminHeaders(), 'Content-Type': 'application/json' },
-                                      body: JSON.stringify({ [`clay_oven_dish_image_${item.id}`]: '' })
-                                    });
-                                    if (response.ok) {
-                                      fetchSettings();
-                                      setNotificationBox({
-                                        isOpen: true,
-                                        type: 'info',
-                                        title: 'Photo Removed',
-                                        message: `Photo for "${item.name}" was removed.`
-                                      });
-                                    }
-                                  } catch (err) {
-                                    console.error(err);
-                                  }
-                                }}
-                                className="text-red-600 hover:text-red-800 text-[10px] font-mono font-bold uppercase"
-                              >
-                                Remove
-                              </button>
-                            )}
-                          </div>
-                          <div className="flex flex-col sm:flex-row sm:items-center gap-2.5 w-full">
-                            <div className="flex items-center gap-2 flex-grow">
-                              <div className="w-12 h-12 border border-brand-dark/10 overflow-hidden bg-white flex-shrink-0 flex items-center justify-center">
-                                {settingsData[`clay_oven_dish_image_${item.id}`] ? (
-                                  <img
-                                    src={settingsData[`clay_oven_dish_image_${item.id}`]}
-                                    alt={item.name}
-                                    className="w-full h-full object-cover"
-                                  />
-                                ) : (
-                                  <span className="text-[9px] text-brand-muted font-mono uppercase text-center leading-tight">No Photo</span>
+                              <h3 className="font-serif text-base font-bold text-brand-dark flex items-center gap-1.5 truncate">
+                                {product.name}
+                                {product.isVeg && (
+                                  <span className="w-2 h-2 bg-emerald-600 rounded-full flex-shrink-0" title="Vegetarian"></span>
                                 )}
-                              </div>
+                              </h3>
+                            </div>
+                            <span className="font-mono text-sm font-bold text-brand-dark bg-brand-beige/40 px-2 py-0.5 border border-brand-dark/10 shrink-0">
+                              &euro;{product.price.toFixed(2)}
+                            </span>
+                          </div>
+
+                          {product.description && (
+                            <p className="font-sans text-xs text-brand-muted leading-relaxed line-clamp-2">
+                              {product.description}
+                            </p>
+                          )}
+
+                          {/* Sizes Badges */}
+                          {product.sizeOptions && product.sizeOptions.length > 0 && (
+                            <div className="flex flex-wrap items-center gap-1 pt-1">
+                              <span className="text-[9px] font-mono text-brand-accent font-bold uppercase">Sizes:</span>
+                              {product.sizeOptions.map(sz => (
+                                <span key={sz.name} className="bg-brand-dark/5 border border-brand-dark/10 px-1.5 py-0.5 text-[9px] font-mono text-brand-dark">
+                                  {sz.name} (&euro;{sz.price.toFixed(2)})
+                                </span>
+                              ))}
+                            </div>
+                          )}
+
+                          {/* Allergens */}
+                          {product.allergens && product.allergens.length > 0 && (
+                            <div className="flex flex-wrap items-center gap-1">
+                              <span className="text-[9px] font-mono text-brand-muted font-bold uppercase">Allergens:</span>
+                              {product.allergens.map(aIdx => {
+                                const allergen = ALLERGENS.find(al => al.index === aIdx);
+                                return (
+                                  <span key={aIdx} className="bg-amber-50 text-amber-900 border border-amber-200 px-1 py-0.2 text-[8px] font-mono">
+                                    {allergen ? allergen.name : `#${aIdx}`}
+                                  </span>
+                                );
+                              })}
+                            </div>
+                          )}
+
+                          {/* Linked Modifier Groups */}
+                          {product.optionGroupIds && product.optionGroupIds.length > 0 && (
+                            <div className="flex flex-wrap items-center gap-1">
+                              <span className="text-[9px] font-mono text-brand-accent font-bold uppercase">Options:</span>
+                              {product.optionGroupIds.map(gId => {
+                                const grp = catalogOptionGroups.find(g => String(g.id) === String(gId));
+                                return (
+                                  <span key={gId} className="bg-brand-accent/10 text-brand-accent border border-brand-accent/20 px-1.5 py-0.5 text-[9px] font-mono font-bold">
+                                    ⚡ {grp ? grp.title : `Group #${gId}`}
+                                  </span>
+                                );
+                              })}
+                            </div>
+                          )}
+
+                          {/* Image preview & quick URL */}
+                          <div className="flex items-center gap-2 pt-2 border-t border-dashed border-brand-dark/10">
+                            <div className="w-10 h-10 border border-brand-dark/15 overflow-hidden bg-brand-dark/5 flex-shrink-0 flex items-center justify-center">
+                              {dishImage ? (
+                                <img src={dishImage} alt={product.name} className="w-full h-full object-cover" />
+                              ) : (
+                                <span className="text-[8px] text-brand-muted font-mono uppercase text-center">No Pic</span>
+                              )}
+                            </div>
+                            <div className="flex-1 min-w-0">
                               <input
                                 type="text"
                                 placeholder="Paste image URL..."
-                                value={settingsData[`clay_oven_dish_image_${item.id}`] || ''}
+                                value={settingsData[`clay_oven_dish_image_${product.id}`] || product.imageUrl || ''}
                                 onChange={async (e) => {
                                   const newVal = e.target.value;
-                                  setSettingsData(prev => ({ ...prev, [`clay_oven_dish_image_${item.id}`]: newVal }));
+                                  setSettingsData((prev: any) => ({ ...prev, [`clay_oven_dish_image_${product.id}`]: newVal }));
                                   try {
                                     await fetch('/api/settings', {
                                       method: 'POST',
                                       headers: { ...adminHeaders(), 'Content-Type': 'application/json' },
-                                      body: JSON.stringify({ [`clay_oven_dish_image_${item.id}`]: newVal })
+                                      body: JSON.stringify({ [`clay_oven_dish_image_${product.id}`]: newVal })
                                     });
                                   } catch (err) {
                                     console.error(err);
                                   }
                                 }}
-                                className="flex-grow border border-brand-dark/15 p-1.5 px-2 text-[10px] font-mono focus:border-brand-dark outline-none bg-white rounded-none w-full min-w-0"
+                                className="w-full border border-brand-dark/15 p-1 px-2 text-[10px] font-mono focus:border-brand-dark outline-none bg-white rounded-none"
                               />
                             </div>
-                            <label className="bg-brand-dark hover:bg-brand-accent text-white py-1.5 px-3 text-[10px] font-mono font-bold uppercase rounded-none cursor-pointer text-center sm:flex-shrink-0 flex items-center justify-center">
-                              <span>Upload file</span>
-                              <input
-                                type="file"
-                                accept="image/*"
-                                className="hidden"
-                                onChange={async (e) => {
-                                  const file = e.target.files?.[0];
-                                  if (!file) return;
-                                  const reader = new FileReader();
-                                  reader.onload = async () => {
-                                    const base64Data = reader.result as string;
-                                    try {
-                                      const response = await fetch('/api/settings', {
-                                        method: 'POST',
-                                        headers: { ...adminHeaders(), 'Content-Type': 'application/json' },
-                                        body: JSON.stringify({ [`clay_oven_dish_image_${item.id}`]: base64Data })
-                                      });
-                                      if (response.ok) {
-                                        fetchSettings();
-                                        setNotificationBox({
-                                          isOpen: true,
-                                          type: 'success',
-                                          title: 'Photo Uploaded',
-                                          message: `Photo for "${item.name}" was uploaded successfully.`
-                                        });
-                                      }
-                                    } catch (err) {
-                                      console.error(err);
-                                    }
-                                  };
-                                  reader.readAsDataURL(file);
-                                }}
-                              />
-                            </label>
+                          </div>
+                        </div>
+
+                        {/* Bottom Actions Row */}
+                        <div className="p-3 bg-brand-beige/20 border-t border-brand-dark/10 flex flex-wrap items-center justify-between gap-2">
+                          <div className="flex items-center gap-1.5">
+                            {/* In Stock / Sold Out Toggle */}
+                            <button
+                              type="button"
+                              onClick={() => handleToggleDishStock(product.id, Boolean(product.isSoldOut))}
+                              className={`px-2 py-1 font-mono text-[10px] font-bold uppercase border transition-all active:scale-95 ${
+                                product.isSoldOut
+                                  ? 'bg-rose-700 text-white border-rose-800'
+                                  : 'bg-emerald-700 text-white border-emerald-800'
+                              }`}
+                              title="Toggle instant item availability"
+                            >
+                              {product.isSoldOut ? '✕ SOLD OUT' : '✓ IN STOCK'}
+                            </button>
+
+                            {/* Active / Hidden Toggle */}
+                            <button
+                              type="button"
+                              onClick={() => handleToggleDishActive(product.id, product.isActive !== false)}
+                              className={`px-2 py-1 font-mono text-[10px] font-bold uppercase border transition-all active:scale-95 ${
+                                product.isActive === false
+                                  ? 'bg-gray-600 text-white border-gray-700'
+                                  : 'bg-white text-brand-dark border-brand-dark/20 hover:border-brand-dark'
+                              }`}
+                              title="Toggle storefront visibility"
+                            >
+                              {product.isActive === false ? 'HIDDEN' : 'VISIBLE'}
+                            </button>
+                          </div>
+
+                          <div className="flex items-center gap-1.5">
+                            <button
+                              type="button"
+                              onClick={() => handleOpenEditDishModal(product)}
+                              className="border border-brand-dark/20 hover:border-brand-dark text-brand-dark bg-white px-2.5 py-1 font-mono text-[10px] font-bold uppercase rounded-none transition-all active:scale-95 flex items-center gap-1"
+                            >
+                              <Edit3 className="w-3 h-3" />
+                              <span>EDIT</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteDish(product.id, product.name)}
+                              className="border border-red-200 hover:border-red-600 text-red-600 bg-white px-2 py-1 font-mono text-[10px] font-bold uppercase rounded-none transition-all active:scale-95"
+                              title="Delete Dish"
+                            >
+                              <Trash2 className="w-3 h-3" />
+                            </button>
                           </div>
                         </div>
                       </div>
-                    ))}
-                  </div>
+                    );
+                  })}
+              </div>
+            </div>
+          )}
+
+          {/* 2. CATEGORIES VIEW */}
+          {catalogSubTab === 'categories' && (
+            <div className="space-y-6">
+              <div className="flex justify-between items-center bg-brand-beige/10 p-3.5 border border-brand-dark/10">
+                <div>
+                  <h3 className="font-serif text-lg font-bold text-brand-dark">Category Directory</h3>
+                  <p className="font-sans text-xs text-brand-muted">Organize menu order, display tabs, and assign default modifier groups.</p>
                 </div>
-              );
-            })}
-          </div>
+                <button
+                  type="button"
+                  onClick={handleOpenCreateCategoryModal}
+                  className="bg-brand-accent hover:bg-brand-dark text-white px-5 py-2 font-mono text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 rounded-none shadow-md transition-all active:scale-95"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>ADD CATEGORY</span>
+                </button>
+              </div>
+
+              <div className="border border-brand-dark/10 overflow-hidden divide-y divide-brand-dark/10 bg-white">
+                {catalogCategories.map((category, index) => {
+                  const dishCount = catalogProducts.filter(p => p.category === category.name).length;
+                  return (
+                    <div key={category.id} className="p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 hover:bg-brand-beige/5 transition-colors">
+                      <div className="flex items-center gap-3 min-w-0 flex-1">
+                        <div className="flex flex-col gap-0.5">
+                          <button
+                            type="button"
+                            disabled={index === 0}
+                            onClick={() => handleReorderCategory(category.id, 'up')}
+                            className="p-1 border border-brand-dark/10 hover:border-brand-dark disabled:opacity-20 text-brand-dark transition-colors"
+                            title="Move Up"
+                          >
+                            <ChevronUp className="w-3 h-3" />
+                          </button>
+                          <button
+                            type="button"
+                            disabled={index === catalogCategories.length - 1}
+                            onClick={() => handleReorderCategory(category.id, 'down')}
+                            className="p-1 border border-brand-dark/10 hover:border-brand-dark disabled:opacity-20 text-brand-dark transition-colors"
+                            title="Move Down"
+                          >
+                            <ChevronDown className="w-3 h-3" />
+                          </button>
+                        </div>
+
+                        <div className="space-y-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <span className="font-mono text-xs text-brand-muted font-bold">#{index + 1}</span>
+                            <h4 className="font-serif text-base font-bold text-brand-dark truncate">{category.name}</h4>
+                            <span className="font-mono text-[10px] bg-brand-dark/10 text-brand-dark px-2 py-0.5 font-bold">
+                              {dishCount} Dishes
+                            </span>
+                          </div>
+                          {category.description && (
+                            <p className="font-sans text-xs text-brand-muted">{category.description}</p>
+                          )}
+                          {category.optionGroupIds && category.optionGroupIds.length > 0 && (
+                            <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                              <span className="text-[9px] font-mono text-brand-accent font-bold uppercase">Default Modifiers:</span>
+                              {category.optionGroupIds.map(gId => {
+                                const grp = catalogOptionGroups.find(g => String(g.id) === String(gId));
+                                return (
+                                  <span key={gId} className="bg-brand-accent/10 text-brand-accent border border-brand-accent/20 px-2 py-0.5 text-[9px] font-mono font-bold">
+                                    ⚡ {grp ? grp.title : `Group #${gId}`}
+                                  </span>
+                                );
+                              })}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2 self-end sm:self-center shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => handleOpenEditCategoryModal(category)}
+                          className="border border-brand-dark/20 hover:border-brand-dark text-brand-dark px-3 py-1.5 font-mono text-xs font-bold uppercase rounded-none transition-all active:scale-95 flex items-center gap-1"
+                        >
+                          <Edit3 className="w-3 h-3" />
+                          <span>EDIT</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteCategory(category.id, category.name)}
+                          className="border border-red-200 hover:border-red-600 text-red-600 px-3 py-1.5 font-mono text-xs font-bold uppercase rounded-none transition-all active:scale-95 flex items-center gap-1"
+                        >
+                          <Trash2 className="w-3 h-3" />
+                          <span>DELETE</span>
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* 3. MODIFIERS & DIPS VIEW */}
+          {catalogSubTab === 'modifiers' && (
+            <div className="space-y-6">
+              <div className="flex justify-between items-center bg-brand-beige/10 p-3.5 border border-brand-dark/10">
+                <div>
+                  <h3 className="font-serif text-lg font-bold text-brand-dark">Modifiers, Dips &amp; Choice Groups</h3>
+                  <p className="font-sans text-xs text-brand-muted">
+                    Create reusable modifier popups (Included Sides, Free Cans, Paid Dips, Sauces, Spice levels) and attach to categories or dishes.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleOpenCreateOptionGroupModal}
+                  className="bg-brand-accent hover:bg-brand-dark text-white px-5 py-2 font-mono text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 rounded-none shadow-md transition-all active:scale-95"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>CREATE MODIFIER GROUP</span>
+                </button>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {catalogOptionGroups.map((group) => {
+                  const isMandatory = group.minSelection > 0;
+                  const isSingleChoice = group.maxSelection === 1;
+                  return (
+                    <div key={group.id} className="border border-brand-dark/15 bg-white p-5 space-y-4 shadow-sm flex flex-col justify-between">
+                      <div className="space-y-3">
+                        <div className="flex justify-between items-start gap-2 border-b border-brand-dark/10 pb-3">
+                          <div>
+                            <span className="text-[10px] font-mono text-brand-muted uppercase tracking-wider block">
+                              GROUP ID: #{group.id}
+                            </span>
+                            <h4 className="font-serif text-lg font-bold text-brand-dark">{group.title}</h4>
+                          </div>
+                          <span className={`px-2.5 py-1 text-[10px] font-mono font-bold uppercase border ${
+                            isMandatory
+                              ? 'bg-amber-50 text-amber-900 border-amber-300'
+                              : 'bg-blue-50 text-blue-900 border-blue-200'
+                          }`}>
+                            {isMandatory ? `Mandatory (Min: ${group.minSelection})` : 'Optional (Add-on)'}
+                            {isSingleChoice ? ' · Single Choice' : ` · Max: ${group.maxSelection}`}
+                          </span>
+                        </div>
+
+                        {/* Options List */}
+                        <div className="space-y-1.5">
+                          <span className="text-[10px] font-mono text-brand-muted uppercase font-bold block">Choices / Items:</span>
+                          <div className="divide-y divide-brand-dark/5 max-h-[220px] overflow-y-auto pr-1">
+                            {group.options && group.options.length > 0 ? (
+                              group.options.map((opt, i) => (
+                                <div key={opt.id || i} className="py-2 flex justify-between items-center text-xs font-mono">
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-brand-dark font-medium">{opt.name}</span>
+                                    {opt.isDefault && (
+                                      <span className="text-[8px] bg-emerald-50 text-emerald-800 border border-emerald-200 px-1 py-0.2 uppercase font-bold">Default</span>
+                                    )}
+                                  </div>
+                                  <span className="font-bold text-brand-dark">
+                                    {opt.priceModifier > 0 ? `+€${opt.priceModifier.toFixed(2)}` : 'FREE (€0.00)'}
+                                  </span>
+                                </div>
+                              ))
+                            ) : (
+                              <p className="text-xs font-mono text-brand-muted italic py-2">No options added yet.</p>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="pt-3 border-t border-brand-dark/10 flex justify-end gap-2">
+                        <button
+                          type="button"
+                          onClick={() => handleOpenEditOptionGroupModal(group)}
+                          className="border border-brand-dark/20 hover:border-brand-dark text-brand-dark px-3 py-1.5 font-mono text-xs font-bold uppercase rounded-none transition-all active:scale-95 flex items-center gap-1"
+                        >
+                          <Edit3 className="w-3 h-3" />
+                          <span>EDIT GROUP</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteOptionGroup(group.id, group.title)}
+                          className="border border-red-200 hover:border-red-600 text-red-600 px-3 py-1.5 font-mono text-xs font-bold uppercase rounded-none transition-all active:scale-95 flex items-center gap-1"
+                        >
+                          <Trash2 className="w-3 h-3" />
+                          <span>DELETE</span>
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* 4. DEALS & COMBOS VIEW */}
+          {catalogSubTab === 'deals' && (
+            <div className="space-y-6">
+              <div className="flex justify-between items-center bg-brand-beige/10 p-3.5 border border-brand-dark/10">
+                <div>
+                  <h3 className="font-serif text-lg font-bold text-brand-dark">Meal Combos &amp; Promotional Deals</h3>
+                  <p className="font-sans text-xs text-brand-muted">
+                    Create set-price combo bundles with step-by-step dish choices (e.g., Pizza Deals, Karahi Feast, Family Bundles).
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleOpenCreateDealModal}
+                  className="bg-brand-accent hover:bg-brand-dark text-white px-5 py-2 font-mono text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 rounded-none shadow-md transition-all active:scale-95"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>CREATE DEAL PACKAGE</span>
+                </button>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {catalogDeals.length > 0 ? (
+                  catalogDeals.map((deal) => (
+                    <div key={deal.id} className="border border-brand-dark/15 bg-white p-5 space-y-4 shadow-sm flex flex-col justify-between">
+                      <div className="space-y-3">
+                        <div className="flex justify-between items-start gap-2 border-b border-brand-dark/10 pb-3">
+                          <div>
+                            {deal.badgeText && (
+                              <span className="bg-brand-accent text-white px-2 py-0.5 text-[9px] font-mono font-bold uppercase tracking-wider block w-fit mb-1">
+                                {deal.badgeText}
+                              </span>
+                            )}
+                            <h4 className="font-serif text-lg font-bold text-brand-dark">{deal.title}</h4>
+                          </div>
+                          <span className="font-mono text-base font-bold text-brand-accent bg-brand-beige/40 px-2.5 py-1 border border-brand-dark/10">
+                            &euro;{deal.bundlePrice.toFixed(2)}
+                          </span>
+                        </div>
+
+                        {deal.description && (
+                          <p className="font-sans text-xs text-brand-muted leading-relaxed">{deal.description}</p>
+                        )}
+
+                        {/* Steps Preview */}
+                        <div className="space-y-1.5 bg-brand-dark/5 p-3">
+                          <span className="text-[10px] font-mono text-brand-muted uppercase font-bold block">Bundle Selection Steps:</span>
+                          <div className="space-y-1">
+                            {deal.steps && deal.steps.map((step, idx) => (
+                              <div key={idx} className="text-xs font-mono text-brand-dark flex items-center gap-2">
+                                <span className="font-bold text-brand-accent">Step {idx + 1}:</span>
+                                <span>{step.stepName} (Pick {step.count})</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="pt-3 border-t border-brand-dark/10 flex justify-end gap-2">
+                        <button
+                          type="button"
+                          onClick={() => handleOpenEditDealModal(deal)}
+                          className="border border-brand-dark/20 hover:border-brand-dark text-brand-dark px-3 py-1.5 font-mono text-xs font-bold uppercase rounded-none transition-all active:scale-95 flex items-center gap-1"
+                        >
+                          <Edit3 className="w-3 h-3" />
+                          <span>EDIT DEAL</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteDeal(deal.id, deal.title)}
+                          className="border border-red-200 hover:border-red-600 text-red-600 px-3 py-1.5 font-mono text-xs font-bold uppercase rounded-none transition-all active:scale-95 flex items-center gap-1"
+                        >
+                          <Trash2 className="w-3 h-3" />
+                          <span>DELETE</span>
+                        </button>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="col-span-full border border-dashed border-brand-dark/20 p-12 text-center space-y-3">
+                    <Tag className="w-8 h-8 text-brand-muted mx-auto" />
+                    <h4 className="font-serif text-base font-bold text-brand-dark">No Combo Deals Configured Yet</h4>
+                    <p className="font-sans text-xs text-brand-muted max-w-md mx-auto">
+                      Click "CREATE DEAL PACKAGE" above to create bundle packages that boost order values (e.g. 1 Karahi + 2 Naans + 2 Cans for €29.95).
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
 
         </div>
       )}
@@ -4611,6 +5607,747 @@ Beverages | Tea or Coffee`);
                 <span>{confirmModal.confirmText || 'Confirm & Save'}</span>
               </button>
             </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* 1. DISH CREATE / EDIT MODAL */}
+      {isDishModalOpen && createPortal(
+        <div className="fixed inset-0 z-[120] bg-black/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-6 overflow-y-auto animate-fade-in text-left">
+          <div className="bg-white border border-brand-dark/20 max-w-2xl w-full p-6 space-y-6 shadow-2xl my-8 max-h-[90vh] overflow-y-auto font-sans">
+            <div className="flex justify-between items-center border-b border-brand-dark/10 pb-3">
+              <div className="flex items-center gap-2">
+                <UtensilsCrossed className="w-5 h-5 text-brand-accent" />
+                <h3 className="font-serif text-lg font-bold text-brand-dark">
+                  {editingDish ? `Edit Dish: ${editingDish.name}` : 'Add New Dish to Menu'}
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsDishModalOpen(false)}
+                className="text-brand-muted hover:text-brand-dark transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveDish} className="space-y-5">
+              {/* Name & Category */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <label className="block font-mono text-[10px] text-brand-accent uppercase tracking-widest font-bold">
+                    Dish Name *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. Lamb Karahi"
+                    value={dishFormName}
+                    onChange={(e) => setDishFormName(e.target.value)}
+                    className="w-full border border-brand-dark/15 p-2 text-xs font-mono focus:border-brand-dark outline-none bg-white rounded-none"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="block font-mono text-[10px] text-brand-accent uppercase tracking-widest font-bold">
+                    Category *
+                  </label>
+                  <select
+                    required
+                    value={dishFormCategoryId}
+                    onChange={(e) => setDishFormCategoryId(e.target.value)}
+                    className="w-full border border-brand-dark/15 p-2 text-xs font-mono focus:border-brand-dark outline-none bg-white rounded-none"
+                  >
+                    {catalogCategories.map(c => (
+                      <option key={c.id} value={c.id}>{c.name}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              {/* Price & Veg Toggle */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-center">
+                <div className="space-y-1">
+                  <label className="block font-mono text-[10px] text-brand-accent uppercase tracking-widest font-bold">
+                    Base Price (&euro;) *
+                  </label>
+                  <input
+                    type="number"
+                    step="0.05"
+                    min="0"
+                    required
+                    value={dishFormPrice}
+                    onChange={(e) => setDishFormPrice(e.target.value)}
+                    className="w-full border border-brand-dark/15 p-2 text-xs font-mono focus:border-brand-dark outline-none bg-white rounded-none"
+                  />
+                </div>
+
+                <div className="pt-4">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={dishFormIsVeg}
+                      onChange={(e) => setDishFormIsVeg(e.target.checked)}
+                      className="w-4 h-4 text-emerald-600 focus:ring-emerald-500 rounded"
+                    />
+                    <span className="font-mono text-xs font-bold text-brand-dark">Vegetarian Dish</span>
+                  </label>
+                </div>
+              </div>
+
+              {/* Description */}
+              <div className="space-y-1">
+                <label className="block font-mono text-[10px] text-brand-accent uppercase tracking-widest font-bold">
+                  Description
+                </label>
+                <textarea
+                  rows={2}
+                  placeholder="Describe ingredients, cooking style, included sides or flavor notes..."
+                  value={dishFormDescription}
+                  onChange={(e) => setDishFormDescription(e.target.value)}
+                  className="w-full border border-brand-dark/15 p-2 text-xs font-sans focus:border-brand-dark outline-none bg-white resize-none rounded-none"
+                />
+              </div>
+
+              {/* Portion / Size Variations Builder */}
+              <div className="space-y-2 border border-brand-dark/10 p-3.5 bg-brand-beige/10">
+                <div className="flex justify-between items-center">
+                  <span className="font-mono text-xs font-bold text-brand-dark uppercase">
+                    Portion / Size Variations (Optional)
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setDishFormSizes([...dishFormSizes, { name: '', price: 0 }])}
+                    className="text-brand-accent hover:text-brand-dark text-[10px] font-mono font-bold uppercase flex items-center gap-1"
+                  >
+                    <Plus className="w-3 h-3" />
+                    <span>Add Size Option</span>
+                  </button>
+                </div>
+                {dishFormSizes.length > 0 ? (
+                  <div className="space-y-2">
+                    {dishFormSizes.map((sz, sIdx) => (
+                      <div key={sIdx} className="flex items-center gap-2">
+                        <input
+                          type="text"
+                          placeholder="e.g. 6 Pieces, 10 inch, Large"
+                          value={sz.name}
+                          onChange={(e) => {
+                            const updated = [...dishFormSizes];
+                            updated[sIdx].name = e.target.value;
+                            setDishFormSizes(updated);
+                          }}
+                          className="flex-1 border border-brand-dark/15 p-1.5 text-xs font-mono bg-white rounded-none"
+                        />
+                        <div className="flex items-center gap-1">
+                          <span className="text-xs font-mono">&euro;</span>
+                          <input
+                            type="number"
+                            step="0.05"
+                            placeholder="Price"
+                            value={sz.price || ''}
+                            onChange={(e) => {
+                              const updated = [...dishFormSizes];
+                              updated[sIdx].price = parseFloat(e.target.value) || 0;
+                              setDishFormSizes(updated);
+                            }}
+                            className="w-24 border border-brand-dark/15 p-1.5 text-xs font-mono bg-white rounded-none"
+                          />
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setDishFormSizes(dishFormSizes.filter((_, i) => i !== sIdx))}
+                          className="text-rose-600 hover:text-rose-800 p-1"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-[11px] font-mono text-brand-muted italic">
+                    No size variations. Base price will apply for this dish.
+                  </p>
+                )}
+              </div>
+
+              {/* 14 EU Allergens Selector */}
+              <div className="space-y-2 border border-brand-dark/10 p-3.5 bg-brand-beige/10">
+                <span className="font-mono text-xs font-bold text-brand-dark uppercase block">
+                  Allergen Information (14 EU Standard Allergens)
+                </span>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                  {ALLERGENS.map((allergen) => {
+                    const isSelected = dishFormAllergens.includes(allergen.index);
+                    return (
+                      <button
+                        key={allergen.index}
+                        type="button"
+                        onClick={() => {
+                          if (isSelected) {
+                            setDishFormAllergens(dishFormAllergens.filter(idx => idx !== allergen.index));
+                          } else {
+                            setDishFormAllergens([...dishFormAllergens, allergen.index]);
+                          }
+                        }}
+                        className={`p-1.5 px-2 text-[10px] font-mono font-bold text-left border flex items-center justify-between transition-all rounded-none ${
+                          isSelected
+                            ? 'bg-amber-100 border-amber-400 text-amber-950 font-bold'
+                            : 'bg-white border-brand-dark/10 text-brand-muted hover:border-brand-dark/30'
+                        }`}
+                      >
+                        <span>{allergen.index}. {allergen.name}</span>
+                        {isSelected && <Check className="w-3 h-3 text-amber-800" />}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Link Modifier Groups to this Dish */}
+              <div className="space-y-2 border border-brand-dark/10 p-3.5 bg-brand-beige/10">
+                <span className="font-mono text-xs font-bold text-brand-dark uppercase block">
+                  Attach Modifier &amp; Choice Popups (Free Drinks, Dips, Sauces)
+                </span>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {catalogOptionGroups.map((grp) => {
+                    const isAttached = dishFormOptionGroupIds.some(id => String(id) === String(grp.id));
+                    return (
+                      <button
+                        key={grp.id}
+                        type="button"
+                        onClick={() => {
+                          if (isAttached) {
+                            setDishFormOptionGroupIds(dishFormOptionGroupIds.filter(id => String(id) !== String(grp.id)));
+                          } else {
+                            setDishFormOptionGroupIds([...dishFormOptionGroupIds, grp.id]);
+                          }
+                        }}
+                        className={`p-2 text-xs font-mono text-left border flex items-center justify-between transition-all rounded-none ${
+                          isAttached
+                            ? 'bg-brand-accent/15 border-brand-accent text-brand-dark font-bold'
+                            : 'bg-white border-brand-dark/10 text-brand-muted hover:border-brand-dark/30'
+                        }`}
+                      >
+                        <div>
+                          <span className="block">{grp.title}</span>
+                          <span className="text-[9px] text-brand-muted">
+                            {grp.minSelection > 0 ? 'Mandatory' : 'Optional'} · Max: {grp.maxSelection}
+                          </span>
+                        </div>
+                        {isAttached ? (
+                          <CheckSquare className="w-4 h-4 text-brand-accent shrink-0" />
+                        ) : (
+                          <Square className="w-4 h-4 text-brand-muted shrink-0" />
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Dish Photo */}
+              <div className="space-y-2">
+                <label className="block font-mono text-[10px] text-brand-accent uppercase tracking-widest font-bold">
+                  Dish Image URL / Photo
+                </label>
+                <div className="flex gap-2 items-center">
+                  <input
+                    type="text"
+                    placeholder="https://... or paste image URL"
+                    value={dishFormImageUrl}
+                    onChange={(e) => setDishFormImageUrl(e.target.value)}
+                    className="flex-1 border border-brand-dark/15 p-2 text-xs font-mono focus:border-brand-dark outline-none bg-white rounded-none"
+                  />
+                  <label className="bg-brand-dark hover:bg-brand-accent text-white px-3 py-2 text-xs font-mono font-bold uppercase rounded-none cursor-pointer flex items-center justify-center">
+                    <span>Upload</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        const reader = new FileReader();
+                        reader.onload = () => {
+                          setDishFormImageUrl(reader.result as string);
+                        };
+                        reader.readAsDataURL(file);
+                      }}
+                    />
+                  </label>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="pt-4 border-t border-brand-dark/10 flex justify-end gap-3">
+                <button
+                  type="button"
+                  disabled={dishFormSubmitting}
+                  onClick={() => setIsDishModalOpen(false)}
+                  className="px-5 py-2.5 border border-brand-dark/20 text-brand-dark hover:bg-brand-dark/5 font-mono text-xs font-bold uppercase rounded-none transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={dishFormSubmitting}
+                  className="bg-brand-accent hover:bg-brand-dark text-white px-6 py-2.5 font-mono text-xs font-bold uppercase tracking-wider rounded-none transition-all flex items-center gap-2 shadow-md disabled:opacity-50"
+                >
+                  {dishFormSubmitting && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                  <span>{editingDish ? 'Save Dish Changes' : 'Create Dish'}</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* 2. CATEGORY CREATE / EDIT MODAL */}
+      {isCategoryModalOpen && createPortal(
+        <div className="fixed inset-0 z-[120] bg-black/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-6 overflow-y-auto animate-fade-in text-left">
+          <div className="bg-white border border-brand-dark/20 max-w-lg w-full p-6 space-y-6 shadow-2xl my-8 font-sans">
+            <div className="flex justify-between items-center border-b border-brand-dark/10 pb-3">
+              <div className="flex items-center gap-2">
+                <Layers className="w-5 h-5 text-brand-accent" />
+                <h3 className="font-serif text-lg font-bold text-brand-dark">
+                  {editingCategory ? `Edit Category: ${editingCategory.name}` : 'Add New Category'}
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsCategoryModalOpen(false)}
+                className="text-brand-muted hover:text-brand-dark transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveCategory} className="space-y-4">
+              <div className="space-y-1">
+                <label className="block font-mono text-[10px] text-brand-accent uppercase tracking-widest font-bold">
+                  Category Name *
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. Sizzlers & Grills"
+                  value={categoryFormName}
+                  onChange={(e) => setCategoryFormName(e.target.value)}
+                  className="w-full border border-brand-dark/15 p-2 text-xs font-mono focus:border-brand-dark outline-none bg-white rounded-none"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="block font-mono text-[10px] text-brand-accent uppercase tracking-widest font-bold">
+                  Description
+                </label>
+                <textarea
+                  rows={2}
+                  placeholder="Category description or chef specialty note..."
+                  value={categoryFormDescription}
+                  onChange={(e) => setCategoryFormDescription(e.target.value)}
+                  className="w-full border border-brand-dark/15 p-2 text-xs font-sans focus:border-brand-dark outline-none bg-white resize-none rounded-none"
+                />
+              </div>
+
+              {/* Category-Level Default Modifiers */}
+              <div className="space-y-2 border border-brand-dark/10 p-3.5 bg-brand-beige/10">
+                <span className="font-mono text-xs font-bold text-brand-dark uppercase block">
+                  Default Modifier Groups for this Category
+                </span>
+                <p className="font-sans text-[11px] text-brand-muted">
+                  All dishes inside this category will automatically display these modifier choices to customers.
+                </p>
+                <div className="space-y-2 pt-1">
+                  {catalogOptionGroups.map((grp) => {
+                    const isAttached = categoryFormOptionGroupIds.some(id => String(id) === String(grp.id));
+                    return (
+                      <button
+                        key={grp.id}
+                        type="button"
+                        onClick={() => {
+                          if (isAttached) {
+                            setCategoryFormOptionGroupIds(categoryFormOptionGroupIds.filter(id => String(id) !== String(grp.id)));
+                          } else {
+                            setCategoryFormOptionGroupIds([...categoryFormOptionGroupIds, grp.id]);
+                          }
+                        }}
+                        className={`w-full p-2 text-xs font-mono text-left border flex items-center justify-between transition-all rounded-none ${
+                          isAttached
+                            ? 'bg-brand-accent/15 border-brand-accent text-brand-dark font-bold'
+                            : 'bg-white border-brand-dark/10 text-brand-muted hover:border-brand-dark/30'
+                        }`}
+                      >
+                        <div>
+                          <span className="block">{grp.title}</span>
+                          <span className="text-[9px] text-brand-muted">
+                            {grp.minSelection > 0 ? 'Mandatory' : 'Optional'} · Max: {grp.maxSelection}
+                          </span>
+                        </div>
+                        {isAttached ? (
+                          <CheckSquare className="w-4 h-4 text-brand-accent shrink-0" />
+                        ) : (
+                          <Square className="w-4 h-4 text-brand-muted shrink-0" />
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div className="pt-3 border-t border-brand-dark/10 flex justify-end gap-3">
+                <button
+                  type="button"
+                  disabled={categoryFormSubmitting}
+                  onClick={() => setIsCategoryModalOpen(false)}
+                  className="px-5 py-2 border border-brand-dark/20 text-brand-dark hover:bg-brand-dark/5 font-mono text-xs font-bold uppercase rounded-none transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={categoryFormSubmitting}
+                  className="bg-brand-accent hover:bg-brand-dark text-white px-6 py-2 font-mono text-xs font-bold uppercase tracking-wider rounded-none transition-all flex items-center gap-2 shadow-md disabled:opacity-50"
+                >
+                  {categoryFormSubmitting && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                  <span>{editingCategory ? 'Save Category' : 'Create Category'}</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* 3. OPTION GROUP CREATE / EDIT MODAL */}
+      {isOptionGroupModalOpen && createPortal(
+        <div className="fixed inset-0 z-[120] bg-black/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-6 overflow-y-auto animate-fade-in text-left">
+          <div className="bg-white border border-brand-dark/20 max-w-xl w-full p-6 space-y-6 shadow-2xl my-8 max-h-[90vh] overflow-y-auto font-sans">
+            <div className="flex justify-between items-center border-b border-brand-dark/10 pb-3">
+              <div className="flex items-center gap-2">
+                <Sliders className="w-5 h-5 text-brand-accent" />
+                <h3 className="font-serif text-lg font-bold text-brand-dark">
+                  {editingOptionGroup ? `Edit Group: ${editingOptionGroup.title}` : 'Create Modifier / Choice Group'}
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsOptionGroupModalOpen(false)}
+                className="text-brand-muted hover:text-brand-dark transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveOptionGroup} className="space-y-4">
+              <div className="space-y-1">
+                <label className="block font-mono text-[10px] text-brand-accent uppercase tracking-widest font-bold">
+                  Group Title *
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. Choose Free Drink, Extra Dips, Spice Level"
+                  value={optionGroupFormTitle}
+                  onChange={(e) => setOptionGroupFormTitle(e.target.value)}
+                  className="w-full border border-brand-dark/15 p-2 text-xs font-mono focus:border-brand-dark outline-none bg-white rounded-none"
+                />
+              </div>
+
+              {/* Min & Max Selections */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <label className="block font-mono text-[10px] text-brand-accent uppercase tracking-widest font-bold">
+                    Min Selection (0 = Optional)
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    max="10"
+                    required
+                    value={optionGroupFormMin}
+                    onChange={(e) => setOptionGroupFormMin(parseInt(e.target.value) || 0)}
+                    className="w-full border border-brand-dark/15 p-2 text-xs font-mono focus:border-brand-dark outline-none bg-white rounded-none"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="block font-mono text-[10px] text-brand-accent uppercase tracking-widest font-bold">
+                    Max Selection (1 = Single Choice)
+                  </label>
+                  <input
+                    type="number"
+                    min="1"
+                    max="20"
+                    required
+                    value={optionGroupFormMax}
+                    onChange={(e) => setOptionGroupFormMax(parseInt(e.target.value) || 1)}
+                    className="w-full border border-brand-dark/15 p-2 text-xs font-mono focus:border-brand-dark outline-none bg-white rounded-none"
+                  />
+                </div>
+              </div>
+
+              {/* Choices / Items Rows */}
+              <div className="space-y-2 border border-brand-dark/10 p-3.5 bg-brand-beige/10">
+                <div className="flex justify-between items-center">
+                  <span className="font-mono text-xs font-bold text-brand-dark uppercase">
+                    Choices / Items
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setOptionGroupFormItems([...optionGroupFormItems, { name: '', priceModifier: 0, isDefault: false }])}
+                    className="text-brand-accent hover:text-brand-dark text-[10px] font-mono font-bold uppercase flex items-center gap-1"
+                  >
+                    <Plus className="w-3 h-3" />
+                    <span>Add Choice</span>
+                  </button>
+                </div>
+
+                <div className="space-y-2 max-h-[220px] overflow-y-auto pr-1">
+                  {optionGroupFormItems.map((opt, oIdx) => (
+                    <div key={oIdx} className="flex items-center gap-2">
+                      <input
+                        type="text"
+                        placeholder="Choice name (e.g. Cola, Garlic Mayo)"
+                        value={opt.name}
+                        onChange={(e) => {
+                          const updated = [...optionGroupFormItems];
+                          updated[oIdx].name = e.target.value;
+                          setOptionGroupFormItems(updated);
+                        }}
+                        className="flex-1 border border-brand-dark/15 p-1.5 text-xs font-mono bg-white rounded-none"
+                      />
+                      <div className="flex items-center gap-1">
+                        <span className="text-xs font-mono">+&euro;</span>
+                        <input
+                          type="number"
+                          step="0.05"
+                          min="0"
+                          placeholder="0.00"
+                          value={opt.priceModifier}
+                          onChange={(e) => {
+                            const updated = [...optionGroupFormItems];
+                            updated[oIdx].priceModifier = parseFloat(e.target.value) || 0;
+                            setOptionGroupFormItems(updated);
+                          }}
+                          className="w-20 border border-brand-dark/15 p-1.5 text-xs font-mono bg-white rounded-none"
+                        />
+                      </div>
+                      <label className="flex items-center gap-1 text-[10px] font-mono shrink-0 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={opt.isDefault}
+                          onChange={(e) => {
+                            const updated = [...optionGroupFormItems];
+                            updated[oIdx].isDefault = e.target.checked;
+                            setOptionGroupFormItems(updated);
+                          }}
+                          className="rounded"
+                        />
+                        <span>Default</span>
+                      </label>
+                      <button
+                        type="button"
+                        onClick={() => setOptionGroupFormItems(optionGroupFormItems.filter((_, i) => i !== oIdx))}
+                        className="text-rose-600 hover:text-rose-800 p-1"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="pt-3 border-t border-brand-dark/10 flex justify-end gap-3">
+                <button
+                  type="button"
+                  disabled={optionGroupFormSubmitting}
+                  onClick={() => setIsOptionGroupModalOpen(false)}
+                  className="px-5 py-2 border border-brand-dark/20 text-brand-dark hover:bg-brand-dark/5 font-mono text-xs font-bold uppercase rounded-none transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={optionGroupFormSubmitting}
+                  className="bg-brand-accent hover:bg-brand-dark text-white px-6 py-2 font-mono text-xs font-bold uppercase tracking-wider rounded-none transition-all flex items-center gap-2 shadow-md disabled:opacity-50"
+                >
+                  {optionGroupFormSubmitting && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                  <span>{editingOptionGroup ? 'Save Group' : 'Create Group'}</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* 4. DEAL CREATE / EDIT MODAL */}
+      {isDealModalOpen && createPortal(
+        <div className="fixed inset-0 z-[120] bg-black/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-6 overflow-y-auto animate-fade-in text-left">
+          <div className="bg-white border border-brand-dark/20 max-w-xl w-full p-6 space-y-6 shadow-2xl my-8 font-sans">
+            <div className="flex justify-between items-center border-b border-brand-dark/10 pb-3">
+              <div className="flex items-center gap-2">
+                <Tag className="w-5 h-5 text-brand-accent" />
+                <h3 className="font-serif text-lg font-bold text-brand-dark">
+                  {editingDeal ? `Edit Deal: ${editingDeal.title}` : 'Create Meal Combo Deal'}
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsDealModalOpen(false)}
+                className="text-brand-muted hover:text-brand-dark transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveDeal} className="space-y-4">
+              <div className="space-y-1">
+                <label className="block font-mono text-[10px] text-brand-accent uppercase tracking-widest font-bold">
+                  Deal Package Title *
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. Pizza Deal 1 or Royal Karahi Feast"
+                  value={dealFormTitle}
+                  onChange={(e) => setDealFormTitle(e.target.value)}
+                  className="w-full border border-brand-dark/15 p-2 text-xs font-mono focus:border-brand-dark outline-none bg-white rounded-none"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <label className="block font-mono text-[10px] text-brand-accent uppercase tracking-widest font-bold">
+                    Bundle Price (&euro;) *
+                  </label>
+                  <input
+                    type="number"
+                    step="0.05"
+                    min="0"
+                    required
+                    value={dealFormBundlePrice}
+                    onChange={(e) => setDealFormBundlePrice(e.target.value)}
+                    className="w-full border border-brand-dark/15 p-2 text-xs font-mono focus:border-brand-dark outline-none bg-white rounded-none"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="block font-mono text-[10px] text-brand-accent uppercase tracking-widest font-bold">
+                    Promotional Badge
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. POPULAR, SAVE €6.00"
+                    value={dealFormBadge}
+                    onChange={(e) => setDealFormBadge(e.target.value)}
+                    className="w-full border border-brand-dark/15 p-2 text-xs font-mono focus:border-brand-dark outline-none bg-white rounded-none"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <label className="block font-mono text-[10px] text-brand-accent uppercase tracking-widest font-bold">
+                  Description
+                </label>
+                <textarea
+                  rows={2}
+                  placeholder="e.g. 10 inch pizza with chips and cold can of drink..."
+                  value={dealFormDescription}
+                  onChange={(e) => setDealFormDescription(e.target.value)}
+                  className="w-full border border-brand-dark/15 p-2 text-xs font-sans focus:border-brand-dark outline-none bg-white resize-none rounded-none"
+                />
+              </div>
+
+              {/* Deal Steps Builder */}
+              <div className="space-y-2 border border-brand-dark/10 p-3.5 bg-brand-beige/10">
+                <div className="flex justify-between items-center">
+                  <span className="font-mono text-xs font-bold text-brand-dark uppercase">
+                    Step-by-Step Choice Rules
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setDealFormSteps([...dealFormSteps, { stepName: 'Choose Dish', categoryId: catalogCategories[0]?.id || '', count: 1 }])}
+                    className="text-brand-accent hover:text-brand-dark text-[10px] font-mono font-bold uppercase flex items-center gap-1"
+                  >
+                    <Plus className="w-3 h-3" />
+                    <span>Add Step</span>
+                  </button>
+                </div>
+
+                <div className="space-y-2">
+                  {dealFormSteps.map((st, stIdx) => (
+                    <div key={stIdx} className="flex items-center gap-2">
+                      <input
+                        type="text"
+                        placeholder="Step name (e.g. Choose 1 Main, Pick 2 Drinks)"
+                        value={st.stepName}
+                        onChange={(e) => {
+                          const updated = [...dealFormSteps];
+                          updated[stIdx].stepName = e.target.value;
+                          setDealFormSteps(updated);
+                        }}
+                        className="flex-1 border border-brand-dark/15 p-1.5 text-xs font-mono bg-white rounded-none"
+                      />
+                      <select
+                        value={st.categoryId}
+                        onChange={(e) => {
+                          const updated = [...dealFormSteps];
+                          updated[stIdx].categoryId = e.target.value;
+                          setDealFormSteps(updated);
+                        }}
+                        className="w-36 border border-brand-dark/15 p-1.5 text-xs font-mono bg-white rounded-none"
+                      >
+                        {catalogCategories.map(c => (
+                          <option key={c.id} value={c.id}>{c.name}</option>
+                        ))}
+                      </select>
+                      <input
+                        type="number"
+                        min="1"
+                        max="10"
+                        value={st.count}
+                        onChange={(e) => {
+                          const updated = [...dealFormSteps];
+                          updated[stIdx].count = parseInt(e.target.value) || 1;
+                          setDealFormSteps(updated);
+                        }}
+                        className="w-16 border border-brand-dark/15 p-1.5 text-xs font-mono bg-white rounded-none"
+                        title="Count to choose"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setDealFormSteps(dealFormSteps.filter((_, i) => i !== stIdx))}
+                        className="text-rose-600 hover:text-rose-800 p-1"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="pt-3 border-t border-brand-dark/10 flex justify-end gap-3">
+                <button
+                  type="button"
+                  disabled={dealFormSubmitting}
+                  onClick={() => setIsDealModalOpen(false)}
+                  className="px-5 py-2 border border-brand-dark/20 text-brand-dark hover:bg-brand-dark/5 font-mono text-xs font-bold uppercase rounded-none transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={dealFormSubmitting}
+                  className="bg-brand-accent hover:bg-brand-dark text-white px-6 py-2 font-mono text-xs font-bold uppercase tracking-wider rounded-none transition-all flex items-center gap-2 shadow-md disabled:opacity-50"
+                >
+                  {dealFormSubmitting && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                  <span>{editingDeal ? 'Save Deal' : 'Create Deal'}</span>
+                </button>
+              </div>
+            </form>
           </div>
         </div>,
         document.body

@@ -13,6 +13,8 @@ import rateLimit from 'express-rate-limit';
 import compression from 'compression';
 import bcrypt from 'bcryptjs';
 
+import { CATEGORIES as SEED_CATEGORIES, MENU_ITEMS as SEED_MENU_ITEMS } from './src/data/menuData.js';
+
 dotenv.config();
 
 // Resolve directories for ESM
@@ -59,6 +61,15 @@ const SMTP_CACHE_TTL = 10 * 60 * 1000;
 let notifEmailsCache = null;
 let notifEmailsCacheTime = 0;
 const NOTIF_EMAILS_CACHE_TTL = 10 * 60 * 1000;
+
+let menuCatalogCache = null;
+let menuCatalogCacheTime = 0;
+const MENU_CATALOG_CACHE_TTL = 10 * 60 * 1000; // 10 minutes
+
+function invalidateMenuCache() {
+  menuCatalogCache = null;
+  menuCatalogCacheTime = 0;
+}
 
 // Cached helper for SMTP configuration
 async function getSmtpConfig() {
@@ -196,31 +207,37 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ limit: '10mb', extended: true }));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
+const isDev = process.env.NODE_ENV !== 'production';
+
 // Rate limiting for sensitive endpoints
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,  // 15 minutes
-  max: 10,
+  max: isDev ? 1000 : 50,
+  skip: (req) => isDev || req.ip === '127.0.0.1' || req.ip === '::1',
   standardHeaders: true,
   legacyHeaders: false,
   message: { error: 'Too many attempts. Please try again after 15 minutes.' }
 });
 const otpLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 5,
+  max: isDev ? 1000 : 30,
+  skip: (req) => isDev || req.ip === '127.0.0.1' || req.ip === '::1',
   standardHeaders: true,
   legacyHeaders: false,
   message: { error: 'Too many OTP requests. Please try again after 15 minutes.' }
 });
 const orderLimiter = rateLimit({
   windowMs: 60 * 60 * 1000,  // 1 hour
-  max: 20,
+  max: isDev ? 1000 : 50,
+  skip: (req) => isDev || req.ip === '127.0.0.1' || req.ip === '::1',
   standardHeaders: true,
   legacyHeaders: false,
   message: { error: 'Too many order submissions. Please try again later.' }
 });
 const generalApiLimiter = rateLimit({
   windowMs: 1 * 60 * 1000,  // 1 minute
-  max: 100,
+  max: isDev ? 5000 : 1200,
+  skip: (req) => isDev || req.ip === '127.0.0.1' || req.ip === '::1',
   standardHeaders: true,
   legacyHeaders: false
 });
@@ -265,7 +282,7 @@ async function createIndexIfNotExists(connection, tableName, indexName, columnsS
   }
 }
 
-const TARGET_SCHEMA_VERSION = 2;
+const TARGET_SCHEMA_VERSION = 3;
 
 // Verify connection on startup & perform migration (with Schema Version Lock)
 (async () => {
@@ -650,6 +667,215 @@ Complimentary green tea | Beverage`]);
       'DELETE FROM order_notification_emails WHERE email = ?',
       ['customers@clayoven.ie']
     );
+
+    // --- 7. DYNAMIC MENU CATALOG, MODIFIERS & DEALS SCHEMA (Phase 1) ---
+    await connection.query(`
+      CREATE TABLE IF NOT EXISTS menu_categories (
+        id INT PRIMARY KEY AUTO_INCREMENT,
+        name VARCHAR(100) NOT NULL,
+        slug VARCHAR(100) UNIQUE NOT NULL,
+        description TEXT,
+        display_order INT DEFAULT 0,
+        is_active BOOLEAN DEFAULT TRUE,
+        image_url VARCHAR(500)
+      )
+    `);
+
+    await connection.query(`
+      CREATE TABLE IF NOT EXISTS menu_products (
+        id VARCHAR(100) PRIMARY KEY,
+        category_id INT NOT NULL,
+        name VARCHAR(255) NOT NULL,
+        description TEXT,
+        base_price DECIMAL(10,2) NOT NULL,
+        is_veg BOOLEAN DEFAULT FALSE,
+        is_active BOOLEAN DEFAULT TRUE,
+        is_sold_out BOOLEAN DEFAULT FALSE,
+        allergens JSON,
+        size_options JSON,
+        image_url VARCHAR(500),
+        display_order INT DEFAULT 0,
+        FOREIGN KEY (category_id) REFERENCES menu_categories(id) ON DELETE CASCADE
+      )
+    `);
+
+    await connection.query(`
+      CREATE TABLE IF NOT EXISTS option_groups (
+        id INT PRIMARY KEY AUTO_INCREMENT,
+        title VARCHAR(255) NOT NULL,
+        min_selection INT DEFAULT 0,
+        max_selection INT DEFAULT 1,
+        is_active BOOLEAN DEFAULT TRUE
+      )
+    `);
+
+    await connection.query(`
+      CREATE TABLE IF NOT EXISTS option_items (
+        id INT PRIMARY KEY AUTO_INCREMENT,
+        group_id INT NOT NULL,
+        name VARCHAR(255) NOT NULL,
+        price_modifier DECIMAL(10,2) DEFAULT 0.00,
+        is_default BOOLEAN DEFAULT FALSE,
+        display_order INT DEFAULT 0,
+        FOREIGN KEY (group_id) REFERENCES option_groups(id) ON DELETE CASCADE
+      )
+    `);
+
+    await connection.query(`
+      CREATE TABLE IF NOT EXISTS category_option_groups (
+        category_id INT NOT NULL,
+        group_id INT NOT NULL,
+        display_order INT DEFAULT 0,
+        PRIMARY KEY (category_id, group_id),
+        FOREIGN KEY (category_id) REFERENCES menu_categories(id) ON DELETE CASCADE,
+        FOREIGN KEY (group_id) REFERENCES option_groups(id) ON DELETE CASCADE
+      )
+    `);
+
+    await connection.query(`
+      CREATE TABLE IF NOT EXISTS product_option_groups (
+        product_id VARCHAR(100) NOT NULL,
+        group_id INT NOT NULL,
+        display_order INT DEFAULT 0,
+        PRIMARY KEY (product_id, group_id),
+        FOREIGN KEY (product_id) REFERENCES menu_products(id) ON DELETE CASCADE,
+        FOREIGN KEY (group_id) REFERENCES option_groups(id) ON DELETE CASCADE
+      )
+    `);
+
+    await connection.query(`
+      CREATE TABLE IF NOT EXISTS menu_deals (
+        id VARCHAR(100) PRIMARY KEY,
+        title VARCHAR(255) NOT NULL,
+        description TEXT,
+        bundle_price DECIMAL(10,2) NOT NULL,
+        badge_text VARCHAR(50),
+        is_active BOOLEAN DEFAULT TRUE,
+        image_url VARCHAR(500),
+        steps JSON
+      )
+    `);
+
+    // Add high-performance indexes for catalog queries
+    await createIndexIfNotExists(connection, 'menu_products', 'idx_menu_products_cat_active', 'category_id, is_active');
+    await createIndexIfNotExists(connection, 'option_items', 'idx_option_items_group_order', 'group_id, display_order');
+
+    // Safe Seeding of Categories
+    const [existingCategories] = await connection.query('SELECT COUNT(*) as count FROM menu_categories');
+    const categoryMap = {}; // name -> id
+
+    if (existingCategories[0].count === 0) {
+      console.log('Seeding initial categories into menu_categories...');
+      for (let i = 0; i < SEED_CATEGORIES.length; i++) {
+        const catName = SEED_CATEGORIES[i];
+        const slug = catName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+        const [res] = await connection.query(`
+          INSERT INTO menu_categories (name, slug, display_order, is_active)
+          VALUES (?, ?, ?, TRUE)
+        `, [catName, slug, i + 1]);
+        categoryMap[catName] = res.insertId;
+      }
+      console.log(`Seeded ${SEED_CATEGORIES.length} menu categories successfully.`);
+    } else {
+      const [allCats] = await connection.query('SELECT id, name FROM menu_categories');
+      allCats.forEach(c => { categoryMap[c.name] = c.id; });
+    }
+
+    // Safe Seeding of Products
+    const [existingProducts] = await connection.query('SELECT COUNT(*) as count FROM menu_products');
+    if (existingProducts[0].count === 0) {
+      console.log('Seeding initial products into menu_products...');
+      for (let i = 0; i < SEED_MENU_ITEMS.length; i++) {
+        const item = SEED_MENU_ITEMS[i];
+        const catId = categoryMap[item.category];
+        if (catId) {
+          await connection.query(`
+            INSERT INTO menu_products (id, category_id, name, description, base_price, is_veg, is_active, is_sold_out, allergens, size_options, display_order)
+            VALUES (?, ?, ?, ?, ?, ?, TRUE, FALSE, ?, ?, ?)
+          `, [
+            item.id,
+            catId,
+            item.name,
+            item.description || '',
+            item.price,
+            item.isVeg ? true : false,
+            item.allergens ? JSON.stringify(item.allergens) : null,
+            item.sizeOptions ? JSON.stringify(item.sizeOptions) : null,
+            i + 1
+          ]);
+        }
+      }
+      console.log(`Seeded ${SEED_MENU_ITEMS.length} products successfully into database.`);
+    }
+
+    // Safe Seeding of Default Option Groups (Included Side, Free Drink, Gourmet Dips)
+    const [existingGroups] = await connection.query('SELECT COUNT(*) as count FROM option_groups');
+    if (existingGroups[0].count === 0) {
+      console.log('Seeding default option groups and choices...');
+      
+      // 1. Included Side (Pakistani Cuisine)
+      const [sideGrp] = await connection.query(`
+        INSERT INTO option_groups (title, min_selection, max_selection, is_active)
+        VALUES ('Included Free Side', 1, 1, TRUE)
+      `);
+      const sideGrpId = sideGrp.insertId;
+      await connection.query(`
+        INSERT INTO option_items (group_id, name, price_modifier, is_default, display_order)
+        VALUES 
+          (?, 'Naan Bread', 0.00, TRUE, 1),
+          (?, 'White Rice', 0.00, FALSE, 2)
+      `, [sideGrpId, sideGrpId]);
+
+      const pakistaniCatId = categoryMap['Pakistani Cuisine'];
+      if (pakistaniCatId) {
+        await connection.query(`
+          INSERT INTO category_option_groups (category_id, group_id, display_order)
+          VALUES (?, ?, 1)
+        `, [pakistaniCatId, sideGrpId]);
+      }
+
+      // 2. Included Free Cold Drink (Burgers, Wraps & Sandwiches)
+      const [drinkGrp] = await connection.query(`
+        INSERT INTO option_groups (title, min_selection, max_selection, is_active)
+        VALUES ('Included Free Cold Drink', 1, 1, TRUE)
+      `);
+      const drinkGrpId = drinkGrp.insertId;
+      await connection.query(`
+        INSERT INTO option_items (group_id, name, price_modifier, is_default, display_order)
+        VALUES 
+          (?, 'Cola', 0.00, TRUE, 1),
+          (?, 'Lemon & Lime', 0.00, FALSE, 2),
+          (?, 'Orange Soft Drink', 0.00, FALSE, 3)
+      `, [drinkGrpId, drinkGrpId, drinkGrpId]);
+
+      const burgersCatId = categoryMap['Burgers'];
+      const wrapsCatId = categoryMap['Wraps & Sandwiches'];
+      if (burgersCatId) {
+        await connection.query(`INSERT INTO category_option_groups (category_id, group_id, display_order) VALUES (?, ?, 1)`, [burgersCatId, drinkGrpId]);
+      }
+      if (wrapsCatId) {
+        await connection.query(`INSERT INTO category_option_groups (category_id, group_id, display_order) VALUES (?, ?, 1)`, [wrapsCatId, drinkGrpId]);
+      }
+
+      // 3. Extra Dips & Sauces
+      const [dipsGrp] = await connection.query(`
+        INSERT INTO option_groups (title, min_selection, max_selection, is_active)
+        VALUES ('Extra Dips & Sauces', 0, 5, TRUE)
+      `);
+      const dipsGrpId = dipsGrp.insertId;
+      await connection.query(`
+        INSERT INTO option_items (group_id, name, price_modifier, is_default, display_order)
+        VALUES 
+          (?, 'Garlic Mayo', 1.50, FALSE, 1),
+          (?, 'Mint Raita', 1.50, FALSE, 2),
+          (?, 'Chilli Sauce', 1.50, FALSE, 3),
+          (?, 'Sweet Chilli', 1.50, FALSE, 4),
+          (?, 'BBQ Sauce', 1.50, FALSE, 5),
+          (?, 'Peri-Peri Mayo', 1.50, FALSE, 6)
+      `, [dipsGrpId, dipsGrpId, dipsGrpId, dipsGrpId, dipsGrpId, dipsGrpId]);
+      
+      console.log('Default option groups and items linked successfully.');
+    }
 
     // Ensure local uploads folder exists
     const uploadsDir = path.join(__dirname, 'uploads');
@@ -2021,6 +2247,656 @@ app.delete('/api/admin/notification-emails/:email', requireAdmin, async (req, re
   } catch (error) {
     console.error('Error deleting notification email:', error);
     res.status(500).json({ error: 'Failed to delete notification email' });
+  }
+});
+
+/* --- 6. DYNAMIC MENU CATALOG, MODIFIERS & DEALS API ENDPOINTS --- */
+
+// 6.1. Public Full Menu Catalog (With RAM Cache)
+app.get('/api/menu/full', async (req, res) => {
+  const now = Date.now();
+  if (menuCatalogCache && (now - menuCatalogCacheTime) < MENU_CATALOG_CACHE_TTL) {
+    return res.json(menuCatalogCache);
+  }
+
+  try {
+    // 1. Fetch Categories
+    const [categories] = await pool.query(`
+      SELECT id, name, slug, description, display_order, is_active, image_url
+      FROM menu_categories
+      ORDER BY display_order ASC, id ASC
+    `);
+
+    // 2. Fetch Category Option Group links
+    const [catOptLinks] = await pool.query(`
+      SELECT category_id, group_id, display_order
+      FROM category_option_groups
+      ORDER BY display_order ASC
+    `);
+
+    const catOptMap = {};
+    catOptLinks.forEach(link => {
+      if (!catOptMap[link.category_id]) catOptMap[link.category_id] = [];
+      catOptMap[link.category_id].push(link.group_id);
+    });
+
+    const enrichedCategories = categories.map(c => ({
+      id: c.id,
+      name: c.name,
+      slug: c.slug,
+      description: c.description || '',
+      displayOrder: c.display_order,
+      isActive: Boolean(c.is_active),
+      imageUrl: c.image_url || '',
+      optionGroupIds: catOptMap[c.id] || []
+    }));
+
+    // 3. Fetch Products
+    const [products] = await pool.query(`
+      SELECT p.id, p.category_id, p.name, p.description, p.base_price, p.is_veg, 
+             p.is_active, p.is_sold_out, p.allergens, p.size_options, p.image_url, p.display_order,
+             c.name as category_name
+      FROM menu_products p
+      JOIN menu_categories c ON p.category_id = c.id
+      ORDER BY p.display_order ASC, p.id ASC
+    `);
+
+    // 4. Fetch Product Option Group links
+    const [prodOptLinks] = await pool.query(`
+      SELECT product_id, group_id, display_order
+      FROM product_option_groups
+      ORDER BY display_order ASC
+    `);
+
+    const prodOptMap = {};
+    prodOptLinks.forEach(link => {
+      if (!prodOptMap[link.product_id]) prodOptMap[link.product_id] = [];
+      prodOptMap[link.product_id].push(link.group_id);
+    });
+
+    const enrichedProducts = products.map(p => {
+      let allergens = [];
+      try {
+        allergens = typeof p.allergens === 'string' ? JSON.parse(p.allergens) : (p.allergens || []);
+      } catch (e) {}
+
+      let sizeOptions = undefined;
+      try {
+        if (p.size_options) {
+          sizeOptions = typeof p.size_options === 'string' ? JSON.parse(p.size_options) : p.size_options;
+        }
+      } catch (e) {}
+
+      return {
+        id: p.id,
+        categoryId: p.category_id,
+        category: p.category_name,
+        name: p.name,
+        description: p.description || '',
+        price: parseFloat(p.base_price),
+        isVeg: Boolean(p.is_veg),
+        isActive: Boolean(p.is_active),
+        isSoldOut: Boolean(p.is_sold_out),
+        allergens: allergens,
+        sizeOptions: sizeOptions && sizeOptions.length > 0 ? sizeOptions : undefined,
+        imageUrl: p.image_url || '',
+        displayOrder: p.display_order,
+        optionGroupIds: prodOptMap[p.id] || []
+      };
+    });
+
+    // 5. Fetch Option Groups and Option Items
+    const [groups] = await pool.query(`
+      SELECT id, title, min_selection, max_selection, is_active
+      FROM option_groups
+      ORDER BY id ASC
+    `);
+
+    const [items] = await pool.query(`
+      SELECT id, group_id, name, price_modifier, is_default, display_order
+      FROM option_items
+      ORDER BY display_order ASC, id ASC
+    `);
+
+    const groupItemsMap = {};
+    items.forEach(it => {
+      if (!groupItemsMap[it.group_id]) groupItemsMap[it.group_id] = [];
+      groupItemsMap[it.group_id].push({
+        id: it.id,
+        groupId: it.group_id,
+        name: it.name,
+        priceModifier: parseFloat(it.price_modifier),
+        isDefault: Boolean(it.is_default),
+        displayOrder: it.display_order
+      });
+    });
+
+    const enrichedGroups = groups.map(g => ({
+      id: g.id,
+      title: g.title,
+      minSelection: g.min_selection,
+      maxSelection: g.max_selection,
+      isActive: Boolean(g.is_active),
+      options: groupItemsMap[g.id] || []
+    }));
+
+    // 6. Fetch Deals
+    const [deals] = await pool.query(`
+      SELECT id, title, description, bundle_price, badge_text, is_active, image_url, steps
+      FROM menu_deals
+      ORDER BY id ASC
+    `);
+
+    const enrichedDeals = deals.map(d => {
+      let steps = [];
+      try {
+        steps = typeof d.steps === 'string' ? JSON.parse(d.steps) : (d.steps || []);
+      } catch (e) {}
+      return {
+        id: d.id,
+        title: d.title,
+        description: d.description || '',
+        bundlePrice: parseFloat(d.bundle_price),
+        badgeText: d.badge_text || '',
+        isActive: Boolean(d.is_active),
+        imageUrl: d.image_url || '',
+        steps: steps
+      };
+    });
+
+    const result = {
+      categories: enrichedCategories,
+      products: enrichedProducts,
+      optionGroups: enrichedGroups,
+      deals: enrichedDeals
+    };
+
+    menuCatalogCache = result;
+    menuCatalogCacheTime = now;
+    res.json(result);
+  } catch (error) {
+    console.error('Failed to fetch full menu catalog:', error);
+    res.status(500).json({ error: 'Database query failed' });
+  }
+});
+
+// 6.2. Admin Category Endpoints
+app.post('/api/admin/categories', requireAdmin, async (req, res) => {
+  const { name, description, display_order, is_active, image_url, option_group_ids } = req.body;
+  if (!name) {
+    return res.status(400).json({ error: 'Category name is required' });
+  }
+
+  const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') + '-' + Date.now();
+  try {
+    let finalOrder = parseInt(display_order);
+    if (isNaN(finalOrder) || display_order === undefined || display_order === null) {
+      const [maxRows] = await pool.query('SELECT COALESCE(MAX(display_order), 0) + 1 AS next_order FROM menu_categories');
+      finalOrder = maxRows[0].next_order;
+    }
+
+    const [result] = await pool.query(`
+      INSERT INTO menu_categories (name, slug, description, display_order, is_active, image_url)
+      VALUES (?, ?, ?, ?, ?, ?)
+    `, [
+      name.trim(),
+      slug,
+      description || '',
+      finalOrder,
+      is_active !== undefined ? Boolean(is_active) : true,
+      image_url || null
+    ]);
+
+    const categoryId = result.insertId;
+
+    if (Array.isArray(option_group_ids) && option_group_ids.length > 0) {
+      for (let i = 0; i < option_group_ids.length; i++) {
+        await pool.query(`
+          INSERT INTO category_option_groups (category_id, group_id, display_order)
+          VALUES (?, ?, ?)
+        `, [categoryId, option_group_ids[i], i + 1]);
+      }
+    }
+
+    invalidateMenuCache();
+    res.json({ success: true, categoryId, message: 'Category created successfully' });
+  } catch (error) {
+    console.error('Error creating category:', error);
+    res.status(500).json({ error: 'Failed to create category' });
+  }
+});
+
+app.put('/api/admin/categories/:id', requireAdmin, async (req, res) => {
+  const { id } = req.params;
+  const { name, description, display_order, is_active, image_url, option_group_ids } = req.body;
+  if (!name) {
+    return res.status(400).json({ error: 'Category name is required' });
+  }
+
+  try {
+    const [existingRows] = await pool.query('SELECT display_order FROM menu_categories WHERE id = ?', [id]);
+    const currentOrder = existingRows.length > 0 ? existingRows[0].display_order : 0;
+    const finalOrder = (display_order !== undefined && display_order !== null && !isNaN(parseInt(display_order)))
+      ? parseInt(display_order)
+      : currentOrder;
+
+    await pool.query(`
+      UPDATE menu_categories
+      SET name = ?, description = ?, display_order = ?, is_active = ?, image_url = ?
+      WHERE id = ?
+    `, [
+      name.trim(),
+      description || '',
+      finalOrder,
+      is_active !== undefined ? Boolean(is_active) : true,
+      image_url || null,
+      id
+    ]);
+
+    if (Array.isArray(option_group_ids)) {
+      await pool.query('DELETE FROM category_option_groups WHERE category_id = ?', [id]);
+      for (let i = 0; i < option_group_ids.length; i++) {
+        await pool.query(`
+          INSERT INTO category_option_groups (category_id, group_id, display_order)
+          VALUES (?, ?, ?)
+        `, [id, option_group_ids[i], i + 1]);
+      }
+    }
+
+    invalidateMenuCache();
+    res.json({ success: true, message: 'Category updated successfully' });
+  } catch (error) {
+    console.error('Error updating category:', error);
+    res.status(500).json({ error: 'Failed to update category' });
+  }
+});
+
+app.delete('/api/admin/categories/:id', requireAdmin, async (req, res) => {
+  const { id } = req.params;
+  try {
+    await pool.query('DELETE FROM menu_categories WHERE id = ?', [id]);
+    invalidateMenuCache();
+    res.json({ success: true, message: 'Category deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting category:', error);
+    res.status(500).json({ error: 'Failed to delete category' });
+  }
+});
+
+app.post('/api/admin/categories/reorder', requireAdmin, async (req, res) => {
+  const { orderedIds } = req.body;
+  if (!Array.isArray(orderedIds)) {
+    return res.status(400).json({ error: 'orderedIds array is required' });
+  }
+
+  try {
+    for (let i = 0; i < orderedIds.length; i++) {
+      await pool.query('UPDATE menu_categories SET display_order = ? WHERE id = ?', [i + 1, orderedIds[i]]);
+    }
+    invalidateMenuCache();
+    res.json({ success: true, message: 'Categories reordered successfully' });
+  } catch (error) {
+    console.error('Error reordering categories:', error);
+    res.status(500).json({ error: 'Failed to reorder categories' });
+  }
+});
+
+// 6.3. Admin Product Endpoints
+app.post('/api/admin/products', requireAdmin, async (req, res) => {
+  const {
+    category_id,
+    name,
+    description,
+    base_price,
+    is_veg,
+    is_active,
+    is_sold_out,
+    allergens,
+    size_options,
+    image_url,
+    display_order,
+    option_group_ids
+  } = req.body;
+
+  if (!category_id || !name || base_price === undefined) {
+    return res.status(400).json({ error: 'category_id, name, and base_price are required' });
+  }
+
+  try {
+    let finalOrder = parseInt(display_order);
+    if (isNaN(finalOrder) || display_order === undefined || display_order === null) {
+      const [maxRows] = await pool.query('SELECT COALESCE(MAX(display_order), 0) + 1 AS next_order FROM menu_products WHERE category_id = ?', [category_id]);
+      finalOrder = maxRows[0].next_order;
+    }
+
+    const [result] = await pool.query(`
+      INSERT INTO menu_products 
+      (category_id, name, description, base_price, is_veg, is_active, is_sold_out, allergens, size_options, image_url, display_order)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `, [
+      parseInt(category_id),
+      name.trim(),
+      description || '',
+      parseFloat(base_price),
+      is_veg !== undefined ? Boolean(is_veg) : false,
+      is_active !== undefined ? Boolean(is_active) : true,
+      is_sold_out !== undefined ? Boolean(is_sold_out) : false,
+      allergens ? JSON.stringify(allergens) : null,
+      size_options ? JSON.stringify(size_options) : null,
+      image_url || null,
+      finalOrder
+    ]);
+
+    const productId = result.insertId;
+
+    if (Array.isArray(option_group_ids) && option_group_ids.length > 0) {
+      for (let i = 0; i < option_group_ids.length; i++) {
+        await pool.query(`
+          INSERT INTO product_option_groups (product_id, group_id, display_order)
+          VALUES (?, ?, ?)
+        `, [productId, option_group_ids[i], i + 1]);
+      }
+    }
+
+    invalidateMenuCache();
+    res.json({ success: true, productId, message: 'Dish created successfully' });
+  } catch (error) {
+    console.error('Error creating product:', error);
+    res.status(500).json({ error: 'Failed to create product' });
+  }
+});
+
+app.put('/api/admin/products/:id', requireAdmin, async (req, res) => {
+  const { id } = req.params;
+  const {
+    category_id,
+    name,
+    description,
+    base_price,
+    is_veg,
+    is_active,
+    is_sold_out,
+    allergens,
+    size_options,
+    image_url,
+    display_order,
+    option_group_ids
+  } = req.body;
+
+  if (!category_id || !name || base_price === undefined) {
+    return res.status(400).json({ error: 'category_id, name, and base_price are required' });
+  }
+
+  try {
+    const [existingRows] = await pool.query('SELECT display_order FROM menu_products WHERE id = ?', [id]);
+    const currentOrder = existingRows.length > 0 ? existingRows[0].display_order : 0;
+    const finalOrder = (display_order !== undefined && display_order !== null && !isNaN(parseInt(display_order)))
+      ? parseInt(display_order)
+      : currentOrder;
+
+    await pool.query(`
+      UPDATE menu_products
+      SET category_id = ?, name = ?, description = ?, base_price = ?, is_veg = ?, 
+          is_active = ?, is_sold_out = ?, allergens = ?, size_options = ?, image_url = ?, display_order = ?
+      WHERE id = ?
+    `, [
+      parseInt(category_id),
+      name.trim(),
+      description || '',
+      parseFloat(base_price),
+      is_veg !== undefined ? Boolean(is_veg) : false,
+      is_active !== undefined ? Boolean(is_active) : true,
+      is_sold_out !== undefined ? Boolean(is_sold_out) : false,
+      allergens ? JSON.stringify(allergens) : null,
+      size_options ? JSON.stringify(size_options) : null,
+      image_url || null,
+      finalOrder,
+      id
+    ]);
+
+    if (Array.isArray(option_group_ids)) {
+      await pool.query('DELETE FROM product_option_groups WHERE product_id = ?', [id]);
+      for (let i = 0; i < option_group_ids.length; i++) {
+        await pool.query(`
+          INSERT INTO product_option_groups (product_id, group_id, display_order)
+          VALUES (?, ?, ?)
+        `, [id, option_group_ids[i], i + 1]);
+      }
+    }
+
+    invalidateMenuCache();
+    res.json({ success: true, message: 'Dish updated successfully' });
+  } catch (error) {
+    console.error('Error updating product:', error);
+    res.status(500).json({ error: 'Failed to update product' });
+  }
+});
+
+app.patch('/api/admin/products/:id/toggle-stock', requireAdmin, async (req, res) => {
+  const { id } = req.params;
+  const { is_sold_out } = req.body;
+  try {
+    if (is_sold_out !== undefined) {
+      await pool.query('UPDATE menu_products SET is_sold_out = ? WHERE id = ?', [Boolean(is_sold_out), id]);
+    } else {
+      await pool.query('UPDATE menu_products SET is_sold_out = NOT is_sold_out WHERE id = ?', [id]);
+    }
+    invalidateMenuCache();
+    res.json({ success: true, message: 'Stock status updated successfully' });
+  } catch (error) {
+    console.error('Error toggling product stock:', error);
+    res.status(500).json({ error: 'Failed to update stock status' });
+  }
+});
+
+app.patch('/api/admin/products/:id/toggle-active', requireAdmin, async (req, res) => {
+  const { id } = req.params;
+  const { is_active } = req.body;
+  try {
+    if (is_active !== undefined) {
+      await pool.query('UPDATE menu_products SET is_active = ? WHERE id = ?', [Boolean(is_active), id]);
+    } else {
+      await pool.query('UPDATE menu_products SET is_active = NOT is_active WHERE id = ?', [id]);
+    }
+    invalidateMenuCache();
+    res.json({ success: true, message: 'Active status updated successfully' });
+  } catch (error) {
+    console.error('Error toggling product active status:', error);
+    res.status(500).json({ error: 'Failed to update active status' });
+  }
+});
+
+app.delete('/api/admin/products/:id', requireAdmin, async (req, res) => {
+  const { id } = req.params;
+  try {
+    await pool.query('DELETE FROM menu_products WHERE id = ?', [id]);
+    invalidateMenuCache();
+    res.json({ success: true, message: 'Dish deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting product:', error);
+    res.status(500).json({ error: 'Failed to delete dish' });
+  }
+});
+
+// 6.4. Admin Option Groups & Modifier Endpoints
+app.post('/api/admin/option-groups', requireAdmin, async (req, res) => {
+  const { title, min_selection, max_selection, is_active, options } = req.body;
+  if (!title) {
+    return res.status(400).json({ error: 'Group title is required' });
+  }
+
+  try {
+    const [result] = await pool.query(`
+      INSERT INTO option_groups (title, min_selection, max_selection, is_active)
+      VALUES (?, ?, ?, ?)
+    `, [
+      title.trim(),
+      parseInt(min_selection !== undefined ? min_selection : 0),
+      parseInt(max_selection !== undefined ? max_selection : 1),
+      is_active !== undefined ? Boolean(is_active) : true
+    ]);
+
+    const groupId = result.insertId;
+
+    if (Array.isArray(options) && options.length > 0) {
+      for (let i = 0; i < options.length; i++) {
+        const opt = options[i];
+        if (opt.name && opt.name.trim()) {
+          await pool.query(`
+            INSERT INTO option_items (group_id, name, price_modifier, is_default, display_order)
+            VALUES (?, ?, ?, ?, ?)
+          `, [
+            groupId,
+            opt.name.trim(),
+            parseFloat(opt.priceModifier || opt.price_modifier || 0),
+            Boolean(opt.isDefault || opt.is_default),
+            i + 1
+          ]);
+        }
+      }
+    }
+
+    invalidateMenuCache();
+    res.json({ success: true, groupId, message: 'Option group created successfully' });
+  } catch (error) {
+    console.error('Error creating option group:', error);
+    res.status(500).json({ error: 'Failed to create option group' });
+  }
+});
+
+app.put('/api/admin/option-groups/:id', requireAdmin, async (req, res) => {
+  const { id } = req.params;
+  const { title, min_selection, max_selection, is_active, options } = req.body;
+  if (!title) {
+    return res.status(400).json({ error: 'Group title is required' });
+  }
+
+  try {
+    await pool.query(`
+      UPDATE option_groups
+      SET title = ?, min_selection = ?, max_selection = ?, is_active = ?
+      WHERE id = ?
+    `, [
+      title.trim(),
+      parseInt(min_selection !== undefined ? min_selection : 0),
+      parseInt(max_selection !== undefined ? max_selection : 1),
+      is_active !== undefined ? Boolean(is_active) : true,
+      id
+    ]);
+
+    if (Array.isArray(options)) {
+      await pool.query('DELETE FROM option_items WHERE group_id = ?', [id]);
+      for (let i = 0; i < options.length; i++) {
+        const opt = options[i];
+        if (opt.name && opt.name.trim()) {
+          await pool.query(`
+            INSERT INTO option_items (group_id, name, price_modifier, is_default, display_order)
+            VALUES (?, ?, ?, ?, ?)
+          `, [
+            id,
+            opt.name.trim(),
+            parseFloat(opt.priceModifier || opt.price_modifier || 0),
+            Boolean(opt.isDefault || opt.is_default),
+            i + 1
+          ]);
+        }
+      }
+    }
+
+    invalidateMenuCache();
+    res.json({ success: true, message: 'Option group updated successfully' });
+  } catch (error) {
+    console.error('Error updating option group:', error);
+    res.status(500).json({ error: 'Failed to update option group' });
+  }
+});
+
+app.delete('/api/admin/option-groups/:id', requireAdmin, async (req, res) => {
+  const { id } = req.params;
+  try {
+    await pool.query('DELETE FROM option_groups WHERE id = ?', [id]);
+    invalidateMenuCache();
+    res.json({ success: true, message: 'Option group deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting option group:', error);
+    res.status(500).json({ error: 'Failed to delete option group' });
+  }
+});
+
+// 6.5. Admin Deals Endpoints
+app.post('/api/admin/deals', requireAdmin, async (req, res) => {
+  const { id: customId, title, description, bundle_price, badge_text, is_active, image_url, steps } = req.body;
+  if (!title || bundle_price === undefined) {
+    return res.status(400).json({ error: 'Deal title and bundle_price are required' });
+  }
+
+  const dealId = (customId && customId.trim()) 
+    ? customId.trim() 
+    : 'deal-' + Date.now() + '-' + Math.floor(Math.random() * 1000);
+
+  try {
+    await pool.query(`
+      INSERT INTO menu_deals (id, title, description, bundle_price, badge_text, is_active, image_url, steps)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    `, [
+      dealId,
+      title.trim(),
+      description || '',
+      parseFloat(bundle_price),
+      badge_text || null,
+      is_active !== undefined ? Boolean(is_active) : true,
+      image_url || null,
+      steps ? JSON.stringify(steps) : null
+    ]);
+
+    invalidateMenuCache();
+    res.json({ success: true, dealId, message: 'Deal created successfully' });
+  } catch (error) {
+    console.error('Error creating deal:', error);
+    res.status(500).json({ error: 'Failed to create deal' });
+  }
+});
+
+app.put('/api/admin/deals/:id', requireAdmin, async (req, res) => {
+  const { id } = req.params;
+  const { title, description, bundle_price, badge_text, is_active, image_url, steps } = req.body;
+  if (!title || bundle_price === undefined) {
+    return res.status(400).json({ error: 'Deal title and bundle_price are required' });
+  }
+
+  try {
+    await pool.query(`
+      UPDATE menu_deals
+      SET title = ?, description = ?, bundle_price = ?, badge_text = ?, is_active = ?, image_url = ?, steps = ?
+      WHERE id = ?
+    `, [
+      title.trim(),
+      description || '',
+      parseFloat(bundle_price),
+      badge_text || null,
+      is_active !== undefined ? Boolean(is_active) : true,
+      image_url || null,
+      steps ? JSON.stringify(steps) : null,
+      id
+    ]);
+
+    invalidateMenuCache();
+    res.json({ success: true, message: 'Deal updated successfully' });
+  } catch (error) {
+    console.error('Error updating deal:', error);
+    res.status(500).json({ error: 'Failed to update deal' });
+  }
+});
+
+app.delete('/api/admin/deals/:id', requireAdmin, async (req, res) => {
+  const { id } = req.params;
+  try {
+    await pool.query('DELETE FROM menu_deals WHERE id = ?', [id]);
+    invalidateMenuCache();
+    res.json({ success: true, message: 'Deal deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting deal:', error);
+    res.status(500).json({ error: 'Failed to delete deal' });
   }
 });
 

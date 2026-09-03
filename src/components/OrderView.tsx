@@ -5,9 +5,9 @@
 
 import React from 'react';
 import { createPortal } from 'react-dom';
-import { ShoppingCart, Plus, Minus, Trash2, Check, ArrowRight, ArrowLeft, Clock, MapPin, Sparkles, ShoppingBag, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, Phone, X, CookingPot } from 'lucide-react';
-import { MenuItem, CartItem, Order } from '../types';
-import { MENU_ITEMS, CATEGORIES } from '../data/menu';
+import { ShoppingCart, Plus, Minus, Trash2, Check, ArrowRight, ArrowLeft, Clock, MapPin, Sparkles, ShoppingBag, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, Phone, X, CookingPot, Tag, UtensilsCrossed, Sliders, CheckSquare, Square, Radio } from 'lucide-react';
+import { MenuItem, CartItem, Order, SelectedModifier, MenuCategory, OptionGroup, OptionItem, MenuDeal } from '../types';
+import { MENU_ITEMS, CATEGORIES, ALLERGENS } from '../data/menu';
 import {
   DeliverySchedule,
   DAY_NAMES,
@@ -22,7 +22,13 @@ import {
 interface OrderViewProps {
   cart: CartItem[];
   setCart: React.Dispatch<React.SetStateAction<CartItem[]>>;
-  addToCart: (item: MenuItem, size?: { name: string; price: number }, notes?: string) => void;
+  addToCart: (
+    item: MenuItem,
+    size?: { name: string; price: number },
+    notes?: string,
+    modifiers?: SelectedModifier[],
+    quantity?: number
+  ) => void;
   removeFromCart: (cartItemId: string) => void;
   updateQuantity: (cartItemId: string, delta: number) => void;
   businessInfo: {
@@ -209,29 +215,116 @@ export const OrderView: React.FC<OrderViewProps> = ({
     }
   };
 
+  // Catalog database states
+  const [catalogCategories, setCatalogCategories] = React.useState<MenuCategory[]>(() =>
+    CATEGORIES.map((c, i) => ({ id: i + 1, name: c, slug: c.toLowerCase().replace(/[^a-z0-9]+/g, '-'), displayOrder: i }))
+  );
+  const [catalogProducts, setCatalogProducts] = React.useState<MenuItem[]>(MENU_ITEMS);
+  const [catalogOptionGroups, setCatalogOptionGroups] = React.useState<OptionGroup[]>([]);
+  const [catalogDeals, setCatalogDeals] = React.useState<MenuDeal[]>([]);
+
+  React.useEffect(() => {
+    const fetchCatalog = async () => {
+      try {
+        const res = await fetch('/api/menu/full');
+        if (res.ok) {
+          const data = await res.json();
+          if (data.categories && data.categories.length > 0) setCatalogCategories(data.categories);
+          if (data.products && data.products.length > 0) setCatalogProducts(data.products.filter((p: any) => p.isActive !== false));
+          if (data.optionGroups) setCatalogOptionGroups(data.optionGroups);
+          if (data.deals) setCatalogDeals(data.deals.filter((d: any) => d.isActive !== false));
+        }
+      } catch (e) {
+        console.warn('Fallback to local menu catalog:', e);
+      }
+    };
+    fetchCatalog();
+  }, []);
+
   // Initialize prices/sizes for items
   React.useEffect(() => {
     const initialSizes: { [itemId: string]: { name: string; price: number } } = {};
-    MENU_ITEMS.forEach((item) => {
+    catalogProducts.forEach((item) => {
       if (item.sizeOptions && item.sizeOptions.length > 0) {
         initialSizes[item.id] = item.sizeOptions[0];
       }
     });
     setSelectedSizes(initialSizes);
-  }, []);
+  }, [catalogProducts]);
 
-  // Pakistani Cuisine side choice modal state
-  const [pakistaniSideModalItem, setPakistaniSideModalItem] = React.useState<MenuItem | null>(null);
-  const [selectedSideChoice, setSelectedSideChoice] = React.useState<'Naan Bread' | 'White Rice'>('Naan Bread');
-  const [modalChefNotes, setModalChefNotes] = React.useState<string>('');
+  // Helper to retrieve all active option groups applicable for a given item
+  const getOptionGroupsForItem = (item: MenuItem): OptionGroup[] => {
+    const result: OptionGroup[] = [];
+    const addedGroupIds = new Set<string>();
 
-  // Free Cold Drink modal state for Burgers, Wraps & Sandwiches
-  const [drinkModalItem, setDrinkModalItem] = React.useState<MenuItem | null>(null);
-  const [selectedDrinkChoice, setSelectedDrinkChoice] = React.useState<string>('Cola');
-  const [drinkModalNotes, setDrinkModalNotes] = React.useState<string>('');
+    // 1. Direct item modifier groups
+    if (item.optionGroupIds && item.optionGroupIds.length > 0) {
+      item.optionGroupIds.forEach(gid => {
+        const grp = catalogOptionGroups.find(g => String(g.id) === String(gid));
+        if (grp && !addedGroupIds.has(String(grp.id))) {
+          result.push(grp);
+          addedGroupIds.add(String(grp.id));
+        }
+      });
+    }
+
+    // 2. Category modifier groups
+    const cat = catalogCategories.find(c => c.name === item.category || String(c.id) === String(item.categoryId));
+    if (cat && cat.optionGroupIds && cat.optionGroupIds.length > 0) {
+      cat.optionGroupIds.forEach(gid => {
+        const grp = catalogOptionGroups.find(g => String(g.id) === String(gid));
+        if (grp && !addedGroupIds.has(String(grp.id))) {
+          result.push(grp);
+          addedGroupIds.add(String(grp.id));
+        }
+      });
+    }
+
+    // 3. Fallback built-in groups if not already present in DB
+    if ((item.category === 'Burgers' || item.category === 'Wraps & Sandwiches') && !result.some(g => g.title.toLowerCase().includes('drink'))) {
+      result.unshift({
+        id: 'builtin-drink',
+        title: 'Included Free Cold Drink',
+        minSelection: 1,
+        maxSelection: 1,
+        options: [
+          { id: 'drink-cola', groupId: 'builtin-drink', name: 'Cola', priceModifier: 0, isDefault: true },
+          { id: 'drink-lemon', groupId: 'builtin-drink', name: 'Lemon & Lime', priceModifier: 0 },
+          { id: 'drink-orange', groupId: 'builtin-drink', name: 'Orange Soft Drink', priceModifier: 0 }
+        ]
+      });
+    }
+
+    if (item.category === 'Pakistani Cuisine' && !result.some(g => g.title.toLowerCase().includes('side'))) {
+      result.unshift({
+        id: 'builtin-side',
+        title: 'Included Side Choice',
+        minSelection: 1,
+        maxSelection: 1,
+        options: [
+          { id: 'side-naan', groupId: 'builtin-side', name: 'Naan Bread', priceModifier: 0, isDefault: true },
+          { id: 'side-rice', groupId: 'builtin-side', name: 'White Rice', priceModifier: 0 }
+        ]
+      });
+    }
+
+    return result;
+  };
+
+  // Food Customization Modal States
+  const [customizationItem, setCustomizationItem] = React.useState<MenuItem | null>(null);
+  const [customizationSize, setCustomizationSize] = React.useState<{ name: string; price: number } | undefined>(undefined);
+  const [customizationModifiers, setCustomizationModifiers] = React.useState<{ [groupId: string]: SelectedModifier[] }>({});
+  const [customizationNotes, setCustomizationNotes] = React.useState<string>('');
+  const [customizationQuantity, setCustomizationQuantity] = React.useState<number>(1);
+
+  // Combo Deal Customizer Modal States
+  const [dealModalItem, setDealModalItem] = React.useState<MenuDeal | null>(null);
+  const [dealStepSelections, setDealStepSelections] = React.useState<{ [stepIdx: number]: MenuItem[] }>({});
+  const [dealNotes, setDealNotes] = React.useState<string>('');
 
   const handleSizeChange = (itemId: string, sizeName: string) => {
-    const item = MENU_ITEMS.find((i) => i.id === itemId);
+    const item = catalogProducts.find((i) => i.id === itemId);
     if (item && item.sizeOptions) {
       const selectedOption = item.sizeOptions.find((opt) => opt.name === sizeName);
       if (selectedOption) {
@@ -240,8 +333,14 @@ export const OrderView: React.FC<OrderViewProps> = ({
     }
   };
 
-  const executeAddToCart = (item: MenuItem, size?: { name: string; price: number }, notes?: string) => {
-    addToCart(item, size, notes);
+  const executeAddToCart = (
+    item: MenuItem,
+    size?: { name: string; price: number },
+    notes?: string,
+    modifiers?: SelectedModifier[],
+    quantity: number = 1
+  ) => {
+    addToCart(item, size, notes, modifiers, quantity);
 
     // Clear notes for this item once added to improve UX
     setCustomNotes((prev) => ({ ...prev, [item.id]: '' }));
@@ -258,52 +357,158 @@ export const OrderView: React.FC<OrderViewProps> = ({
     }
   };
 
-  const handleAddWithDetails = (item: MenuItem) => {
-    if (item.category === 'Pakistani Cuisine') {
-      setPakistaniSideModalItem(item);
-      setSelectedSideChoice('Naan Bread');
-      setModalChefNotes(customNotes[item.id] || '');
+  const handleOpenCustomization = (item: MenuItem) => {
+    const applicableGroups = getOptionGroupsForItem(item);
+    const hasSizes = item.sizeOptions && item.sizeOptions.length > 0;
+
+    // If item has sizes OR modifier groups, open the interactive customization popup
+    if (hasSizes || applicableGroups.length > 0) {
+      setCustomizationItem(item);
+      setCustomizationSize(selectedSizes[item.id] || (hasSizes ? item.sizeOptions![0] : undefined));
+      setCustomizationNotes(customNotes[item.id] || '');
+      setCustomizationQuantity(1);
+
+      // Pre-select default options for mandatory groups
+      const initialMods: { [groupId: string]: SelectedModifier[] } = {};
+      applicableGroups.forEach(grp => {
+        const defaultOpt = grp.options.find(o => o.isDefault) || (grp.minSelection > 0 ? grp.options[0] : null);
+        if (defaultOpt) {
+          initialMods[String(grp.id)] = [{
+            groupId: grp.id,
+            groupTitle: grp.title,
+            optionId: defaultOpt.id,
+            optionName: defaultOpt.name,
+            price: defaultOpt.priceModifier || 0
+          }];
+        } else {
+          initialMods[String(grp.id)] = [];
+        }
+      });
+      setCustomizationModifiers(initialMods);
       return;
     }
 
-    if (item.category === 'Burgers' || item.category === 'Wraps & Sandwiches') {
-      setDrinkModalItem(item);
-      setSelectedDrinkChoice('Cola');
-      setDrinkModalNotes(customNotes[item.id] || '');
-      return;
-    }
-
+    // Direct add for simple standalone items with no options
     const size = selectedSizes[item.id];
     const notes = customNotes[item.id] || '';
-    executeAddToCart(item, size, notes);
+    executeAddToCart(item, size, notes, undefined, 1);
   };
 
-  const handleConfirmPakistaniSide = () => {
-    if (!pakistaniSideModalItem) return;
-    const size = selectedSizes[pakistaniSideModalItem.id];
-    const sideNote = `Side: ${selectedSideChoice}`;
-    const fullNotes = [sideNote, modalChefNotes.trim()].filter(Boolean).join(' | ');
+  const handleToggleModifierOption = (group: OptionGroup, option: OptionItem) => {
+    const gid = String(group.id);
+    const current = customizationModifiers[gid] || [];
+    const isAlreadySelected = current.some(m => String(m.optionId) === String(option.id));
 
-    executeAddToCart(pakistaniSideModalItem, size, fullNotes);
-    setPakistaniSideModalItem(null);
-    setModalChefNotes('');
+    if (group.maxSelection === 1) {
+      // Single choice radio
+      setCustomizationModifiers(prev => ({
+        ...prev,
+        [gid]: [{
+          groupId: group.id,
+          groupTitle: group.title,
+          optionId: option.id,
+          optionName: option.name,
+          price: option.priceModifier || 0
+        }]
+      }));
+    } else {
+      // Multi-choice checkbox
+      if (isAlreadySelected) {
+        setCustomizationModifiers(prev => ({
+          ...prev,
+          [gid]: current.filter(m => String(m.optionId) !== String(option.id))
+        }));
+      } else {
+        if (current.length < group.maxSelection) {
+          setCustomizationModifiers(prev => ({
+            ...prev,
+            [gid]: [
+              ...current,
+              {
+                groupId: group.id,
+                groupTitle: group.title,
+                optionId: option.id,
+                optionName: option.name,
+                price: option.priceModifier || 0
+              }
+            ]
+          }));
+        }
+      }
+    }
   };
 
-  const handleConfirmDrinkChoice = () => {
-    if (!drinkModalItem) return;
-    const size = selectedSizes[drinkModalItem.id];
-    const drinkNote = `Free Drink: ${selectedDrinkChoice}`;
-    const fullNotes = [drinkNote, drinkModalNotes.trim()].filter(Boolean).join(' | ');
+  const handleConfirmCustomization = () => {
+    if (!customizationItem) return;
 
-    executeAddToCart(drinkModalItem, size, fullNotes);
-    setDrinkModalItem(null);
-    setDrinkModalNotes('');
+    // Flatten all selected modifiers from each group
+    const allSelectedModifiers: SelectedModifier[] = Object.values(customizationModifiers).flat();
+
+    executeAddToCart(
+      customizationItem,
+      customizationSize,
+      customizationNotes.trim() || undefined,
+      allSelectedModifiers.length > 0 ? allSelectedModifiers : undefined,
+      customizationQuantity
+    );
+
+    setCustomizationItem(null);
+    setCustomizationModifiers({});
+    setCustomizationNotes('');
+    setCustomizationQuantity(1);
+  };
+
+  // Combo Deal handlers
+  const handleOpenDealModal = (deal: MenuDeal) => {
+    setDealModalItem(deal);
+    const initialSteps: { [stepIdx: number]: MenuItem[] } = {};
+    deal.steps.forEach((step, idx) => {
+      const stepItems = catalogProducts.filter(p => p.category === step.categoryName || String(p.categoryId) === String(step.categoryId));
+      initialSteps[idx] = stepItems.slice(0, step.count || 1);
+    });
+    setDealStepSelections(initialSteps);
+    setDealNotes('');
+  };
+
+  const handleConfirmDeal = () => {
+    if (!dealModalItem) return;
+
+    // Format choices into notes
+    const stepSummaries: string[] = [];
+    dealModalItem.steps.forEach((st, idx) => {
+      const selected = dealStepSelections[idx] || [];
+      if (selected.length > 0) {
+        stepSummaries.push(`${st.stepName}: ${selected.map(s => s.name).join(', ')}`);
+      }
+    });
+
+    const fullDealNotes = [
+      ...stepSummaries,
+      dealNotes.trim()
+    ].filter(Boolean).join(' | ');
+
+    // Add deal as special MenuItem item
+    const dealAsMenuItem: MenuItem = {
+      id: `DEAL-${dealModalItem.id}`,
+      name: `🎁 ${dealModalItem.title}`,
+      price: dealModalItem.bundlePrice,
+      description: dealModalItem.description,
+      category: 'Deals & Offers'
+    };
+
+    addToCart(dealAsMenuItem, undefined, fullDealNotes, undefined, 1);
+    setDealModalItem(null);
+    setDealStepSelections({});
+    setDealNotes('');
   };
 
   // Calculations
   const subtotal = cart.reduce((acc, curr) => {
-    const pricePerItem = curr.selectedSize ? curr.selectedSize.price : curr.menuItem.price;
-    return acc + pricePerItem * curr.quantity;
+    const basePrice = curr.selectedSize ? curr.selectedSize.price : curr.menuItem.price;
+    const modExtra = curr.selectedModifiers
+      ? curr.selectedModifiers.reduce((mAcc, m) => mAcc + (m.price || 0), 0)
+      : 0;
+    return acc + (basePrice + modExtra) * curr.quantity;
   }, 0);
   
   const packagingFee = subtotal > 0 ? takeawayCharges : 0.00;
@@ -405,13 +610,20 @@ export const OrderView: React.FC<OrderViewProps> = ({
     // Compose structural order object
     const finalOrder: Order = {
       id: 'CO-' + Math.floor(100000 + Math.random() * 900000),
-      items: cart.map((item) => ({
-        name: item.menuItem.name,
-        quantity: item.quantity,
-        price: item.selectedSize ? item.selectedSize.price : item.menuItem.price,
-        size: item.selectedSize?.name,
-        notes: item.notes
-      })),
+      items: cart.map((item) => {
+        const basePrice = item.selectedSize ? item.selectedSize.price : item.menuItem.price;
+        const modExtra = item.selectedModifiers
+          ? item.selectedModifiers.reduce((acc, m) => acc + (m.price || 0), 0)
+          : 0;
+        return {
+          name: item.menuItem.name,
+          quantity: item.quantity,
+          price: basePrice + modExtra,
+          size: item.selectedSize?.name,
+          modifiers: item.selectedModifiers,
+          notes: item.notes
+        };
+      }),
       packagingFee,
       subtotal,
       total,
@@ -502,7 +714,7 @@ export const OrderView: React.FC<OrderViewProps> = ({
     setCheckoutNotes('');
   };
 
-  const filteredItems = MENU_ITEMS.filter((item) => item.category === selectedCategory);
+  const filteredItems = catalogProducts.filter((item) => item.category === selectedCategory && item.isActive !== false);
 
   if (placedOrder) {
     return (
@@ -551,16 +763,25 @@ export const OrderView: React.FC<OrderViewProps> = ({
             <h4 className="text-sm font-bold text-brand-dark">Order Items Summarized:</h4>
             <div className="text-xs sm:text-sm bg-brand-dark/[0.02] p-4 rounded-2xl space-y-2">
               {placedOrder.items.map((it, idx) => (
-                <div key={idx} className="flex justify-between text-brand-muted">
-                  <span>
-                    {it.quantity}x {it.name} {it.size ? `(${it.size})` : ''}
+                <div key={idx} className="flex justify-between items-start text-brand-muted">
+                  <div>
+                    <span className="font-semibold text-brand-dark">
+                      {it.quantity}x {it.name} {it.size ? `(${it.size})` : ''}
+                    </span>
+                    {(it as any).modifiers && (it as any).modifiers.length > 0 && (
+                      <div className="text-[11px] text-brand-dark/80 font-mono mt-0.5 space-y-0.5">
+                        {(it as any).modifiers.map((m: any, mi: number) => (
+                          <div key={mi}>+ {m.optionName} {m.price > 0 ? `(+€${m.price.toFixed(2)})` : '(Free)'}</div>
+                        ))}
+                      </div>
+                    )}
                     {it.notes && (
-                      <span className="block text-xs text-brand-accent italic">
+                      <span className="block text-xs text-brand-accent italic mt-0.5">
                         &ldquo;{it.notes}&rdquo;
                       </span>
                     )}
-                  </span>
-                  <span className="text-brand-dark font-bold">&euro;{(it.price * it.quantity).toFixed(2)}</span>
+                  </div>
+                  <span className="text-brand-dark font-bold shrink-0">&euro;{(it.price * it.quantity).toFixed(2)}</span>
                 </div>
               ))}
               <div className="border-t border-dashed border-brand-dark/10 pt-2 font-bold flex justify-between text-brand-dark text-sm sm:text-base">
@@ -667,7 +888,11 @@ export const OrderView: React.FC<OrderViewProps> = ({
               <div className="pt-3 border-t border-brand-dark/5 space-y-3 animate-fade-in">
                 <div className="divide-y divide-brand-dark/5 max-h-56 overflow-y-auto space-y-2.5 pr-1">
                   {cart.map((item) => {
-                    const itemPrice = item.selectedSize ? item.selectedSize.price : item.menuItem.price;
+                    const basePrice = item.selectedSize ? item.selectedSize.price : item.menuItem.price;
+                    const modExtra = item.selectedModifiers
+                      ? item.selectedModifiers.reduce((acc, m) => acc + (m.price || 0), 0)
+                      : 0;
+                    const itemTotal = (basePrice + modExtra) * item.quantity;
                     return (
                       <div key={item.id} className="pt-2 flex justify-between items-start gap-3 text-xs sm:text-sm">
                         <div>
@@ -679,13 +904,22 @@ export const OrderView: React.FC<OrderViewProps> = ({
                               Size: {item.selectedSize.name}
                             </span>
                           )}
+                          {item.selectedModifiers && item.selectedModifiers.length > 0 && (
+                            <div className="space-y-0.5 mt-0.5">
+                              {item.selectedModifiers.map((m, mIdx) => (
+                                <span key={mIdx} className="block text-[11px] font-mono text-brand-dark/80">
+                                  + {m.optionName} {m.price > 0 ? `(+€${m.price.toFixed(2)})` : '(Free)'}
+                                </span>
+                              ))}
+                            </div>
+                          )}
                           {item.notes && (
-                            <span className="block text-xs text-brand-accent italic truncate max-w-[200px]">
+                            <span className="block text-xs text-brand-accent italic truncate max-w-[200px] mt-0.5">
                               &ldquo;{item.notes}&rdquo;
                             </span>
                           )}
                         </div>
-                        <span className="text-brand-dark font-bold shrink-0">&euro;{(itemPrice * item.quantity).toFixed(2)}</span>
+                        <span className="text-brand-dark font-bold shrink-0">&euro;{itemTotal.toFixed(2)}</span>
                       </div>
                     );
                   })}
@@ -963,7 +1197,11 @@ export const OrderView: React.FC<OrderViewProps> = ({
             
             <div className="divide-y divide-brand-dark/5 space-y-3">
               {cart.map((item) => {
-                const itemPrice = item.selectedSize ? item.selectedSize.price : item.menuItem.price;
+                const basePrice = item.selectedSize ? item.selectedSize.price : item.menuItem.price;
+                const modExtra = item.selectedModifiers
+                  ? item.selectedModifiers.reduce((acc, m) => acc + (m.price || 0), 0)
+                  : 0;
+                const itemTotal = (basePrice + modExtra) * item.quantity;
                 return (
                   <div key={item.id} className="pt-3 flex justify-between gap-4 text-sm">
                     <div>
@@ -975,13 +1213,22 @@ export const OrderView: React.FC<OrderViewProps> = ({
                           Size: {item.selectedSize.name}
                         </span>
                       )}
+                      {item.selectedModifiers && item.selectedModifiers.length > 0 && (
+                        <div className="space-y-0.5 mt-1">
+                          {item.selectedModifiers.map((m, mIdx) => (
+                            <span key={mIdx} className="block text-[11px] font-mono text-brand-dark/80">
+                              + {m.optionName} {m.price > 0 ? `(+€${m.price.toFixed(2)})` : '(Free)'}
+                            </span>
+                          ))}
+                        </div>
+                      )}
                       {item.notes && (
                         <span className="block text-xs text-brand-accent italic truncate max-w-[200px] mt-0.5">
                           &ldquo;{item.notes}&rdquo;
                         </span>
                       )}
                     </div>
-                    <span className="text-brand-dark font-bold">&euro;{(itemPrice * item.quantity).toFixed(2)}</span>
+                    <span className="text-brand-dark font-bold">&euro;{itemTotal.toFixed(2)}</span>
                   </div>
                 );
               })}
@@ -1048,15 +1295,43 @@ export const OrderView: React.FC<OrderViewProps> = ({
                 onScroll={updateArrows}
                 className="flex lg:flex-col overflow-x-auto lg:overflow-visible gap-2 pb-2 lg:pb-0 scrollbar-none w-full scroll-smooth px-1 lg:px-0 py-1"
               >
-                {CATEGORIES.map((cat) => {
-                  const isActive = selectedCategory === cat;
+                {catalogDeals && catalogDeals.length > 0 && (
+                  <button
+                    type="button"
+                    id="order-category-btn-deals"
+                    onClick={(e) => {
+                      setSelectedCategory('🎁 Deals & Offers');
+                      e.currentTarget.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'nearest',
+                        inline: 'center'
+                      });
+                    }}
+                    className={`text-left px-4 py-2.5 lg:px-5 lg:py-3 text-xs font-sans tracking-wider uppercase transition-all duration-200 lg:w-full whitespace-nowrap lg:whitespace-normal font-bold group relative flex items-center justify-between shrink-0 rounded-full active:scale-95 ${
+                      selectedCategory === '🎁 Deals & Offers' || selectedCategory === 'Deals & Offers'
+                        ? 'bg-brand-accent text-white shadow-md'
+                        : 'bg-amber-500/10 text-amber-900 hover:bg-amber-500/20 shadow-xs'
+                    }`}
+                  >
+                    <span className="flex items-center gap-1.5">
+                      <Sparkles className="w-3.5 h-3.5" />
+                      <span>Deals &amp; Combos</span>
+                    </span>
+                    <span className="text-[10px] bg-white/20 text-white font-mono px-1.5 py-0.5 rounded-full">
+                      {catalogDeals.length}
+                    </span>
+                  </button>
+                )}
+
+                {catalogCategories.map((cat) => {
+                  const isActive = selectedCategory === cat.name;
                   return (
                     <button
                       type="button"
-                      id={`order-category-btn-${cat.replace(/\s+/g, '-').toLowerCase()}`}
-                      key={cat}
+                      id={`order-category-btn-${cat.slug || cat.name.replace(/\s+/g, '-').toLowerCase()}`}
+                      key={cat.id || cat.name}
                       onClick={(e) => {
-                        setSelectedCategory(cat);
+                        setSelectedCategory(cat.name);
                         e.currentTarget.scrollIntoView({
                           behavior: 'smooth',
                           block: 'nearest',
@@ -1069,7 +1344,7 @@ export const OrderView: React.FC<OrderViewProps> = ({
                           : 'bg-white text-brand-muted hover:text-brand-dark hover:bg-brand-dark/5 shadow-xs'
                       }`}
                     >
-                      <span>{cat}</span>
+                      <span>{cat.name}</span>
                       {isActive && (
                         <span className="w-2 h-2 rounded-full bg-brand-accent shrink-0 ml-2 hidden lg:inline-block animate-pulse"></span>
                       )}
@@ -1104,107 +1379,165 @@ export const OrderView: React.FC<OrderViewProps> = ({
                 {selectedCategory}
               </h2>
               <span className="text-xs text-brand-muted font-medium">
-                {filteredItems.length} items
+                {selectedCategory === '🎁 Deals & Offers' || selectedCategory === 'Deals & Offers'
+                  ? `${catalogDeals.length} deals available`
+                  : `${filteredItems.length} items`}
               </span>
             </div>
 
-            <div className="space-y-3.5 sm:space-y-4 animate-slide-up" key={selectedCategory} id="order-items-scrollable">
-              {filteredItems.map((item) => {
-                const activeSize = selectedSizes[item.id];
-                const activePrice = activeSize ? activeSize.price : item.price;
-                const notes = customNotes[item.id] || '';
-
-                return (
+            {/* If Deals & Combos is selected */}
+            {(selectedCategory === '🎁 Deals & Offers' || selectedCategory === 'Deals & Offers') ? (
+              <div className="space-y-3.5 sm:space-y-4 animate-slide-up" id="deal-items-scrollable">
+                {catalogDeals.map((deal) => (
                   <div 
-                    key={item.id} 
-                    className="p-4 sm:p-6 bg-white hover:bg-white rounded-2xl shadow-[0_2px_12px_rgba(0,0,0,0.03)] hover:shadow-[0_8px_24px_rgba(0,0,0,0.06)] transition-all duration-200 flex flex-col justify-between space-y-3.5 sm:space-y-4"
+                    key={deal.id}
+                    className="p-4 sm:p-6 bg-gradient-to-br from-amber-500/5 to-transparent border border-amber-500/20 rounded-3xl shadow-[0_2px_12px_rgba(0,0,0,0.03)] hover:shadow-[0_8px_24px_rgba(0,0,0,0.06)] transition-all space-y-4"
                   >
-                    <div className="space-y-1.5 sm:space-y-2">
-                      <div className="flex justify-between items-start gap-3">
-                        <h3 className="text-base sm:text-lg font-bold text-brand-dark flex items-center gap-1.5 leading-snug">
-                          {item.name}
-                          {item.isVeg && (
-                            <span className="w-2 h-2 bg-emerald-500 inline-block rounded-full ring-2 ring-emerald-100" title="Veg Available"></span>
-                          )}
+                    <div className="flex justify-between items-start gap-3">
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2">
+                          <span className="px-2 py-0.5 bg-brand-accent text-white text-[10px] font-bold uppercase tracking-wider rounded-full">
+                            {deal.badgeText || 'SPECIAL OFFER'}
+                          </span>
+                        </div>
+                        <h3 className="text-base sm:text-lg font-bold text-brand-dark">
+                          {deal.title}
                         </h3>
-                        <span className="text-sm sm:text-base font-extrabold text-brand-dark shrink-0">
-                          &euro;{activePrice.toFixed(2)}
+                        {deal.description && (
+                          <p className="text-xs sm:text-sm text-brand-muted leading-relaxed font-normal">
+                            {deal.description}
+                          </p>
+                        )}
+                      </div>
+                      <div className="text-right shrink-0">
+                        <span className="text-base sm:text-lg font-black text-brand-accent block">
+                          &euro;{deal.bundlePrice.toFixed(2)}
                         </span>
                       </div>
-
-                      {item.description && (
-                        <p className="text-xs sm:text-sm text-brand-muted leading-relaxed font-normal">
-                          {item.description}
-                        </p>
-                      )}
                     </div>
 
-                    {/* Options area: size selector if any */}
-                    {item.sizeOptions && item.sizeOptions.length > 0 && (
-                      <div className="space-y-1.5">
-                        <span className="block text-xs text-brand-accent tracking-wider font-bold uppercase">
-                          CHOOSE SIZE:
+                    {/* Step overview */}
+                    {deal.steps && deal.steps.length > 0 && (
+                      <div className="bg-white/80 p-3 rounded-2xl border border-brand-dark/5 space-y-1 text-xs">
+                        <span className="font-bold text-brand-dark uppercase tracking-wider text-[11px] block">
+                          Package Includes:
                         </span>
-                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                          {item.sizeOptions.map((opt) => (
-                            <button
-                              type="button"
-                              id={`size-opt-${item.id}-${opt.name.replace(/\s+/g, '-').toLowerCase()}`}
-                              key={opt.name}
-                              onClick={() => handleSizeChange(item.id, opt.name)}
-                              className={`py-2 px-3 text-xs sm:text-sm font-semibold transition-all truncate text-center min-h-[40px] rounded-full active:scale-95 ${
-                                activeSize?.name === opt.name
-                                  ? 'bg-brand-dark text-white shadow-xs'
-                                  : 'bg-brand-dark/[0.04] text-brand-dark hover:bg-brand-dark/[0.08]'
-                              }`}
-                            >
-                              {opt.name}
-                            </button>
+                        <ul className="space-y-0.5 text-brand-muted">
+                          {deal.steps.map((st, sIdx) => (
+                            <li key={sIdx} className="flex items-center gap-1.5">
+                              <span className="w-1.5 h-1.5 rounded-full bg-brand-accent"></span>
+                              <span>{st.stepName} ({st.count || 1} item{st.count > 1 ? 's' : ''})</span>
+                            </li>
                           ))}
-                        </div>
+                        </ul>
                       </div>
                     )}
 
-                    {/* Inline special chefs notes */}
-                    <div className="space-y-1">
-                      <label htmlFor={`custom-notes-${item.id}`} className="block text-xs text-brand-accent tracking-wider font-bold uppercase">
-                        ADD SPECIAL NOTES FOR CHEF (OPTIONAL)
-                      </label>
-                      <input
-                        id={`custom-notes-${item.id}`}
-                        type="text"
-                        placeholder="e.g., extra hot, garlic sauce on top..."
-                        value={notes}
-                        onChange={(e) => setCustomNotes((prev) => ({ ...prev, [item.id]: e.target.value }))}
-                        className="w-full text-sm sm:text-base px-3.5 py-2.5 bg-brand-dark/[0.03] focus:bg-white focus:ring-2 focus:ring-brand-accent/20 outline-none placeholder:text-brand-muted/50 rounded-xl transition-all"
-                      />
-                    </div>
-
-                    {/* Core action button */}
-                    <div className="pt-1 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                      <span 
-                        id={`added-notif-${item.id}`}
-                        className="text-xs font-bold text-emerald-600 opacity-0 transition-opacity duration-300 flex items-center"
-                      >
-                        ✓ ADDED TO BASKET
-                      </span>
-
+                    <div className="pt-1 flex justify-end">
                       <button
                         type="button"
-                        id={`add-to-cart-btn-${item.id}`}
-                        onClick={() => handleAddWithDetails(item)}
-                        className="w-full sm:w-auto bg-brand-dark text-white hover:bg-brand-accent px-6 py-3 sm:py-2.5 text-xs sm:text-sm font-bold uppercase tracking-wider transition-all rounded-full shadow-sm hover:shadow-md active:scale-[0.98] flex items-center justify-center space-x-2 min-h-[44px]"
+                        onClick={() => handleOpenDealModal(deal)}
+                        className="w-full sm:w-auto bg-brand-accent text-white hover:bg-brand-dark px-6 py-3 text-xs sm:text-sm font-bold uppercase tracking-wider transition-all rounded-full shadow-md active:scale-95 flex items-center justify-center gap-2 min-h-[44px]"
                       >
-                        <span>ADD TO CART</span>
-                        <span>&bull;</span>
-                        <span>&euro;{activePrice.toFixed(2)}</span>
+                        <Sparkles className="w-4 h-4" />
+                        <span>CUSTOMIZE DEAL &bull; &euro;{deal.bundlePrice.toFixed(2)}</span>
                       </button>
                     </div>
-
                   </div>
-                );
-              })}
-            </div>
+                ))}
+              </div>
+            ) : (
+              /* Regular category food list */
+              <div className="space-y-3.5 sm:space-y-4 animate-slide-up" key={selectedCategory} id="order-items-scrollable">
+                {filteredItems.length === 0 ? (
+                  <div className="text-center py-12 bg-white rounded-3xl p-6 text-brand-muted text-sm font-medium">
+                    No dishes found in this category.
+                  </div>
+                ) : (
+                  filteredItems.map((item) => {
+                    const activeSize = selectedSizes[item.id];
+                    const activePrice = activeSize ? activeSize.price : item.price;
+                    const applicableGroups = getOptionGroupsForItem(item);
+                    const hasCustomizations = (item.sizeOptions && item.sizeOptions.length > 0) || applicableGroups.length > 0;
+
+                    return (
+                      <div 
+                        key={item.id} 
+                        className={`p-4 sm:p-6 bg-white rounded-2xl shadow-[0_2px_12px_rgba(0,0,0,0.03)] hover:shadow-[0_8px_24px_rgba(0,0,0,0.06)] transition-all duration-200 flex flex-col justify-between space-y-3.5 sm:space-y-4 ${
+                          item.isSoldOut ? 'opacity-60 bg-gray-50' : ''
+                        }`}
+                      >
+                        <div className="space-y-1.5 sm:space-y-2">
+                          <div className="flex justify-between items-start gap-3">
+                            <div>
+                              <h3 className="text-base sm:text-lg font-bold text-brand-dark flex items-center gap-1.5 leading-snug">
+                                {item.name}
+                                {item.isVeg && (
+                                  <span className="w-2 h-2 bg-emerald-500 inline-block rounded-full ring-2 ring-emerald-100" title="Veg Available"></span>
+                                )}
+                              </h3>
+                              {item.isSoldOut && (
+                                <span className="inline-block mt-0.5 text-[10px] font-bold uppercase tracking-wider text-rose-600 bg-rose-50 px-2 py-0.5 rounded-full">
+                                  SOLD OUT TODAY
+                                </span>
+                              )}
+                            </div>
+                            <span className="text-sm sm:text-base font-extrabold text-brand-dark shrink-0">
+                              &euro;{activePrice.toFixed(2)}
+                            </span>
+                          </div>
+
+                          {item.description && (
+                            <p className="text-xs sm:text-sm text-brand-muted leading-relaxed font-normal">
+                              {item.description}
+                            </p>
+                          )}
+
+                          {/* Quick customization teaser badge */}
+                          {applicableGroups.length > 0 && !item.isSoldOut && (
+                            <div className="flex flex-wrap gap-1.5 pt-1">
+                              {applicableGroups.map((grp) => (
+                                <span key={grp.id} className="text-[10px] font-semibold bg-brand-dark/5 text-brand-dark px-2 py-0.5 rounded-full flex items-center gap-1">
+                                  <Sliders className="w-2.5 h-2.5 text-brand-accent" />
+                                  <span>{grp.title}</span>
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Core action button */}
+                        <div className="pt-1 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                          <span 
+                            id={`added-notif-${item.id}`}
+                            className="text-xs font-bold text-emerald-600 opacity-0 transition-opacity duration-300 flex items-center"
+                          >
+                            ✓ ADDED TO BASKET
+                          </span>
+
+                          <button
+                            type="button"
+                            id={`add-to-cart-btn-${item.id}`}
+                            disabled={item.isSoldOut}
+                            onClick={() => handleOpenCustomization(item)}
+                            className={`w-full sm:w-auto px-6 py-3 sm:py-2.5 text-xs sm:text-sm font-bold uppercase tracking-wider transition-all rounded-full shadow-sm hover:shadow-md active:scale-[0.98] flex items-center justify-center space-x-2 min-h-[44px] ${
+                              item.isSoldOut
+                                ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                                : 'bg-brand-dark text-white hover:bg-brand-accent'
+                            }`}
+                          >
+                            <span>{hasCustomizations ? 'CUSTOMIZE & ADD' : 'ADD TO BASKET'}</span>
+                            <span>&bull;</span>
+                            <span>&euro;{activePrice.toFixed(2)}</span>
+                          </button>
+                        </div>
+
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            )}
           </div>
 
           {/* Right Checkout Basket Column (Desktop) */}
@@ -1254,7 +1587,11 @@ export const OrderView: React.FC<OrderViewProps> = ({
                 {/* Active items scroll box with modern cardlets */}
                 <div className="max-h-[340px] overflow-y-auto space-y-2.5 pr-1 scrollbar-thin" id="cart-items-scroller">
                   {cart.map((cartItem) => {
-                    const price = cartItem.selectedSize ? cartItem.selectedSize.price : cartItem.menuItem.price;
+                    const basePrice = cartItem.selectedSize ? cartItem.selectedSize.price : cartItem.menuItem.price;
+                    const modExtra = cartItem.selectedModifiers
+                      ? cartItem.selectedModifiers.reduce((acc, m) => acc + (m.price || 0), 0)
+                      : 0;
+                    const itemTotal = (basePrice + modExtra) * cartItem.quantity;
                     return (
                       <div 
                         key={cartItem.id} 
@@ -1262,18 +1599,27 @@ export const OrderView: React.FC<OrderViewProps> = ({
                       >
                         <div className="flex justify-between items-start gap-3">
                           <div className="space-y-1 flex-1 min-w-0">
-                            <span className="text-sm font-bold text-brand-dark block truncate">
+                            <span className="text-sm font-bold text-brand-dark block leading-snug">
                               {cartItem.menuItem.name}
                             </span>
                             
-                            <div className="flex flex-wrap gap-1 items-center">
+                            <div className="flex flex-col gap-0.5">
                               {cartItem.selectedSize && (
-                                <span className="text-[11px] font-semibold bg-brand-dark/5 text-brand-dark px-2 py-0.5 rounded-md">
+                                <span className="text-[11px] font-semibold bg-brand-dark/5 text-brand-dark px-2 py-0.5 rounded-md w-max">
                                   {cartItem.selectedSize.name}
                                 </span>
                               )}
+                              {cartItem.selectedModifiers && cartItem.selectedModifiers.length > 0 && (
+                                <div className="space-y-0.5 mt-0.5">
+                                  {cartItem.selectedModifiers.map((m, mIdx) => (
+                                    <span key={mIdx} className="block text-[11px] font-mono text-brand-dark/80 leading-snug">
+                                      + {m.optionName} {m.price > 0 ? `(+€${m.price.toFixed(2)})` : '(Free)'}
+                                    </span>
+                                  ))}
+                                </div>
+                              )}
                               {cartItem.notes && (
-                                <span className="text-xs text-brand-accent italic truncate max-w-[160px] block">
+                                <span className="text-xs text-brand-accent italic block mt-0.5 break-words">
                                   &ldquo;{cartItem.notes}&rdquo;
                                 </span>
                               )}
@@ -1281,7 +1627,7 @@ export const OrderView: React.FC<OrderViewProps> = ({
                           </div>
                           
                           <span className="text-sm font-extrabold text-brand-dark shrink-0">
-                            &euro;{(price * cartItem.quantity).toFixed(2)}
+                            &euro;{itemTotal.toFixed(2)}
                           </span>
                         </div>
 
@@ -1490,237 +1836,360 @@ export const OrderView: React.FC<OrderViewProps> = ({
         document.body
       )}
 
-      {/* Pakistani Cuisine Included Side Selection Popup */}
-      {pakistaniSideModalItem && createPortal(
-        <div 
-          className="fixed inset-0 bg-black/60 z-[9999] flex items-center justify-center p-4 backdrop-blur-xs animate-fade-in overflow-y-auto"
-          onClick={() => setPakistaniSideModalItem(null)}
-        >
-          <div 
-            className="relative my-auto bg-white max-w-md w-full p-5 sm:p-6 shadow-2xl rounded-3xl text-left space-y-4 animate-scale-up max-h-[90vh] overflow-y-auto"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-start justify-between border-b border-brand-dark/5 pb-3">
-              <div>
-                <span className="text-xs text-brand-accent uppercase font-bold tracking-wider block">
-                  ★ INCLUDED SIDE SELECTION
-                </span>
-                <h3 className="text-base sm:text-lg font-bold text-brand-dark mt-0.5">
-                  {pakistaniSideModalItem.name}
-                </h3>
-                <p className="text-xs text-brand-muted mt-0.5 font-medium">
-                  &euro;{pakistaniSideModalItem.price.toFixed(2)} &bull; Served with your choice of side
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={() => setPakistaniSideModalItem(null)}
-                className="text-brand-muted hover:text-brand-dark p-2 rounded-full hover:bg-brand-dark/5 transition-colors"
-                aria-label="Close modal"
+      {/* Interactive Food Customization & Upsell Popup Modal (Deliveroo / UberEats style) */}
+      {customizationItem && createPortal(
+        (() => {
+          const applicableGroups = getOptionGroupsForItem(customizationItem);
+          const baseItemPrice = customizationSize ? customizationSize.price : customizationItem.price;
+          const allSelectedMods = Object.values(customizationModifiers).flat();
+          const modsExtra = allSelectedMods.reduce((acc, m) => acc + (m.price || 0), 0);
+          const customizationTotal = (baseItemPrice + modsExtra) * customizationQuantity;
+
+          const isMandatorySatisfied = applicableGroups.every(grp => {
+            if (grp.minSelection <= 0) return true;
+            const count = (customizationModifiers[String(grp.id)] || []).length;
+            return count >= grp.minSelection;
+          });
+
+          return (
+            <div 
+              className="fixed inset-0 bg-black/60 z-[9999] flex items-center justify-center p-3 sm:p-4 backdrop-blur-xs animate-fade-in overflow-y-auto"
+              onClick={() => setCustomizationItem(null)}
+            >
+              <div 
+                className="relative my-auto bg-white max-w-lg w-full p-5 sm:p-7 shadow-2xl rounded-3xl text-left space-y-5 animate-scale-up max-h-[90vh] overflow-y-auto"
+                onClick={(e) => e.stopPropagation()}
               >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <div className="space-y-2">
-              <label className="block text-xs text-brand-dark tracking-wider font-bold uppercase">
-                Choose 1 Included Side <span className="text-red-500">*</span>
-              </label>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                {/* Naan Bread Option */}
-                <button
-                  type="button"
-                  onClick={() => setSelectedSideChoice('Naan Bread')}
-                  className={`flex flex-col text-left p-3.5 rounded-2xl transition-all cursor-pointer active:scale-95 ${
-                    selectedSideChoice === 'Naan Bread'
-                      ? 'bg-brand-dark text-white shadow-md'
-                      : 'bg-brand-dark/[0.04] text-brand-dark hover:bg-brand-dark/[0.08]'
-                  }`}
-                >
-                  <div className="flex items-center justify-between w-full mb-1">
-                    <span className="font-bold text-sm">Naan Bread</span>
-                    <span className={`w-4 h-4 rounded-full flex items-center justify-center text-[10px] ${
-                      selectedSideChoice === 'Naan Bread' ? 'bg-white text-brand-dark font-bold' : 'bg-brand-dark/10 text-transparent'
-                    }`}>
-                      ✓
+                {/* Header with Close */}
+                <div className="flex items-start justify-between border-b border-brand-dark/5 pb-4">
+                  <div className="space-y-1 pr-3">
+                    <span className="text-[11px] font-bold text-brand-accent uppercase tracking-widest block">
+                      {customizationItem.category}
                     </span>
+                    <h3 className="text-lg sm:text-xl font-bold text-brand-dark flex items-center gap-2">
+                      {customizationItem.name}
+                      {customizationItem.isVeg && (
+                        <span className="w-2.5 h-2.5 bg-emerald-500 inline-block rounded-full ring-2 ring-emerald-100" title="Vegetarian"></span>
+                      )}
+                    </h3>
+                    {customizationItem.description && (
+                      <p className="text-xs sm:text-sm text-brand-muted leading-relaxed font-normal">
+                        {customizationItem.description}
+                      </p>
+                    )}
                   </div>
-                  <span className={`text-xs ${selectedSideChoice === 'Naan Bread' ? 'text-white/80' : 'text-brand-muted'}`}>
-                    Fresh clay oven baked naan
-                  </span>
-                </button>
+                  <button
+                    type="button"
+                    onClick={() => setCustomizationItem(null)}
+                    className="text-brand-muted hover:text-brand-dark p-2 rounded-full hover:bg-brand-dark/5 transition-colors shrink-0"
+                    aria-label="Close customizer"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
 
-                {/* White Rice Option */}
-                <button
-                  type="button"
-                  onClick={() => setSelectedSideChoice('White Rice')}
-                  className={`flex flex-col text-left p-3.5 rounded-2xl transition-all cursor-pointer active:scale-95 ${
-                    selectedSideChoice === 'White Rice'
-                      ? 'bg-brand-dark text-white shadow-md'
-                      : 'bg-brand-dark/[0.04] text-brand-dark hover:bg-brand-dark/[0.08]'
-                  }`}
-                >
-                  <div className="flex items-center justify-between w-full mb-1">
-                    <span className="font-bold text-sm">White Rice</span>
-                    <span className={`w-4 h-4 rounded-full flex items-center justify-center text-[10px] ${
-                      selectedSideChoice === 'White Rice' ? 'bg-white text-brand-dark font-bold' : 'bg-brand-dark/10 text-transparent'
-                    }`}>
-                      ✓
-                    </span>
+                {/* Size options if available */}
+                {customizationItem.sizeOptions && customizationItem.sizeOptions.length > 0 && (
+                  <div className="space-y-2 bg-brand-dark/[0.02] p-4 rounded-2xl border border-brand-dark/5">
+                    <div className="flex justify-between items-center">
+                      <label className="text-xs font-bold text-brand-dark uppercase tracking-wider block">
+                        Choose Portion Size <span className="text-red-500">*</span>
+                      </label>
+                      <span className="text-[10px] bg-brand-dark text-white px-2 py-0.5 rounded-full font-bold">
+                        REQUIRED
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                      {customizationItem.sizeOptions.map((opt) => {
+                        const isSelected = customizationSize?.name === opt.name;
+                        return (
+                          <button
+                            key={opt.name}
+                            type="button"
+                            onClick={() => setCustomizationSize(opt)}
+                            className={`py-2.5 px-3 text-xs sm:text-sm font-semibold transition-all rounded-full flex flex-col items-center justify-center active:scale-95 ${
+                              isSelected
+                                ? 'bg-brand-dark text-white shadow-sm'
+                                : 'bg-white border border-brand-dark/10 text-brand-dark hover:bg-brand-dark/5'
+                            }`}
+                          >
+                            <span>{opt.name}</span>
+                            <span className={`text-[11px] font-mono ${isSelected ? 'text-white/80' : 'text-brand-muted'}`}>
+                              &euro;{opt.price.toFixed(2)}
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
                   </div>
-                  <span className={`text-xs ${selectedSideChoice === 'White Rice' ? 'text-white/80' : 'text-brand-muted'}`}>
-                    Fragrant steamed basmati rice
-                  </span>
-                </button>
+                )}
+
+                {/* Option Groups (Modifiers, Sauces, Included Drinks/Sides, Addons) */}
+                {applicableGroups.map((group) => {
+                  const gid = String(group.id);
+                  const selectedInGroup = customizationModifiers[gid] || [];
+                  const isMandatory = group.minSelection > 0;
+                  const isSatisfied = selectedInGroup.length >= group.minSelection;
+
+                  return (
+                    <div key={group.id} className="space-y-2.5 bg-brand-dark/[0.02] p-4 rounded-2xl border border-brand-dark/5">
+                      <div className="flex justify-between items-baseline gap-2">
+                        <div>
+                          <h4 className="text-xs sm:text-sm font-bold text-brand-dark uppercase tracking-wider">
+                            {group.title}
+                            {isMandatory && <span className="text-red-500 ml-1">*</span>}
+                          </h4>
+                          <span className="text-[11px] text-brand-muted">
+                            {isMandatory
+                              ? `Select ${group.minSelection === 1 ? '1 option' : `at least ${group.minSelection} options`}`
+                              : `Optional (up to ${group.maxSelection})`}
+                          </span>
+                        </div>
+                        <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider ${
+                          isSatisfied
+                            ? 'bg-emerald-100 text-emerald-800'
+                            : isMandatory
+                            ? 'bg-amber-100 text-amber-800'
+                            : 'bg-brand-dark/5 text-brand-muted'
+                        }`}>
+                          {isSatisfied ? 'Completed' : isMandatory ? 'Required' : 'Optional'}
+                        </span>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
+                        {group.options.map((option) => {
+                          const isSelected = selectedInGroup.some(m => String(m.optionId) === String(option.id));
+                          const price = option.priceModifier || 0;
+
+                          return (
+                            <button
+                              key={option.id}
+                              type="button"
+                              onClick={() => handleToggleModifierOption(group, option)}
+                              className={`p-3 rounded-2xl text-left transition-all flex items-center justify-between gap-2 active:scale-95 cursor-pointer ${
+                                isSelected
+                                  ? 'bg-brand-dark text-white shadow-sm'
+                                  : 'bg-white border border-brand-dark/10 text-brand-dark hover:bg-brand-dark/5'
+                              }`}
+                            >
+                              <div className="flex items-center space-x-2.5 min-w-0">
+                                <span className={`w-4 h-4 rounded-full flex items-center justify-center text-[10px] shrink-0 ${
+                                  isSelected
+                                    ? 'bg-white text-brand-dark font-bold'
+                                    : 'border border-brand-dark/30 text-transparent'
+                                }`}>
+                                  ✓
+                                </span>
+                                <span className="text-xs sm:text-sm font-semibold leading-snug break-words">
+                                  {option.name}
+                                </span>
+                              </div>
+                              <span className={`text-xs font-mono shrink-0 ${
+                                isSelected ? 'text-white/90' : price > 0 ? 'text-brand-accent font-bold' : 'text-brand-muted'
+                              }`}>
+                                {price > 0 ? `+€${price.toFixed(2)}` : 'Free'}
+                              </span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })}
+
+                {/* Special Instructions for Chef */}
+                <div className="space-y-1.5">
+                  <label htmlFor="modal-custom-notes" className="block text-xs text-brand-accent tracking-wider font-bold uppercase">
+                    Special Instructions for Chef (Optional)
+                  </label>
+                  <input
+                    id="modal-custom-notes"
+                    type="text"
+                    placeholder="e.g., extra crispy, sauce on side, mild chili..."
+                    value={customizationNotes}
+                    onChange={(e) => setCustomizationNotes(e.target.value)}
+                    className="w-full text-sm sm:text-base px-3.5 py-2.5 bg-brand-dark/[0.03] focus:bg-white focus:ring-2 focus:ring-brand-accent/20 outline-none rounded-xl placeholder:text-brand-muted/50 transition-all"
+                  />
+                </div>
+
+                {/* Quantity & Add to Basket footer */}
+                <div className="pt-2 flex flex-col sm:flex-row items-center gap-3 border-t border-brand-dark/5">
+                  {/* Quantity Stepper */}
+                  <div className="flex items-center space-x-2 bg-brand-dark/[0.05] p-1.5 rounded-full w-full sm:w-auto justify-center">
+                    <button
+                      type="button"
+                      onClick={() => setCustomizationQuantity(q => Math.max(1, q - 1))}
+                      disabled={customizationQuantity <= 1}
+                      className="w-8 h-8 rounded-full flex items-center justify-center text-brand-dark bg-white hover:bg-brand-dark hover:text-white transition-all active:scale-90 disabled:opacity-40"
+                      aria-label="Decrease quantity"
+                    >
+                      <Minus className="w-3.5 h-3.5" />
+                    </button>
+                    <span className="text-sm font-bold text-brand-dark px-3 min-w-[28px] text-center">
+                      {customizationQuantity}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setCustomizationQuantity(q => q + 1)}
+                      className="w-8 h-8 rounded-full flex items-center justify-center text-brand-dark bg-white hover:bg-brand-dark hover:text-white transition-all active:scale-90"
+                      aria-label="Increase quantity"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+
+                  {/* Add to Basket Action */}
+                  <button
+                    type="button"
+                    disabled={!isMandatorySatisfied}
+                    onClick={handleConfirmCustomization}
+                    className={`flex-1 w-full py-3.5 px-6 text-xs sm:text-sm font-bold uppercase tracking-wider rounded-full shadow-md active:scale-95 transition-all flex items-center justify-center gap-2 min-h-[46px] ${
+                      isMandatorySatisfied
+                        ? 'bg-brand-accent hover:bg-brand-dark text-white'
+                        : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                    }`}
+                  >
+                    <span>{isMandatorySatisfied ? 'ADD TO BASKET' : 'SELECT REQUIRED OPTIONS'}</span>
+                    <span>&bull;</span>
+                    <span className="font-mono">&euro;{customizationTotal.toFixed(2)}</span>
+                  </button>
+                </div>
+
               </div>
             </div>
-
-            {/* Special Instructions for Chef */}
-            <div className="space-y-1.5 pt-1">
-              <label htmlFor="pakistani-modal-notes" className="block text-xs text-brand-accent tracking-wider font-bold uppercase">
-                Special Instructions for Chef (Optional)
-              </label>
-              <input
-                id="pakistani-modal-notes"
-                type="text"
-                placeholder="e.g., extra spicy, mild, sauce on side..."
-                value={modalChefNotes}
-                onChange={(e) => setModalChefNotes(e.target.value)}
-                className="w-full text-sm sm:text-base px-3.5 py-2.5 bg-brand-dark/[0.03] focus:bg-white focus:ring-2 focus:ring-brand-accent/20 outline-none rounded-xl placeholder:text-brand-muted/50 transition-all"
-              />
-            </div>
-
-            {/* Modal Actions */}
-            <div className="pt-2 flex items-center gap-2.5">
-              <button
-                type="button"
-                onClick={() => setPakistaniSideModalItem(null)}
-                className="flex-1 py-3 px-4 text-xs sm:text-sm font-bold uppercase tracking-wider bg-brand-dark/5 hover:bg-brand-dark/10 text-brand-dark rounded-full transition-colors min-h-[44px]"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={handleConfirmPakistaniSide}
-                className="flex-2 py-3 px-4 text-xs sm:text-sm font-bold uppercase tracking-wider bg-brand-dark text-white hover:bg-brand-accent rounded-full shadow-sm active:scale-95 transition-all flex items-center justify-center gap-1.5 min-h-[44px]"
-              >
-                <span>Add to Cart</span>
-                <span>&bull;</span>
-                <span>&euro;{pakistaniSideModalItem.price.toFixed(2)}</span>
-              </button>
-            </div>
-          </div>
-        </div>,
+          );
+        })(),
         document.body
       )}
 
-      {/* Free Cold Drink Selection Modal Dialog for Burgers, Wraps & Sandwiches */}
-      {drinkModalItem && createPortal(
+      {/* Combo Deal Customizer Modal */}
+      {dealModalItem && createPortal(
         <div 
-          className="fixed inset-0 bg-black/60 z-[9999] flex items-center justify-center p-4 backdrop-blur-xs animate-fade-in overflow-y-auto"
-          onClick={() => setDrinkModalItem(null)}
+          className="fixed inset-0 bg-black/60 z-[9999] flex items-center justify-center p-3 sm:p-4 backdrop-blur-xs animate-fade-in overflow-y-auto"
+          onClick={() => setDealModalItem(null)}
         >
           <div 
-            className="relative my-auto bg-white max-w-lg w-full p-5 sm:p-6 shadow-2xl rounded-3xl text-left space-y-4 animate-scale-up max-h-[90vh] overflow-y-auto"
+            className="relative my-auto bg-white max-w-lg w-full p-5 sm:p-7 shadow-2xl rounded-3xl text-left space-y-5 animate-scale-up max-h-[90vh] overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-start justify-between border-b border-brand-dark/5 pb-3">
-              <div>
-                <span className="text-xs text-emerald-700 uppercase font-bold tracking-wider block">
-                  ★ INCLUDED FREE COLD DRINK
+            {/* Header */}
+            <div className="flex items-start justify-between border-b border-brand-dark/5 pb-4">
+              <div className="space-y-1 pr-3">
+                <span className="text-[11px] font-bold text-brand-accent uppercase tracking-widest block">
+                  {dealModalItem.badgeText || 'COMBO DEAL'}
                 </span>
-                <h3 className="text-base sm:text-lg font-bold text-brand-dark mt-0.5">
-                  {drinkModalItem.name}
+                <h3 className="text-lg sm:text-xl font-bold text-brand-dark">
+                  {dealModalItem.title}
                 </h3>
-                <p className="text-xs text-brand-muted mt-0.5 font-medium">
-                  &euro;{drinkModalItem.price.toFixed(2)} &bull; Includes 1 complimentary cold beverage
-                </p>
+                {dealModalItem.description && (
+                  <p className="text-xs sm:text-sm text-brand-muted leading-relaxed font-normal">
+                    {dealModalItem.description}
+                  </p>
+                )}
               </div>
               <button
                 type="button"
-                onClick={() => setDrinkModalItem(null)}
-                className="text-brand-muted hover:text-brand-dark p-2 rounded-full hover:bg-brand-dark/5 transition-colors"
-                aria-label="Close modal"
+                onClick={() => setDealModalItem(null)}
+                className="text-brand-muted hover:text-brand-dark p-2 rounded-full hover:bg-brand-dark/5 transition-colors shrink-0"
+                aria-label="Close deal modal"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <div className="space-y-2">
-              <label className="block text-xs text-brand-dark tracking-wider font-bold uppercase">
-                Select Your Free Cold Drink <span className="text-red-500">*</span>
-              </label>
+            {/* Deal Steps */}
+            <div className="space-y-4">
+              {dealModalItem.steps.map((step, idx) => {
+                const stepProducts = catalogProducts.filter(p => p.category === step.categoryName || String(p.categoryId) === String(step.categoryId));
+                const currentSelected = dealStepSelections[idx] || [];
 
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-                {[
-                  { name: 'Cola', desc: 'Classic cold soft drink' },
-                  { name: 'Lemon & Lime', desc: 'Crisp citrus soft drink' },
-                  { name: 'Orange Soft Drink', desc: 'Refreshing orange soft drink' }
-                ].map((drink) => {
-                  const isSelected = selectedDrinkChoice === drink.name;
-                  return (
-                    <button
-                      key={drink.name}
-                      type="button"
-                      onClick={() => setSelectedDrinkChoice(drink.name)}
-                      className={`flex flex-col text-left p-3.5 rounded-2xl transition-all cursor-pointer active:scale-95 ${
-                        isSelected
-                          ? 'bg-brand-dark text-white shadow-md'
-                          : 'bg-brand-dark/[0.04] text-brand-dark hover:bg-brand-dark/[0.08]'
-                      }`}
-                    >
-                      <div className="flex items-center justify-between w-full mb-1">
-                        <span className="font-bold text-xs sm:text-sm">{drink.name}</span>
-                        <span className={`w-4 h-4 rounded-full flex items-center justify-center text-[10px] ${
-                          isSelected ? 'bg-white text-brand-dark font-bold' : 'bg-brand-dark/10 text-transparent'
-                        }`}>
-                          ✓
-                        </span>
-                      </div>
-                      <span className={`text-xs leading-tight ${isSelected ? 'text-white/80' : 'text-brand-muted'}`}>
-                        {drink.desc}
+                return (
+                  <div key={idx} className="space-y-2 bg-brand-dark/[0.02] p-4 rounded-2xl border border-brand-dark/5">
+                    <div className="flex justify-between items-baseline">
+                      <h4 className="text-xs sm:text-sm font-bold text-brand-dark uppercase tracking-wider">
+                        {step.stepName}
+                      </h4>
+                      <span className="text-[11px] text-brand-muted font-semibold">
+                        Pick {step.count || 1}
                       </span>
-                    </button>
-                  );
-                })}
-              </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1 max-h-48 overflow-y-auto pr-1">
+                      {stepProducts.map((p) => {
+                        const isChosen = currentSelected.some(s => s.id === p.id);
+                        return (
+                          <button
+                            key={p.id}
+                            type="button"
+                            onClick={() => {
+                              if (step.count === 1) {
+                                setDealStepSelections(prev => ({ ...prev, [idx]: [p] }));
+                              } else {
+                                if (isChosen) {
+                                  setDealStepSelections(prev => ({ ...prev, [idx]: currentSelected.filter(s => s.id !== p.id) }));
+                                } else {
+                                  if (currentSelected.length < (step.count || 1)) {
+                                    setDealStepSelections(prev => ({ ...prev, [idx]: [...currentSelected, p] }));
+                                  }
+                                }
+                              }
+                            }}
+                            className={`p-3 rounded-2xl text-left transition-all flex items-center justify-between gap-2 active:scale-95 cursor-pointer ${
+                              isChosen
+                                ? 'bg-brand-dark text-white shadow-sm'
+                                : 'bg-white border border-brand-dark/10 text-brand-dark hover:bg-brand-dark/5'
+                            }`}
+                          >
+                            <span className="text-xs sm:text-sm font-semibold leading-snug break-words">{p.name}</span>
+                            <span className={`w-4 h-4 rounded-full flex items-center justify-center text-[10px] shrink-0 ${
+                              isChosen ? 'bg-white text-brand-dark font-bold' : 'border border-brand-dark/30 text-transparent'
+                            }`}>
+                              ✓
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
 
-            {/* Special Instructions for Chef */}
-            <div className="space-y-1.5 pt-1">
-              <label htmlFor="drink-modal-notes" className="block text-xs text-brand-accent tracking-wider font-bold uppercase">
-                Special Instructions for Chef (Optional)
+            {/* Deal Chef Notes */}
+            <div className="space-y-1.5">
+              <label htmlFor="deal-notes" className="block text-xs text-brand-accent tracking-wider font-bold uppercase">
+                Instructions for Deal (Optional)
               </label>
               <input
-                id="drink-modal-notes"
+                id="deal-notes"
                 type="text"
-                placeholder="e.g., extra sauce, no onions, no ice..."
-                value={drinkModalNotes}
-                onChange={(e) => setDrinkModalNotes(e.target.value)}
+                placeholder="e.g. no onions on burger, garlic naan preferred..."
+                value={dealNotes}
+                onChange={(e) => setDealNotes(e.target.value)}
                 className="w-full text-sm sm:text-base px-3.5 py-2.5 bg-brand-dark/[0.03] focus:bg-white focus:ring-2 focus:ring-brand-accent/20 outline-none rounded-xl placeholder:text-brand-muted/50 transition-all"
               />
             </div>
 
             {/* Modal Actions */}
-            <div className="pt-2 flex items-center gap-2.5">
+            <div className="pt-2 flex items-center gap-2.5 border-t border-brand-dark/5">
               <button
                 type="button"
-                onClick={() => setDrinkModalItem(null)}
+                onClick={() => setDealModalItem(null)}
                 className="flex-1 py-3 px-4 text-xs sm:text-sm font-bold uppercase tracking-wider bg-brand-dark/5 hover:bg-brand-dark/10 text-brand-dark rounded-full transition-colors min-h-[44px]"
               >
                 Cancel
               </button>
               <button
                 type="button"
-                onClick={handleConfirmDrinkChoice}
-                className="flex-2 py-3 px-4 text-xs sm:text-sm font-bold uppercase tracking-wider bg-brand-dark text-white hover:bg-brand-accent rounded-full shadow-sm active:scale-95 transition-all flex items-center justify-center gap-1.5 min-h-[44px]"
+                onClick={handleConfirmDeal}
+                className="flex-2 py-3 px-4 text-xs sm:text-sm font-bold uppercase tracking-wider bg-brand-accent text-white hover:bg-brand-dark rounded-full shadow-sm active:scale-95 transition-all flex items-center justify-center gap-1.5 min-h-[44px]"
               >
-                <span>Add to Cart</span>
+                <span>Add Deal to Basket</span>
                 <span>&bull;</span>
-                <span>&euro;{drinkModalItem.price.toFixed(2)}</span>
+                <span className="font-mono">&euro;{dealModalItem.bundlePrice.toFixed(2)}</span>
               </button>
             </div>
+
           </div>
         </div>,
         document.body

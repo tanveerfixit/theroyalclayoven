@@ -5,7 +5,7 @@
 
 import React from 'react';
 import { Navbar } from './components/Navbar';
-import { CartItem, MenuItem } from './types';
+import { CartItem, MenuItem, SelectedModifier } from './types';
 import { Plus, Minus, Trash2, X, ShoppingBag, Send, PhoneCall, MessageCircle, CookingPot } from 'lucide-react';
 import { useGoogleOneTapLogin } from '@react-oauth/google';
 import { jwtDecode } from 'jwt-decode';
@@ -35,8 +35,9 @@ const BrandLoader = () => (
 );
 
 export default function App() {
-  // Check if session exists to determine whether to disable One Tap auto-login
+  // Check if session exists or if admin view is active to determine whether to disable One Tap
   const hasUserSession = !!localStorage.getItem('clay_oven_google_user');
+  const isAdminView = typeof window !== 'undefined' && (window.location.hash.includes('admin') || window.location.pathname.includes('admin'));
 
   useGoogleOneTapLogin({
     onSuccess: async (credentialResponse) => {
@@ -81,10 +82,11 @@ export default function App() {
       }
     },
     onError: () => {
-      console.log('Google One Tap auto-login was closed or failed.');
+      // Graceful silence for dev/localhost or dismissed prompts
     },
-    disabled: hasUserSession,
-    auto_select: true
+    disabled: hasUserSession || isAdminView,
+    auto_select: false,
+    use_fedcm_for_prompt: false
   });
 
   const [businessInfo, setBusinessInfo] = React.useState({
@@ -246,16 +248,25 @@ export default function App() {
   };
 
   // Stateful shopping cart actions
-  const addToCart = (item: MenuItem, size?: { name: string; price: number }, notes?: string) => {
+  const addToCart = (
+    item: MenuItem,
+    size?: { name: string; price: number },
+    notes?: string,
+    modifiers?: SelectedModifier[],
+    quantity: number = 1
+  ) => {
     setCart((prevCart) => {
-      // Formulate unique cart item ID depending on chosen size and custom instructions
-      const optionId = `${item.id}-${size ? size.name : 'std'}-${notes ? notes.trim() : 'none'}`;
+      // Formulate unique cart item ID depending on chosen size, modifiers, and custom instructions
+      const modKey = modifiers && modifiers.length > 0
+        ? modifiers.map(m => `${m.groupId}:${m.optionId}`).sort().join('|')
+        : 'none';
+      const optionId = `${item.id}-${size ? size.name : 'std'}-${modKey}-${notes ? notes.trim() : 'none'}`;
       const existingIndex = prevCart.findIndex((c) => c.id === optionId);
 
       let newCart;
       if (existingIndex > -1) {
         newCart = prevCart.map((c, idx) =>
-          idx === existingIndex ? { ...c, quantity: c.quantity + 1 } : c
+          idx === existingIndex ? { ...c, quantity: c.quantity + quantity } : c
         );
       } else {
         newCart = [
@@ -264,7 +275,8 @@ export default function App() {
             id: optionId,
             menuItem: item,
             selectedSize: size,
-            quantity: 1,
+            selectedModifiers: modifiers,
+            quantity: quantity,
             notes: notes?.trim() || undefined
           }
         ];
@@ -299,8 +311,11 @@ export default function App() {
   const totalCartCount = cart.reduce((acc, curr) => acc + curr.quantity, 0);
 
   const subtotal = cart.reduce((acc, curr) => {
-    const itemPrice = curr.selectedSize ? curr.selectedSize.price : curr.menuItem.price;
-    return acc + itemPrice * curr.quantity;
+    const baseItemPrice = curr.selectedSize ? curr.selectedSize.price : curr.menuItem.price;
+    const modifierExtra = curr.selectedModifiers
+      ? curr.selectedModifiers.reduce((mAcc, m) => mAcc + (m.price || 0), 0)
+      : 0;
+    return acc + (baseItemPrice + modifierExtra) * curr.quantity;
   }, 0);
 
   const takeawayCharges = parseFloat(localStorage.getItem('clay_oven_takeaway_charges') || '0.95');
@@ -413,6 +428,10 @@ export default function App() {
                   <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-1">
                     {cart.map((cartItem) => {
                       const basePrice = cartItem.selectedSize ? cartItem.selectedSize.price : cartItem.menuItem.price;
+                      const modExtra = cartItem.selectedModifiers
+                        ? cartItem.selectedModifiers.reduce((acc, m) => acc + (m.price || 0), 0)
+                        : 0;
+                      const itemTotal = (basePrice + modExtra) * cartItem.quantity;
                       return (
                         <div key={cartItem.id} className="border-b border-brand-dark/5 pb-4 last:border-b-0 space-y-2">
                           <div className="flex justify-between items-start gap-4">
@@ -425,14 +444,23 @@ export default function App() {
                                   Size: {cartItem.selectedSize.name}
                                 </span>
                               )}
+                              {cartItem.selectedModifiers && cartItem.selectedModifiers.length > 0 && (
+                                <div className="space-y-0.5 mt-1">
+                                  {cartItem.selectedModifiers.map((m, mIdx) => (
+                                    <span key={mIdx} className="block text-[11px] font-mono text-brand-dark/80 leading-snug">
+                                      + {m.optionName} {m.price > 0 ? `(+€${m.price.toFixed(2)})` : '(Free)'}
+                                    </span>
+                                  ))}
+                                </div>
+                              )}
                               {cartItem.notes && (
-                                <span className="block text-sm text-brand-accent italic font-sans max-w-[200px] truncate">
+                                <span className="block text-sm text-brand-accent italic font-sans break-words mt-0.5">
                                   &ldquo;{cartItem.notes}&rdquo;
                                 </span>
                               )}
                             </div>
                             <span className="font-mono text-sm font-bold text-brand-dark">
-                              &euro;{(basePrice * cartItem.quantity).toFixed(2)}
+                              &euro;{itemTotal.toFixed(2)}
                             </span>
                           </div>
 
