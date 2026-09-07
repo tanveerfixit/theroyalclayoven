@@ -1497,11 +1497,26 @@ app.post('/api/orders', orderLimiter, async (req, res) => {
       `;
       for (const item of items) {
         const itemPrice = item.price || item.menuItem?.price || 0;
+        let modifiersHtml = '';
+        if (item.modifiers && Array.isArray(item.modifiers) && item.modifiers.length > 0) {
+          modifiersHtml = '<div style="margin-top: 4px; padding: 4px 6px; background: #faf8f5; border-left: 2px solid #C85A32; font-size: 11px;">';
+          for (const mod of item.modifiers) {
+            const mQty = mod.quantity || 1;
+            const isFree = !mod.price || mod.price === 0;
+            const mPriceText = isFree ? '<span style="color: #059669; font-weight: bold;">[FREE]</span>' : `<span style="color: #b45309; font-weight: bold;">[+&euro;${((mod.price || 0) * mQty).toFixed(2)}]</span>`;
+            const mQtyText = mQty > 1 ? `<strong>${mQty}x </strong>` : '';
+            const mGroup = mod.groupTitle ? `<span style="color: #666;">${escapeHtml(mod.groupTitle)}: </span>` : '';
+            modifiersHtml += `<div style="margin-bottom: 2px;">• ${mGroup}${mQtyText}${escapeHtml(mod.optionName || '')} ${mPriceText}</div>`;
+          }
+          modifiersHtml += '</div>';
+        }
+
         itemsHtml += `
           <tr style="border-bottom: 1px solid #eee;">
             <td style="padding: 8px;">
               <strong>${escapeHtml(item.name || item.menuItem?.name || '')}</strong>
-              ${item.notes ? `<br/><span style="font-size: 11px; color: #C85A32; font-style: italic;">"${escapeHtml(item.notes)}"</span>` : ''}
+              ${modifiersHtml}
+              ${item.notes ? `<div style="font-size: 11px; color: #C85A32; font-style: italic; margin-top: 3px;">"${escapeHtml(item.notes)}"</div>` : ''}
             </td>
             <td style="padding: 8px;">${escapeHtml(item.size || '')}</td>
             <td style="padding: 8px; text-align: center;">${item.quantity}</td>

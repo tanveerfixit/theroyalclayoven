@@ -378,7 +378,8 @@ export const OrderView: React.FC<OrderViewProps> = ({
             groupTitle: grp.title,
             optionId: defaultOpt.id,
             optionName: defaultOpt.name,
-            price: defaultOpt.priceModifier || 0
+            price: defaultOpt.priceModifier || 0,
+            quantity: 1
           }];
         } else {
           initialMods[String(grp.id)] = [];
@@ -392,6 +393,55 @@ export const OrderView: React.FC<OrderViewProps> = ({
     const size = selectedSizes[item.id];
     const notes = customNotes[item.id] || '';
     executeAddToCart(item, size, notes, undefined, 1);
+  };
+
+  const handleUpdateModifierQuantity = (group: OptionGroup, option: OptionItem, delta: number) => {
+    const gid = String(group.id);
+    const current = customizationModifiers[gid] || [];
+    const existingIndex = current.findIndex(m => String(m.optionId) === String(option.id));
+    const currentTotalGroupQty = current.reduce((sum, m) => sum + (m.quantity || 1), 0);
+
+    if (existingIndex >= 0) {
+      const currentQty = current[existingIndex].quantity || 1;
+      const newQty = currentQty + delta;
+      if (newQty <= 0) {
+        // Remove item from selection
+        setCustomizationModifiers(prev => ({
+          ...prev,
+          [gid]: current.filter((_, idx) => idx !== existingIndex)
+        }));
+      } else {
+        if (delta > 0 && currentTotalGroupQty >= group.maxSelection) {
+          return; // limit reached
+        }
+        const updated = [...current];
+        updated[existingIndex] = {
+          ...updated[existingIndex],
+          quantity: newQty
+        };
+        setCustomizationModifiers(prev => ({
+          ...prev,
+          [gid]: updated
+        }));
+      }
+    } else if (delta > 0) {
+      if (currentTotalGroupQty < group.maxSelection) {
+        setCustomizationModifiers(prev => ({
+          ...prev,
+          [gid]: [
+            ...current,
+            {
+              groupId: group.id,
+              groupTitle: group.title,
+              optionId: option.id,
+              optionName: option.name,
+              price: option.priceModifier || 0,
+              quantity: 1
+            }
+          ]
+        }));
+      }
+    }
   };
 
   const handleToggleModifierOption = (group: OptionGroup, option: OptionItem) => {
@@ -408,18 +458,20 @@ export const OrderView: React.FC<OrderViewProps> = ({
           groupTitle: group.title,
           optionId: option.id,
           optionName: option.name,
-          price: option.priceModifier || 0
+          price: option.priceModifier || 0,
+          quantity: 1
         }]
       }));
     } else {
-      // Multi-choice checkbox
+      // Multi-choice add-on
+      const currentTotalGroupQty = current.reduce((sum, m) => sum + (m.quantity || 1), 0);
       if (isAlreadySelected) {
         setCustomizationModifiers(prev => ({
           ...prev,
           [gid]: current.filter(m => String(m.optionId) !== String(option.id))
         }));
       } else {
-        if (current.length < group.maxSelection) {
+        if (currentTotalGroupQty < group.maxSelection) {
           setCustomizationModifiers(prev => ({
             ...prev,
             [gid]: [
@@ -429,7 +481,8 @@ export const OrderView: React.FC<OrderViewProps> = ({
                 groupTitle: group.title,
                 optionId: option.id,
                 optionName: option.name,
-                price: option.priceModifier || 0
+                price: option.priceModifier || 0,
+                quantity: 1
               }
             ]
           }));
@@ -613,7 +666,7 @@ export const OrderView: React.FC<OrderViewProps> = ({
       items: cart.map((item) => {
         const basePrice = item.selectedSize ? item.selectedSize.price : item.menuItem.price;
         const modExtra = item.selectedModifiers
-          ? item.selectedModifiers.reduce((acc, m) => acc + (m.price || 0), 0)
+          ? item.selectedModifiers.reduce((acc, m) => acc + (m.price || 0) * (m.quantity || 1), 0)
           : 0;
         return {
           name: item.menuItem.name,
@@ -770,9 +823,13 @@ export const OrderView: React.FC<OrderViewProps> = ({
                     </span>
                     {(it as any).modifiers && (it as any).modifiers.length > 0 && (
                       <div className="text-[11px] text-brand-dark/80 font-mono mt-0.5 space-y-0.5">
-                        {(it as any).modifiers.map((m: any, mi: number) => (
-                          <div key={mi}>+ {m.optionName} {m.price > 0 ? `(+€${m.price.toFixed(2)})` : '(Free)'}</div>
-                        ))}
+                        {(it as any).modifiers.map((m: any, mi: number) => {
+                          const qty = m.quantity || 1;
+                          const totalModPrice = (m.price || 0) * qty;
+                          return (
+                            <div key={mi}>+ {qty > 1 ? `${qty}x ` : ''}{m.optionName} {m.price > 0 ? `(+€${totalModPrice.toFixed(2)})` : '(Free)'}</div>
+                          );
+                        })}
                       </div>
                     )}
                     {it.notes && (
@@ -890,7 +947,7 @@ export const OrderView: React.FC<OrderViewProps> = ({
                   {cart.map((item) => {
                     const basePrice = item.selectedSize ? item.selectedSize.price : item.menuItem.price;
                     const modExtra = item.selectedModifiers
-                      ? item.selectedModifiers.reduce((acc, m) => acc + (m.price || 0), 0)
+                      ? item.selectedModifiers.reduce((acc, m) => acc + (m.price || 0) * (m.quantity || 1), 0)
                       : 0;
                     const itemTotal = (basePrice + modExtra) * item.quantity;
                     return (
@@ -906,11 +963,15 @@ export const OrderView: React.FC<OrderViewProps> = ({
                           )}
                           {item.selectedModifiers && item.selectedModifiers.length > 0 && (
                             <div className="space-y-0.5 mt-0.5">
-                              {item.selectedModifiers.map((m, mIdx) => (
-                                <span key={mIdx} className="block text-[11px] font-mono text-brand-dark/80">
-                                  + {m.optionName} {m.price > 0 ? `(+€${m.price.toFixed(2)})` : '(Free)'}
-                                </span>
-                              ))}
+                              {item.selectedModifiers.map((m, mIdx) => {
+                                const qty = m.quantity || 1;
+                                const totalModPrice = (m.price || 0) * qty;
+                                return (
+                                  <span key={mIdx} className="block text-[11px] font-mono text-brand-dark/80">
+                                    + {qty > 1 ? `${qty}x ` : ''}{m.optionName} {m.price > 0 ? `(+€${totalModPrice.toFixed(2)})` : '(Free)'}
+                                  </span>
+                                );
+                              })}
                             </div>
                           )}
                           {item.notes && (
@@ -1589,7 +1650,7 @@ export const OrderView: React.FC<OrderViewProps> = ({
                   {cart.map((cartItem) => {
                     const basePrice = cartItem.selectedSize ? cartItem.selectedSize.price : cartItem.menuItem.price;
                     const modExtra = cartItem.selectedModifiers
-                      ? cartItem.selectedModifiers.reduce((acc, m) => acc + (m.price || 0), 0)
+                      ? cartItem.selectedModifiers.reduce((acc, m) => acc + (m.price || 0) * (m.quantity || 1), 0)
                       : 0;
                     const itemTotal = (basePrice + modExtra) * cartItem.quantity;
                     return (
@@ -1611,11 +1672,15 @@ export const OrderView: React.FC<OrderViewProps> = ({
                               )}
                               {cartItem.selectedModifiers && cartItem.selectedModifiers.length > 0 && (
                                 <div className="space-y-0.5 mt-0.5">
-                                  {cartItem.selectedModifiers.map((m, mIdx) => (
-                                    <span key={mIdx} className="block text-[11px] font-mono text-brand-dark/80 leading-snug">
-                                      + {m.optionName} {m.price > 0 ? `(+€${m.price.toFixed(2)})` : '(Free)'}
-                                    </span>
-                                  ))}
+                                  {cartItem.selectedModifiers.map((m, mIdx) => {
+                                    const qty = m.quantity || 1;
+                                    const totalModPrice = (m.price || 0) * qty;
+                                    return (
+                                      <span key={mIdx} className="block text-[11px] font-mono text-brand-dark/80 leading-snug">
+                                        + {qty > 1 ? `${qty}x ` : ''}{m.optionName} {m.price > 0 ? `(+€${totalModPrice.toFixed(2)})` : '(Free)'}
+                                      </span>
+                                    );
+                                  })}
                                 </div>
                               )}
                               {cartItem.notes && (
@@ -1842,12 +1907,12 @@ export const OrderView: React.FC<OrderViewProps> = ({
           const applicableGroups = getOptionGroupsForItem(customizationItem);
           const baseItemPrice = customizationSize ? customizationSize.price : customizationItem.price;
           const allSelectedMods = Object.values(customizationModifiers).flat();
-          const modsExtra = allSelectedMods.reduce((acc, m) => acc + (m.price || 0), 0);
+          const modsExtra = allSelectedMods.reduce((acc, m) => acc + (m.price || 0) * (m.quantity || 1), 0);
           const customizationTotal = (baseItemPrice + modsExtra) * customizationQuantity;
 
           const isMandatorySatisfied = applicableGroups.every(grp => {
             if (grp.minSelection <= 0) return true;
-            const count = (customizationModifiers[String(grp.id)] || []).length;
+            const count = (customizationModifiers[String(grp.id)] || []).reduce((sum, m) => sum + (m.quantity || 1), 0);
             return count >= grp.minSelection;
           });
 
@@ -1928,8 +1993,9 @@ export const OrderView: React.FC<OrderViewProps> = ({
                 {applicableGroups.map((group) => {
                   const gid = String(group.id);
                   const selectedInGroup = customizationModifiers[gid] || [];
+                  const groupTotalQty = selectedInGroup.reduce((sum, m) => sum + (m.quantity || 1), 0);
                   const isMandatory = group.minSelection > 0;
-                  const isSatisfied = selectedInGroup.length >= group.minSelection;
+                  const isSatisfied = groupTotalQty >= group.minSelection;
 
                   return (
                     <div key={group.id} className="space-y-2.5 bg-brand-dark/[0.02] p-4 rounded-2xl border border-brand-dark/5">
@@ -1958,21 +2024,29 @@ export const OrderView: React.FC<OrderViewProps> = ({
 
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
                         {group.options.map((option) => {
-                          const isSelected = selectedInGroup.some(m => String(m.optionId) === String(option.id));
+                          const selectedMod = selectedInGroup.find(m => String(m.optionId) === String(option.id));
+                          const isSelected = Boolean(selectedMod);
+                          const optQty = selectedMod?.quantity || 1;
                           const price = option.priceModifier || 0;
+                          const totalOptionPrice = price * optQty;
 
                           return (
-                            <button
+                            <div
                               key={option.id}
-                              type="button"
-                              onClick={() => handleToggleModifierOption(group, option)}
-                              className={`p-3 rounded-2xl text-left transition-all flex items-center justify-between gap-2 active:scale-95 cursor-pointer ${
+                              onClick={() => {
+                                if (group.maxSelection === 1) {
+                                  handleToggleModifierOption(group, option);
+                                } else if (!isSelected) {
+                                  handleUpdateModifierQuantity(group, option, 1);
+                                }
+                              }}
+                              className={`p-3 rounded-2xl text-left transition-all flex items-center justify-between gap-2 cursor-pointer ${
                                 isSelected
                                   ? 'bg-brand-dark text-white shadow-sm'
                                   : 'bg-white border border-brand-dark/10 text-brand-dark hover:bg-brand-dark/5'
                               }`}
                             >
-                              <div className="flex items-center space-x-2.5 min-w-0">
+                              <div className="flex items-center space-x-2.5 min-w-0 flex-1">
                                 <span className={`w-4 h-4 rounded-full flex items-center justify-center text-[10px] shrink-0 ${
                                   isSelected
                                     ? 'bg-white text-brand-dark font-bold'
@@ -1980,16 +2054,59 @@ export const OrderView: React.FC<OrderViewProps> = ({
                                 }`}>
                                   ✓
                                 </span>
-                                <span className="text-xs sm:text-sm font-semibold leading-snug break-words">
-                                  {option.name}
-                                </span>
+                                <div className="min-w-0">
+                                  <span className="text-xs sm:text-sm font-semibold leading-snug block break-words">
+                                    {option.name}
+                                  </span>
+                                  {isSelected && group.maxSelection > 1 && optQty > 1 && (
+                                    <span className="text-[10px] text-brand-accent font-bold font-mono">
+                                      {optQty} selected
+                                    </span>
+                                  )}
+                                </div>
                               </div>
-                              <span className={`text-xs font-mono shrink-0 ${
-                                isSelected ? 'text-white/90' : price > 0 ? 'text-brand-accent font-bold' : 'text-brand-muted'
-                              }`}>
-                                {price > 0 ? `+€${price.toFixed(2)}` : 'Free'}
-                              </span>
-                            </button>
+
+                              <div className="flex items-center gap-2 shrink-0">
+                                {group.maxSelection > 1 && isSelected ? (
+                                  <div 
+                                    className="flex items-center space-x-1 bg-white/20 p-1 rounded-full shrink-0" 
+                                    onClick={(e) => e.stopPropagation()}
+                                  >
+                                    <button
+                                      type="button"
+                                      onClick={() => handleUpdateModifierQuantity(group, option, -1)}
+                                      className="w-5 h-5 rounded-full flex items-center justify-center bg-white text-brand-dark hover:bg-rose-50 hover:text-rose-700 transition-all font-bold text-xs"
+                                      aria-label="Decrease quantity"
+                                    >
+                                      -
+                                    </button>
+                                    <span className="text-xs font-bold text-white px-1.5 min-w-[16px] text-center">
+                                      {optQty}
+                                    </span>
+                                    <button
+                                      type="button"
+                                      disabled={groupTotalQty >= group.maxSelection}
+                                      onClick={() => handleUpdateModifierQuantity(group, option, 1)}
+                                      className="w-5 h-5 rounded-full flex items-center justify-center bg-white text-brand-dark hover:bg-brand-accent hover:text-white transition-all font-bold text-xs disabled:opacity-40"
+                                      aria-label="Increase quantity"
+                                    >
+                                      +
+                                    </button>
+                                  </div>
+                                ) : (
+                                  <span className={`text-xs font-mono shrink-0 ${
+                                    isSelected ? 'text-white/90' : price > 0 ? 'text-brand-accent font-bold' : 'text-brand-muted'
+                                  }`}>
+                                    {price > 0 ? `+€${price.toFixed(2)}` : 'Free'}
+                                  </span>
+                                )}
+                                {group.maxSelection > 1 && isSelected && price > 0 && (
+                                  <span className="text-xs font-mono text-white/90 shrink-0 font-bold">
+                                    +€{totalOptionPrice.toFixed(2)}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
                           );
                         })}
                       </div>

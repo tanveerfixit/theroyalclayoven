@@ -258,7 +258,7 @@ export default function App() {
     setCart((prevCart) => {
       // Formulate unique cart item ID depending on chosen size, modifiers, and custom instructions
       const modKey = modifiers && modifiers.length > 0
-        ? modifiers.map(m => `${m.groupId}:${m.optionId}`).sort().join('|')
+        ? modifiers.map(m => `${m.groupId}:${m.optionId}x${m.quantity || 1}`).sort().join('|')
         : 'none';
       const optionId = `${item.id}-${size ? size.name : 'std'}-${modKey}-${notes ? notes.trim() : 'none'}`;
       const existingIndex = prevCart.findIndex((c) => c.id === optionId);
@@ -313,7 +313,7 @@ export default function App() {
   const subtotal = cart.reduce((acc, curr) => {
     const baseItemPrice = curr.selectedSize ? curr.selectedSize.price : curr.menuItem.price;
     const modifierExtra = curr.selectedModifiers
-      ? curr.selectedModifiers.reduce((mAcc, m) => mAcc + (m.price || 0), 0)
+      ? curr.selectedModifiers.reduce((mAcc, m) => mAcc + (m.price || 0) * (m.quantity || 1), 0)
       : 0;
     return acc + (baseItemPrice + modifierExtra) * curr.quantity;
   }, 0);
@@ -323,7 +323,7 @@ export default function App() {
   // Clear entire cart helper
   const clearCart = () => {
     setCart([]);
-    saveCartToStorage([]);
+    localStorage.removeItem('clay_oven_active_cart');
   };
 
   return (
@@ -429,7 +429,7 @@ export default function App() {
                     {cart.map((cartItem) => {
                       const basePrice = cartItem.selectedSize ? cartItem.selectedSize.price : cartItem.menuItem.price;
                       const modExtra = cartItem.selectedModifiers
-                        ? cartItem.selectedModifiers.reduce((acc, m) => acc + (m.price || 0), 0)
+                        ? cartItem.selectedModifiers.reduce((acc, m) => acc + (m.price || 0) * (m.quantity || 1), 0)
                         : 0;
                       const itemTotal = (basePrice + modExtra) * cartItem.quantity;
                       return (
@@ -446,11 +446,15 @@ export default function App() {
                               )}
                               {cartItem.selectedModifiers && cartItem.selectedModifiers.length > 0 && (
                                 <div className="space-y-0.5 mt-1">
-                                  {cartItem.selectedModifiers.map((m, mIdx) => (
-                                    <span key={mIdx} className="block text-[11px] font-mono text-brand-dark/80 leading-snug">
-                                      + {m.optionName} {m.price > 0 ? `(+€${m.price.toFixed(2)})` : '(Free)'}
-                                    </span>
-                                  ))}
+                                  {cartItem.selectedModifiers.map((m, mIdx) => {
+                                    const qty = m.quantity || 1;
+                                    const totalModPrice = (m.price || 0) * qty;
+                                    return (
+                                      <span key={mIdx} className="block text-[11px] font-mono text-brand-dark/80 leading-snug">
+                                        + {qty > 1 ? `${qty}x ` : ''}{m.optionName} {m.price > 0 ? `(+€${totalModPrice.toFixed(2)})` : '(Free)'}
+                                      </span>
+                                    );
+                                  })}
                                 </div>
                               )}
                               {cartItem.notes && (

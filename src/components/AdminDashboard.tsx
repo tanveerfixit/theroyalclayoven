@@ -2075,6 +2075,11 @@ Beverages | Tea or Coffee`);
 
       {/* --- CONTENT TABS SWITCH BOARD --- */}
 
+      {/* Helper to render kitchen modifiers (Free choices, paid add-ons, quantities) */}
+      {(() => {
+        return null;
+      })()}
+
       {/* 1. TAB: ACTIVE TAKEAWAY ORDERS */}
       {adminTab === 'orders' && (
         <div className="space-y-6 animate-fade-in" id="admin-orders-board">
@@ -2169,32 +2174,62 @@ Beverages | Tea or Coffee`);
 
                         <div className="space-y-1">
                           <span className="font-mono text-xs font-bold text-brand-dark uppercase block">Items:</span>
-                          <ul className="text-xs font-mono text-brand-muted space-y-1.5 list-none">
+                          <ul className="text-xs font-mono text-brand-muted space-y-2 list-none">
                             {order.items.map((it, i) => (
-                              <li key={i} className={`flex items-start justify-between gap-2 ${it.cancelled ? 'opacity-50 line-through' : ''}`}>
-                                <div className="flex-1 truncate">
-                                  <span className={it.cancelled ? 'text-rose-700 font-bold' : ''}>
-                                    {it.quantity}x {it.name} {it.size ? `(${it.size})` : ''}
-                                  </span>
-                                  {it.cancelled && (
-                                    <span className="ml-1 inline-block text-[10px] uppercase font-bold text-rose-600 bg-rose-50 border border-rose-200 px-1 py-0.2 not-italic">
-                                      Cancelled {it.cancelReason ? `— ${it.cancelReason}` : ''}
+                              <li key={i} className={`space-y-1 pb-1.5 border-b border-brand-dark/5 last:border-0 ${it.cancelled ? 'opacity-50 line-through' : ''}`}>
+                                <div className="flex items-start justify-between gap-2">
+                                  <div className="flex-1 min-w-0">
+                                    <span className={`font-bold block ${it.cancelled ? 'text-rose-700' : 'text-brand-dark'}`}>
+                                      {it.quantity}x {it.name} {it.size ? `(${it.size})` : ''}
                                     </span>
+                                    {it.cancelled && (
+                                      <span className="inline-block text-[10px] uppercase font-bold text-rose-600 bg-rose-50 border border-rose-200 px-1 py-0.2 not-italic">
+                                        Cancelled {it.cancelReason ? `— ${it.cancelReason}` : ''}
+                                      </span>
+                                    )}
+                                    {it.notes && <span className="text-brand-accent block font-sans italic text-[11px] pl-1">&ldquo;{it.notes}&rdquo;</span>}
+                                  </div>
+                                  {!it.cancelled && (
+                                    <button
+                                      type="button"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleOpenCancelItemModal(order, i);
+                                      }}
+                                      title="Cancel this item from order"
+                                      className="text-rose-500 hover:text-rose-700 hover:bg-rose-50 p-1 border border-rose-200/60 rounded-none transition-colors shrink-0"
+                                    >
+                                      <X className="w-3 h-3" />
+                                    </button>
                                   )}
-                                  {it.notes && <span className="text-brand-accent block font-sans italic text-[11px] pl-3">&ldquo;{it.notes}&rdquo;</span>}
                                 </div>
-                                {!it.cancelled && (
-                                  <button
-                                    type="button"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      handleOpenCancelItemModal(order, i);
-                                    }}
-                                    title="Cancel this item from order"
-                                    className="text-rose-500 hover:text-rose-700 hover:bg-rose-50 p-1 border border-rose-200/60 rounded-none transition-colors shrink-0"
-                                  >
-                                    <X className="w-3 h-3" />
-                                  </button>
+                                {it.modifiers && it.modifiers.length > 0 && (
+                                  <div className="space-y-1 bg-brand-beige/20 p-2 border-l-2 border-brand-accent/50 text-[11px] font-mono">
+                                    {it.modifiers.map((m, mIdx) => {
+                                      const qty = m.quantity || 1;
+                                      const isFree = !m.price || m.price === 0;
+                                      const totalModPrice = (m.price || 0) * qty;
+                                      return (
+                                        <div key={mIdx} className="flex items-center justify-between gap-1.5">
+                                          <span className="flex items-center gap-1.5 flex-wrap">
+                                            <span className={`text-[9px] px-1.5 py-0.5 uppercase font-bold tracking-wider ${
+                                              isFree ? 'bg-emerald-100 text-emerald-800 border border-emerald-300' : 'bg-amber-100 text-amber-900 border border-amber-300'
+                                            }`}>
+                                              {isFree ? 'INCLUDED / FREE' : 'PAID EXTRA'}
+                                            </span>
+                                            <span className="text-brand-dark font-medium">
+                                              {m.groupTitle ? `${m.groupTitle}: ` : ''}
+                                              {qty > 1 ? <strong className="text-brand-accent font-bold">{qty}x </strong> : ''}
+                                              {m.optionName}
+                                            </span>
+                                          </span>
+                                          <span className={`font-bold shrink-0 ${isFree ? 'text-emerald-700' : 'text-brand-dark'}`}>
+                                            {isFree ? 'FREE' : `+€${totalModPrice.toFixed(2)}`}
+                                          </span>
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
                                 )}
                               </li>
                             ))}
@@ -2271,32 +2306,62 @@ Beverages | Tea or Coffee`);
 
                         <div className="space-y-1">
                           <span className="font-mono text-xs font-bold text-brand-dark uppercase block">Items:</span>
-                          <ul className="text-xs font-mono text-brand-muted space-y-1.5 list-none">
+                          <ul className="text-xs font-mono text-brand-muted space-y-2 list-none">
                             {order.items.map((it, i) => (
-                              <li key={i} className={`flex items-start justify-between gap-2 ${it.cancelled ? 'opacity-50 line-through' : ''}`}>
-                                <div className="flex-1 truncate">
-                                  <span className={it.cancelled ? 'text-rose-700 font-bold' : ''}>
-                                    {it.quantity}x {it.name} {it.size ? `(${it.size})` : ''}
-                                  </span>
-                                  {it.cancelled && (
-                                    <span className="ml-1 inline-block text-[10px] uppercase font-bold text-rose-600 bg-rose-50 border border-rose-200 px-1 py-0.2 not-italic">
-                                      Cancelled {it.cancelReason ? `— ${it.cancelReason}` : ''}
+                              <li key={i} className={`space-y-1 pb-1.5 border-b border-brand-dark/5 last:border-0 ${it.cancelled ? 'opacity-50 line-through' : ''}`}>
+                                <div className="flex items-start justify-between gap-2">
+                                  <div className="flex-1 min-w-0">
+                                    <span className={`font-bold block ${it.cancelled ? 'text-rose-700' : 'text-brand-dark'}`}>
+                                      {it.quantity}x {it.name} {it.size ? `(${it.size})` : ''}
                                     </span>
+                                    {it.cancelled && (
+                                      <span className="inline-block text-[10px] uppercase font-bold text-rose-600 bg-rose-50 border border-rose-200 px-1 py-0.2 not-italic">
+                                        Cancelled {it.cancelReason ? `— ${it.cancelReason}` : ''}
+                                      </span>
+                                    )}
+                                    {it.notes && <span className="text-brand-accent block font-sans italic text-[11px] pl-1">&ldquo;{it.notes}&rdquo;</span>}
+                                  </div>
+                                  {!it.cancelled && (
+                                    <button
+                                      type="button"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleOpenCancelItemModal(order, i);
+                                      }}
+                                      title="Cancel this item from order"
+                                      className="text-rose-500 hover:text-rose-700 hover:bg-rose-50 p-1 border border-rose-200/60 rounded-none transition-colors shrink-0"
+                                    >
+                                      <X className="w-3 h-3" />
+                                    </button>
                                   )}
-                                  {it.notes && <span className="text-brand-accent block font-sans italic text-[11px] pl-3">&ldquo;{it.notes}&rdquo;</span>}
                                 </div>
-                                {!it.cancelled && (
-                                  <button
-                                    type="button"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      handleOpenCancelItemModal(order, i);
-                                    }}
-                                    title="Cancel this item from order"
-                                    className="text-rose-500 hover:text-rose-700 hover:bg-rose-50 p-1 border border-rose-200/60 rounded-none transition-colors shrink-0"
-                                  >
-                                    <X className="w-3 h-3" />
-                                  </button>
+                                {it.modifiers && it.modifiers.length > 0 && (
+                                  <div className="space-y-1 bg-brand-beige/20 p-2 border-l-2 border-brand-accent/50 text-[11px] font-mono">
+                                    {it.modifiers.map((m, mIdx) => {
+                                      const qty = m.quantity || 1;
+                                      const isFree = !m.price || m.price === 0;
+                                      const totalModPrice = (m.price || 0) * qty;
+                                      return (
+                                        <div key={mIdx} className="flex items-center justify-between gap-1.5">
+                                          <span className="flex items-center gap-1.5 flex-wrap">
+                                            <span className={`text-[9px] px-1.5 py-0.5 uppercase font-bold tracking-wider ${
+                                              isFree ? 'bg-emerald-100 text-emerald-800 border border-emerald-300' : 'bg-amber-100 text-amber-900 border border-amber-300'
+                                            }`}>
+                                              {isFree ? 'INCLUDED / FREE' : 'PAID EXTRA'}
+                                            </span>
+                                            <span className="text-brand-dark font-medium">
+                                              {m.groupTitle ? `${m.groupTitle}: ` : ''}
+                                              {qty > 1 ? <strong className="text-brand-accent font-bold">{qty}x </strong> : ''}
+                                              {m.optionName}
+                                            </span>
+                                          </span>
+                                          <span className={`font-bold shrink-0 ${isFree ? 'text-emerald-700' : 'text-brand-dark'}`}>
+                                            {isFree ? 'FREE' : `+€${totalModPrice.toFixed(2)}`}
+                                          </span>
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
                                 )}
                               </li>
                             ))}
@@ -2366,32 +2431,62 @@ Beverages | Tea or Coffee`);
 
                         <div className="space-y-1">
                           <span className="font-mono text-xs font-bold text-brand-dark uppercase block">Items:</span>
-                          <ul className="text-xs font-mono text-brand-muted space-y-1.5 list-none">
+                          <ul className="text-xs font-mono text-brand-muted space-y-2 list-none">
                             {order.items.map((it, i) => (
-                              <li key={i} className={`flex items-start justify-between gap-2 ${it.cancelled ? 'opacity-50 line-through' : ''}`}>
-                                <div className="flex-1 truncate">
-                                  <span className={it.cancelled ? 'text-rose-700 font-bold' : ''}>
-                                    {it.quantity}x {it.name} {it.size ? `(${it.size})` : ''}
-                                  </span>
-                                  {it.cancelled && (
-                                    <span className="ml-1 inline-block text-[10px] uppercase font-bold text-rose-600 bg-rose-50 border border-rose-200 px-1 py-0.2 not-italic">
-                                      Cancelled {it.cancelReason ? `— ${it.cancelReason}` : ''}
+                              <li key={i} className={`space-y-1 pb-1.5 border-b border-brand-dark/5 last:border-0 ${it.cancelled ? 'opacity-50 line-through' : ''}`}>
+                                <div className="flex items-start justify-between gap-2">
+                                  <div className="flex-1 min-w-0">
+                                    <span className={`font-bold block ${it.cancelled ? 'text-rose-700' : 'text-brand-dark'}`}>
+                                      {it.quantity}x {it.name} {it.size ? `(${it.size})` : ''}
                                     </span>
+                                    {it.cancelled && (
+                                      <span className="inline-block text-[10px] uppercase font-bold text-rose-600 bg-rose-50 border border-rose-200 px-1 py-0.2 not-italic">
+                                        Cancelled {it.cancelReason ? `— ${it.cancelReason}` : ''}
+                                      </span>
+                                    )}
+                                    {it.notes && <span className="text-brand-accent block font-sans italic text-[11px] pl-1">&ldquo;{it.notes}&rdquo;</span>}
+                                  </div>
+                                  {!it.cancelled && (
+                                    <button
+                                      type="button"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleOpenCancelItemModal(order, i);
+                                      }}
+                                      title="Cancel this item from order"
+                                      className="text-rose-500 hover:text-rose-700 hover:bg-rose-50 p-1 border border-rose-200/60 rounded-none transition-colors shrink-0"
+                                    >
+                                      <X className="w-3 h-3" />
+                                    </button>
                                   )}
-                                  {it.notes && <span className="text-brand-accent block font-sans italic text-[11px] pl-3">&ldquo;{it.notes}&rdquo;</span>}
                                 </div>
-                                {!it.cancelled && (
-                                  <button
-                                    type="button"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      handleOpenCancelItemModal(order, i);
-                                    }}
-                                    title="Cancel this item from order"
-                                    className="text-rose-500 hover:text-rose-700 hover:bg-rose-50 p-1 border border-rose-200/60 rounded-none transition-colors shrink-0"
-                                  >
-                                    <X className="w-3 h-3" />
-                                  </button>
+                                {it.modifiers && it.modifiers.length > 0 && (
+                                  <div className="space-y-1 bg-brand-beige/20 p-2 border-l-2 border-brand-accent/50 text-[11px] font-mono">
+                                    {it.modifiers.map((m, mIdx) => {
+                                      const qty = m.quantity || 1;
+                                      const isFree = !m.price || m.price === 0;
+                                      const totalModPrice = (m.price || 0) * qty;
+                                      return (
+                                        <div key={mIdx} className="flex items-center justify-between gap-1.5">
+                                          <span className="flex items-center gap-1.5 flex-wrap">
+                                            <span className={`text-[9px] px-1.5 py-0.5 uppercase font-bold tracking-wider ${
+                                              isFree ? 'bg-emerald-100 text-emerald-800 border border-emerald-300' : 'bg-amber-100 text-amber-900 border border-amber-300'
+                                            }`}>
+                                              {isFree ? 'INCLUDED / FREE' : 'PAID EXTRA'}
+                                            </span>
+                                            <span className="text-brand-dark font-medium">
+                                              {m.groupTitle ? `${m.groupTitle}: ` : ''}
+                                              {qty > 1 ? <strong className="text-brand-accent font-bold">{qty}x </strong> : ''}
+                                              {m.optionName}
+                                            </span>
+                                          </span>
+                                          <span className={`font-bold shrink-0 ${isFree ? 'text-emerald-700' : 'text-brand-dark'}`}>
+                                            {isFree ? 'FREE' : `+€${totalModPrice.toFixed(2)}`}
+                                          </span>
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
                                 )}
                               </li>
                             ))}
@@ -2594,10 +2689,40 @@ Beverages | Tea or Coffee`);
 
                         <div className="space-y-1 text-xs font-mono text-brand-muted">
                           <span className="font-bold text-brand-dark block">Items:</span>
-                          <ul className="space-y-1 list-disc list-inside">
+                          <ul className="space-y-2 list-none">
                             {order.items.map((it, idx) => (
-                              <li key={idx} className="truncate">
-                                {it.quantity}x {it.name} {it.size ? `(${it.size})` : ''}
+                              <li key={idx} className="space-y-1 pb-1.5 border-b border-brand-dark/5 last:border-0">
+                                <div className="flex justify-between items-start gap-2">
+                                  <span className="font-bold text-brand-dark truncate">{it.quantity}x {it.name} {it.size ? `(${it.size})` : ''}</span>
+                                </div>
+                                {it.modifiers && it.modifiers.length > 0 && (
+                                  <div className="space-y-1 bg-brand-beige/20 p-2 border-l-2 border-brand-accent/50 text-[11px] font-mono">
+                                    {it.modifiers.map((m, mIdx) => {
+                                      const qty = m.quantity || 1;
+                                      const isFree = !m.price || m.price === 0;
+                                      const totalModPrice = (m.price || 0) * qty;
+                                      return (
+                                        <div key={mIdx} className="flex items-center justify-between gap-1.5">
+                                          <span className="flex items-center gap-1.5 flex-wrap">
+                                            <span className={`text-[9px] px-1.5 py-0.5 uppercase font-bold tracking-wider ${
+                                              isFree ? 'bg-emerald-100 text-emerald-800 border border-emerald-300' : 'bg-amber-100 text-amber-900 border border-amber-300'
+                                            }`}>
+                                              {isFree ? 'INCLUDED / FREE' : 'PAID EXTRA'}
+                                            </span>
+                                            <span className="text-brand-dark font-medium">
+                                              {m.groupTitle ? `${m.groupTitle}: ` : ''}
+                                              {qty > 1 ? <strong className="text-brand-accent font-bold">{qty}x </strong> : ''}
+                                              {m.optionName}
+                                            </span>
+                                          </span>
+                                          <span className={`font-bold shrink-0 ${isFree ? 'text-emerald-700' : 'text-brand-dark'}`}>
+                                            {isFree ? 'FREE' : `+€${totalModPrice.toFixed(2)}`}
+                                          </span>
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
+                                )}
                               </li>
                             ))}
                           </ul>
@@ -2846,11 +2971,41 @@ Beverages | Tea or Coffee`);
 
                         <div className="space-y-1 text-xs font-mono text-brand-muted">
                           <span className="font-bold text-brand-dark block">Items:</span>
-                          <ul className="space-y-1 list-none">
+                          <ul className="space-y-2 list-none">
                             {order.items.map((it, idx) => (
-                              <li key={idx} className={`flex justify-between items-start ${it.cancelled ? 'line-through text-rose-700 opacity-60' : ''}`}>
-                                <span className="truncate pr-2">{it.quantity}x {it.name} {it.size ? `(${it.size})` : ''}</span>
-                                <span className="font-bold text-brand-dark shrink-0">€{(it.price * it.quantity).toFixed(2)}</span>
+                              <li key={idx} className={`space-y-1 pb-1.5 border-b border-brand-dark/5 last:border-0 ${it.cancelled ? 'line-through text-rose-700 opacity-60' : ''}`}>
+                                <div className="flex justify-between items-start gap-2">
+                                  <span className="truncate pr-2 font-bold text-brand-dark">{it.quantity}x {it.name} {it.size ? `(${it.size})` : ''}</span>
+                                  <span className="font-bold text-brand-dark shrink-0">€{(it.price * it.quantity).toFixed(2)}</span>
+                                </div>
+                                {it.modifiers && it.modifiers.length > 0 && (
+                                  <div className="space-y-1 bg-brand-beige/20 p-2 border-l-2 border-brand-accent/50 text-[11px] font-mono">
+                                    {it.modifiers.map((m, mIdx) => {
+                                      const qty = m.quantity || 1;
+                                      const isFree = !m.price || m.price === 0;
+                                      const totalModPrice = (m.price || 0) * qty;
+                                      return (
+                                        <div key={mIdx} className="flex items-center justify-between gap-1.5">
+                                          <span className="flex items-center gap-1.5 flex-wrap">
+                                            <span className={`text-[9px] px-1.5 py-0.5 uppercase font-bold tracking-wider ${
+                                              isFree ? 'bg-emerald-100 text-emerald-800 border border-emerald-300' : 'bg-amber-100 text-amber-900 border border-amber-300'
+                                            }`}>
+                                              {isFree ? 'INCLUDED / FREE' : 'PAID EXTRA'}
+                                            </span>
+                                            <span className="text-brand-dark font-medium">
+                                              {m.groupTitle ? `${m.groupTitle}: ` : ''}
+                                              {qty > 1 ? <strong className="text-brand-accent font-bold">{qty}x </strong> : ''}
+                                              {m.optionName}
+                                            </span>
+                                          </span>
+                                          <span className={`font-bold shrink-0 ${isFree ? 'text-emerald-700' : 'text-brand-dark'}`}>
+                                            {isFree ? 'FREE' : `+€${totalModPrice.toFixed(2)}`}
+                                          </span>
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
+                                )}
                               </li>
                             ))}
                           </ul>

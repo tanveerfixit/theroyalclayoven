@@ -74,6 +74,7 @@ export interface SelectedModifier {
   optionId: number | string;
   optionName: string;
   price: number;
+  quantity?: number;
 }
 
 export interface UserProfile {
