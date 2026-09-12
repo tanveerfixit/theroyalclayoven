@@ -1968,11 +1968,11 @@ Beverages | Tea or Coffee`);
   );
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-20 space-y-8 animate-fade-in" id="admin-console-view">
+    <div className="max-w-7xl mx-auto px-2.5 sm:px-6 lg:px-8 py-3 sm:py-6 space-y-4 sm:space-y-6 animate-fade-in" id="admin-console-view">
       
       {/* Console Header Bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-brand-dark/10 pb-6 pt-4">
-        <div className="space-y-1.5 text-left">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-brand-dark/10 pb-4 pt-1">
+        <div className="space-y-1 text-left">
           <div className="flex items-center space-x-2">
             <span className="text-[10px] font-mono font-bold tracking-widest text-emerald-700 bg-emerald-50 border border-emerald-300/40 px-2 py-0.5 uppercase">
               Authenticated Admin Session
@@ -1985,99 +1985,99 @@ Beverages | Tea or Coffee`);
               <Volume2 className="w-3.5 h-3.5" />
             </button>
           </div>
-          <h1 className="font-serif text-3xl font-bold tracking-tight text-brand-dark">
+          <h1 className="font-serif text-2xl sm:text-3xl font-bold tracking-tight text-brand-dark">
             Management &amp; Kitchen Console
           </h1>
         </div>
 
         {/* Global Controls Panel */}
-        <div className="grid grid-cols-1 sm:flex sm:flex-wrap gap-2.5 w-full sm:w-auto">
+        <div className="flex flex-wrap gap-2 w-full sm:w-auto">
           <button
             type="button"
             onClick={() => setMuteSound(!muteSound)}
-            className={`px-4 py-2 border font-mono text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all ${
+            className={`px-3 py-1.5 border font-mono text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all ${
               muteSound
                 ? 'bg-amber-50 text-amber-700 border-amber-300'
                 : 'bg-white hover:bg-brand-dark/5 border-brand-dark/10 text-brand-muted'
             }`}
           >
             <Volume2 className="w-3.5 h-3.5" />
-            <span>{muteSound ? 'SOUND MUTED' : 'SOUND ALERTS ON'}</span>
+            <span>{muteSound ? 'MUTED' : 'ALERTS ON'}</span>
           </button>
           <button
             type="button"
             onClick={fetchData}
             disabled={loading}
-            className="bg-white border border-brand-dark/10 hover:border-brand-dark text-brand-dark px-4 py-2 font-mono text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-1.5 active:bg-brand-dark/5 disabled:opacity-50 transition-all rounded-none"
+            className="bg-white border border-brand-dark/10 hover:border-brand-dark text-brand-dark px-3 py-1.5 font-mono text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-1.5 active:bg-brand-dark/5 disabled:opacity-50 transition-all rounded-none"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
-            <span>{loading ? 'SYNCING...' : 'SYNC CONSOLE'}</span>
+            <span>{loading ? 'SYNCING...' : 'SYNC'}</span>
           </button>
           <button
             type="button"
             onClick={handleLogout}
-            className="border border-red-200 hover:border-red-600 text-red-600 px-4 py-2 font-mono text-xs font-bold uppercase tracking-wider rounded-none text-center transition-colors"
+            className="border border-red-200 hover:border-red-600 text-red-600 bg-white px-3 py-1.5 font-mono text-xs font-bold uppercase tracking-wider rounded-none text-center transition-colors"
           >
-            LOGOUT SESSION
+            LOGOUT
           </button>
         </div>
       </div>
 
       {/* Main Console Subtabs Navigation */}
-      <div className="flex space-x-4 border-b border-brand-dark/10 overflow-x-auto whitespace-nowrap scrollbar-none pb-1">
+      <div className="flex space-x-2 sm:space-x-4 border-b border-brand-dark/10 overflow-x-auto whitespace-nowrap scrollbar-none pb-0.5">
         <button
           onClick={() => setAdminTab('orders')}
-          className={`pb-3 font-mono text-xs font-bold uppercase tracking-widest border-b-2 flex items-center gap-1.5 transition-all shrink-0 ${
+          className={`pb-2.5 px-1 sm:px-2 font-mono text-xs font-bold uppercase tracking-wider border-b-2 flex items-center gap-1.5 transition-all shrink-0 ${
             adminTab === 'orders'
               ? 'border-brand-dark text-brand-dark'
               : 'border-transparent text-brand-muted hover:text-brand-dark'
           }`}
         >
-          <ShoppingBag className="w-4 h-4" />
+          <ShoppingBag className="w-3.5 h-3.5" />
           <span>Active Takeaways ({orders.filter(o => o.status !== 'Completed').length})</span>
         </button>
         <button
           onClick={() => setAdminTab('bookings')}
-          className={`pb-3 font-mono text-xs font-bold uppercase tracking-widest border-b-2 flex items-center gap-1.5 transition-all shrink-0 ${
+          className={`pb-2.5 px-1 sm:px-2 font-mono text-xs font-bold uppercase tracking-wider border-b-2 flex items-center gap-1.5 transition-all shrink-0 ${
             adminTab === 'bookings'
               ? 'border-brand-dark text-brand-dark'
               : 'border-transparent text-brand-muted hover:text-brand-dark'
           }`}
         >
-          <Calendar className="w-4 h-4" />
+          <Calendar className="w-3.5 h-3.5" />
           <span>Table Bookings ({bookings.filter(b => b.status === 'Confirmed').length})</span>
         </button>
         <button
           onClick={() => setAdminTab('functions')}
-          className={`pb-3 font-mono text-xs font-bold uppercase tracking-widest border-b-2 flex items-center gap-1.5 transition-all shrink-0 ${
+          className={`pb-2.5 px-1 sm:px-2 font-mono text-xs font-bold uppercase tracking-wider border-b-2 flex items-center gap-1.5 transition-all shrink-0 ${
             adminTab === 'functions'
               ? 'border-brand-dark text-brand-dark'
               : 'border-transparent text-brand-muted hover:text-brand-dark'
           }`}
         >
-          <Sparkles className="w-4 h-4" />
+          <Sparkles className="w-3.5 h-3.5" />
           <span>Functions ({bookings.filter(b => (b.id.startsWith('FUNC') || b.diningArea.includes('Private Hall') || b.partySize >= 12) && b.status === 'Confirmed').length})</span>
         </button>
         <button
           onClick={() => setAdminTab('catalog')}
-          className={`pb-3 font-mono text-xs font-bold uppercase tracking-widest border-b-2 flex items-center gap-1.5 transition-all shrink-0 ${
+          className={`pb-2.5 px-1 sm:px-2 font-mono text-xs font-bold uppercase tracking-wider border-b-2 flex items-center gap-1.5 transition-all shrink-0 ${
             adminTab === 'catalog'
               ? 'border-brand-dark text-brand-dark'
               : 'border-transparent text-brand-muted hover:text-brand-dark'
           }`}
         >
-          <ListFilter className="w-4 h-4" />
+          <ListFilter className="w-3.5 h-3.5" />
           <span>Catalog Directory</span>
         </button>
         <button
           onClick={() => setAdminTab('settings')}
-          className={`pb-3 font-mono text-xs font-bold uppercase tracking-widest border-b-2 flex items-center gap-1.5 transition-all shrink-0 ${
+          className={`pb-2.5 px-1 sm:px-2 font-mono text-xs font-bold uppercase tracking-wider border-b-2 flex items-center gap-1.5 transition-all shrink-0 ${
             adminTab === 'settings'
               ? 'border-brand-dark text-brand-dark'
               : 'border-transparent text-brand-muted hover:text-brand-dark'
           }`}
         >
-          <Clock className="w-4 h-4" />
+          <Clock className="w-3.5 h-3.5" />
           <span>Notice &amp; Timings</span>
         </button>
       </div>
@@ -2091,18 +2091,18 @@ Beverages | Tea or Coffee`);
 
       {/* 1. TAB: ACTIVE TAKEAWAY ORDERS */}
       {adminTab === 'orders' && (
-        <div className="space-y-6 animate-fade-in" id="admin-orders-board">
+        <div className="space-y-4 sm:space-y-5 animate-fade-in" id="admin-orders-board">
           
           {/* Sub-Filter Toolbar: Active vs Cancelled vs All */}
-          <div className="flex flex-wrap items-center justify-between gap-4 bg-white border border-brand-dark/10 p-3">
-            <div className="flex items-center gap-2">
-              <span className="font-mono text-xs font-bold uppercase text-brand-muted flex items-center gap-1.5 pl-2">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 bg-white border border-brand-dark/10 p-2.5 sm:p-3">
+            <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+              <span className="font-mono text-xs font-bold uppercase text-brand-muted flex items-center gap-1 pl-1">
                 <Filter className="w-3.5 h-3.5" /> Filter:
               </span>
               <button
                 type="button"
                 onClick={() => setOrderViewFilter('active')}
-                className={`px-3 py-1 font-mono text-xs font-bold uppercase tracking-wider border transition-all ${
+                className={`px-2.5 py-1 font-mono text-xs font-bold uppercase tracking-wider border transition-all ${
                   orderViewFilter === 'active'
                     ? 'bg-brand-dark text-white border-brand-dark'
                     : 'bg-[#FDFBF7] text-brand-dark border-brand-dark/10 hover:border-brand-dark/30'
@@ -2113,39 +2113,39 @@ Beverages | Tea or Coffee`);
               <button
                 type="button"
                 onClick={() => setOrderViewFilter('cancelled')}
-                className={`px-3 py-1 font-mono text-xs font-bold uppercase tracking-wider border transition-all ${
+                className={`px-2.5 py-1 font-mono text-xs font-bold uppercase tracking-wider border transition-all ${
                   orderViewFilter === 'cancelled'
                     ? 'bg-rose-700 text-white border-rose-700'
                     : 'bg-[#FDFBF7] text-rose-700 border-rose-200 hover:bg-rose-50'
                 }`}
               >
-                Cancelled Orders ({orders.filter(o => o.status === 'Cancelled').length})
+                Cancelled ({orders.filter(o => o.status === 'Cancelled').length})
               </button>
               <button
                 type="button"
                 onClick={() => setOrderViewFilter('all')}
-                className={`px-3 py-1 font-mono text-xs font-bold uppercase tracking-wider border transition-all ${
+                className={`px-2.5 py-1 font-mono text-xs font-bold uppercase tracking-wider border transition-all ${
                   orderViewFilter === 'all'
                     ? 'bg-brand-dark text-white border-brand-dark'
                     : 'bg-[#FDFBF7] text-brand-dark border-brand-dark/10 hover:border-brand-dark/30'
                 }`}
               >
-                All Orders ({orders.length})
+                All ({orders.length})
               </button>
             </div>
 
-            <div className="text-xs font-mono text-brand-muted pr-2">
-              Auto-refreshing live every 12s
+            <div className="text-[11px] font-mono text-brand-muted sm:pr-1">
+              Live sync active
             </div>
           </div>
 
           {/* ACTIVE 3-COLUMN KANBAN BOARD */}
           {orderViewFilter === 'active' && (
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5 sm:gap-4">
               
               {/* COLUMN 1: NEW/RECEIVED */}
-              <div className="bg-white border border-brand-dark/10 p-5 space-y-4">
-                <div className="flex justify-between items-center border-b border-brand-dark/10 pb-3">
+              <div className="bg-white border border-brand-dark/10 p-3 sm:p-4 space-y-3">
+                <div className="flex justify-between items-center border-b border-brand-dark/10 pb-2.5">
                   <span className="font-mono text-xs font-bold uppercase tracking-wider text-brand-accent flex items-center gap-1.5">
                     <span className="w-2 h-2 bg-brand-accent animate-ping inline-block"></span>
                     RECEIVED (NEW)
@@ -2155,44 +2155,44 @@ Beverages | Tea or Coffee`);
                   </span>
                 </div>
 
-                <div className="space-y-4 overflow-y-auto max-h-[65vh] pr-1">
+                <div className="space-y-3 overflow-y-auto max-h-[65vh] pr-0.5">
                   {orders.filter(o => o.status === 'Received').length === 0 ? (
-                    <p className="text-sm text-brand-muted font-mono italic text-center py-10">No new orders placed.</p>
+                    <p className="text-xs text-brand-muted font-mono italic text-center py-8">No new orders placed.</p>
                   ) : (
                     orders.filter(o => o.status === 'Received').map(order => (
-                      <div key={order.id} className="p-4 border border-brand-dark/15 hover:border-brand-dark/30 bg-[#FDFBF7]/40 space-y-4 relative transition-all shadow-[0_4px_12px_rgba(44,38,33,0.008)]">
-                        <div className="flex justify-between items-start font-mono text-sm">
+                      <div key={order.id} className="p-3 sm:p-3.5 border border-brand-dark/15 hover:border-brand-dark/30 bg-[#FDFBF7]/50 space-y-2.5 relative transition-all">
+                        <div className="flex justify-between items-start font-mono text-xs sm:text-sm">
                           <div>
                             <span className="font-bold text-brand-dark block">ORDER: {order.id}</span>
-                            <span className="text-xs text-brand-muted">Placed: {new Date(order.createdAt).toLocaleTimeString()}</span>
+                            <span className="text-[11px] text-brand-muted">Placed: {new Date(order.createdAt).toLocaleTimeString()}</span>
                           </div>
-                          <span className="text-brand-accent font-bold text-base">&euro;{order.total.toFixed(2)}</span>
+                          <span className="text-brand-accent font-bold text-sm sm:text-base">&euro;{order.total.toFixed(2)}</span>
                         </div>
 
-                        <div className="text-xs font-mono border-t border-b border-brand-dark/5 py-2 space-y-1 text-brand-muted">
+                        <div className="text-xs font-mono border-t border-b border-brand-dark/5 py-1.5 space-y-0.5 text-brand-muted">
                           <div>Customer: <span className="font-bold text-brand-dark">{order.customerInfo.name}</span></div>
                           <div>Contact: <span className="underline">{order.customerInfo.phone}</span></div>
                           <div>Time: <span className="font-bold text-brand-dark uppercase">{order.customerInfo.preferredTime}</span></div>
                           <div>Type: <span className="font-bold uppercase text-brand-accent">{order.serviceType}</span>{order.deliveryZone && <span className="ml-1.5 font-sans font-bold text-brand-dark bg-brand-accent/10 px-1.5 py-0.5 rounded text-[10px]">Zone: {order.deliveryZone}</span>}</div>
                           {order.customerInfo.address && (
-                            <div className="pt-1 font-sans text-brand-dark border-t border-dashed border-brand-dark/5 mt-1 font-medium">
+                            <div className="pt-1 font-sans text-brand-dark border-t border-dashed border-brand-dark/5 mt-1 font-medium text-xs">
                               Deliver: {order.customerInfo.address}
                             </div>
                           )}
                         </div>
 
                         <div className="space-y-1">
-                          <span className="font-mono text-xs font-bold text-brand-dark uppercase block">Items:</span>
-                          <ul className="text-xs font-mono text-brand-muted space-y-2 list-none">
+                          <span className="font-mono text-[11px] font-bold text-brand-dark uppercase block">Items:</span>
+                          <ul className="text-xs font-mono text-brand-muted space-y-1.5 list-none">
                             {order.items.map((it, i) => (
-                              <li key={i} className={`space-y-1 pb-1.5 border-b border-brand-dark/5 last:border-0 ${it.cancelled ? 'opacity-50 line-through' : ''}`}>
+                              <li key={i} className={`space-y-0.5 pb-1 border-b border-brand-dark/5 last:border-0 ${it.cancelled ? 'opacity-50 line-through' : ''}`}>
                                 <div className="flex items-start justify-between gap-2">
                                   <div className="flex-1 min-w-0">
-                                    <span className={`font-bold block ${it.cancelled ? 'text-rose-700' : 'text-brand-dark'}`}>
+                                    <span className={`font-bold block text-xs ${it.cancelled ? 'text-rose-700' : 'text-brand-dark'}`}>
                                       {it.quantity}x {it.name} {it.size ? `(${it.size})` : ''}
                                     </span>
                                     {it.cancelled && (
-                                      <span className="inline-block text-[10px] uppercase font-bold text-rose-600 bg-rose-50 border border-rose-200 px-1 py-0.2 not-italic">
+                                      <span className="inline-block text-[9px] uppercase font-bold text-rose-600 bg-rose-50 border border-rose-200 px-1 py-0.2 not-italic">
                                         Cancelled {it.cancelReason ? `— ${it.cancelReason}` : ''}
                                       </span>
                                     )}
@@ -2213,18 +2213,18 @@ Beverages | Tea or Coffee`);
                                   )}
                                 </div>
                                 {it.modifiers && it.modifiers.length > 0 && (
-                                  <div className="space-y-1 bg-brand-beige/20 p-2 border-l-2 border-brand-accent/50 text-[11px] font-mono">
+                                  <div className="space-y-0.5 bg-brand-beige/20 p-1.5 border-l-2 border-brand-accent/50 text-[10px] font-mono">
                                     {it.modifiers.map((m, mIdx) => {
                                       const qty = m.quantity || 1;
                                       const isFree = !m.price || m.price === 0;
                                       const totalModPrice = (m.price || 0) * qty;
                                       return (
-                                        <div key={mIdx} className="flex items-center justify-between gap-1.5">
-                                          <span className="flex items-center gap-1.5 flex-wrap">
-                                            <span className={`text-[9px] px-1.5 py-0.5 uppercase font-bold tracking-wider ${
-                                              isFree ? 'bg-emerald-100 text-emerald-800 border border-emerald-300' : 'bg-amber-100 text-amber-900 border border-amber-300'
+                                        <div key={mIdx} className="flex items-center justify-between gap-1">
+                                          <span className="flex items-center gap-1 flex-wrap">
+                                            <span className={`text-[8px] px-1 py-0.2 uppercase font-bold tracking-wider ${
+                                              isFree ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-900'
                                             }`}>
-                                              {isFree ? 'INCLUDED / FREE' : 'PAID EXTRA'}
+                                              {isFree ? 'FREE' : 'EXTRA'}
                                             </span>
                                             <span className="text-brand-dark font-medium">
                                               {m.groupTitle ? `${m.groupTitle}: ` : ''}
@@ -2246,16 +2246,16 @@ Beverages | Tea or Coffee`);
                         </div>
 
                         {order.customerInfo.notes && (
-                          <div className="p-2 bg-amber-50/50 border border-amber-100 text-[11px] font-sans text-amber-800 italic leading-relaxed">
+                          <div className="p-1.5 bg-amber-50/50 border border-amber-100 text-[11px] font-sans text-amber-800 italic leading-relaxed">
                             ★ "{order.customerInfo.notes}"
                           </div>
                         )}
 
-                        <div className="pt-2 border-t border-brand-dark/5 flex items-center justify-between gap-2">
+                        <div className="pt-1.5 border-t border-brand-dark/5 flex items-center justify-between gap-2">
                           <button
                             type="button"
                             onClick={() => handleOpenRejectOrderModal(order)}
-                            className="border border-rose-300 text-rose-700 hover:bg-rose-50 px-3 py-2 font-mono text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 rounded-none active:scale-95 transition-all"
+                            className="border border-rose-300 text-rose-700 hover:bg-rose-50 px-2.5 py-1.5 font-mono text-xs font-bold uppercase tracking-wider flex items-center gap-1 rounded-none active:scale-95 transition-all"
                           >
                             <Ban className="w-3.5 h-3.5" />
                             <span>REJECT</span>
@@ -2263,10 +2263,10 @@ Beverages | Tea or Coffee`);
                           <button
                             type="button"
                             onClick={() => handleUpdateOrderStatus(order.id, 'Preparing')}
-                            className="bg-brand-dark text-white hover:bg-brand-accent px-4 py-2 font-mono text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 rounded-none active:scale-95 transition-all"
+                            className="bg-brand-dark text-white hover:bg-brand-accent px-3 py-1.5 font-mono text-xs font-bold uppercase tracking-wider flex items-center gap-1 rounded-none active:scale-95 transition-all"
                           >
                             <Play className="w-3 h-3 fill-current" />
-                            <span>START PREPARING</span>
+                            <span>PREPARE</span>
                           </button>
                         </div>
                       </div>
@@ -2276,8 +2276,8 @@ Beverages | Tea or Coffee`);
               </div>
 
               {/* COLUMN 2: IN PREPARATION */}
-              <div className="bg-white border border-brand-dark/10 p-5 space-y-4">
-                <div className="flex justify-between items-center border-b border-brand-dark/10 pb-3">
+              <div className="bg-white border border-brand-dark/10 p-3 sm:p-4 space-y-3">
+                <div className="flex justify-between items-center border-b border-brand-dark/10 pb-2.5">
                   <span className="font-mono text-xs font-bold uppercase tracking-wider text-brand-dark flex items-center gap-1.5">
                     <span className="w-2 h-2 bg-amber-500 inline-block"></span>
                     PREPARING (COOKING)
@@ -2287,44 +2287,44 @@ Beverages | Tea or Coffee`);
                   </span>
                 </div>
 
-                <div className="space-y-4 overflow-y-auto max-h-[65vh] pr-1">
+                <div className="space-y-3 overflow-y-auto max-h-[65vh] pr-0.5">
                   {orders.filter(o => o.status === 'Preparing').length === 0 ? (
-                    <p className="text-sm text-brand-muted font-mono italic text-center py-10">No orders actively cooking.</p>
+                    <p className="text-xs text-brand-muted font-mono italic text-center py-8">No orders actively cooking.</p>
                   ) : (
                     orders.filter(o => o.status === 'Preparing').map(order => (
-                      <div key={order.id} className="p-4 border border-brand-dark/15 hover:border-brand-dark/30 bg-[#FDFBF7]/40 space-y-4 relative transition-all shadow-[0_4px_12px_rgba(44,38,33,0.008)]">
-                        <div className="flex justify-between items-start font-mono text-sm">
+                      <div key={order.id} className="p-3 sm:p-3.5 border border-brand-dark/15 hover:border-brand-dark/30 bg-[#FDFBF7]/50 space-y-2.5 relative transition-all">
+                        <div className="flex justify-between items-start font-mono text-xs sm:text-sm">
                           <div>
                             <span className="font-bold text-brand-dark block">ORDER: {order.id}</span>
-                            <span className="text-xs text-brand-muted">Placed: {new Date(order.createdAt).toLocaleTimeString()}</span>
+                            <span className="text-[11px] text-brand-muted">Placed: {new Date(order.createdAt).toLocaleTimeString()}</span>
                           </div>
-                          <span className="text-brand-dark font-bold text-base">&euro;{order.total.toFixed(2)}</span>
+                          <span className="text-brand-dark font-bold text-sm sm:text-base">&euro;{order.total.toFixed(2)}</span>
                         </div>
 
-                        <div className="text-xs font-mono border-t border-b border-brand-dark/5 py-2 space-y-1 text-brand-muted">
+                        <div className="text-xs font-mono border-t border-b border-brand-dark/5 py-1.5 space-y-0.5 text-brand-muted">
                           <div>Customer: <span className="font-bold text-brand-dark">{order.customerInfo.name}</span></div>
                           <div>Contact: <span className="underline">{order.customerInfo.phone}</span></div>
                           <div>Time: <span className="font-bold text-brand-dark uppercase">{order.customerInfo.preferredTime}</span></div>
                           <div>Type: <span className="font-bold uppercase text-brand-accent">{order.serviceType}</span>{order.deliveryZone && <span className="ml-1.5 font-sans font-bold text-brand-dark bg-brand-accent/10 px-1.5 py-0.5 rounded text-[10px]">Zone: {order.deliveryZone}</span>}</div>
                           {order.customerInfo.address && (
-                            <div className="pt-1 font-sans text-brand-dark border-t border-dashed border-brand-dark/5 mt-1 font-medium">
+                            <div className="pt-1 font-sans text-brand-dark border-t border-dashed border-brand-dark/5 mt-1 font-medium text-xs">
                               Deliver: {order.customerInfo.address}
                             </div>
                           )}
                         </div>
 
                         <div className="space-y-1">
-                          <span className="font-mono text-xs font-bold text-brand-dark uppercase block">Items:</span>
-                          <ul className="text-xs font-mono text-brand-muted space-y-2 list-none">
+                          <span className="font-mono text-[11px] font-bold text-brand-dark uppercase block">Items:</span>
+                          <ul className="text-xs font-mono text-brand-muted space-y-1.5 list-none">
                             {order.items.map((it, i) => (
-                              <li key={i} className={`space-y-1 pb-1.5 border-b border-brand-dark/5 last:border-0 ${it.cancelled ? 'opacity-50 line-through' : ''}`}>
+                              <li key={i} className={`space-y-0.5 pb-1 border-b border-brand-dark/5 last:border-0 ${it.cancelled ? 'opacity-50 line-through' : ''}`}>
                                 <div className="flex items-start justify-between gap-2">
                                   <div className="flex-1 min-w-0">
-                                    <span className={`font-bold block ${it.cancelled ? 'text-rose-700' : 'text-brand-dark'}`}>
+                                    <span className={`font-bold block text-xs ${it.cancelled ? 'text-rose-700' : 'text-brand-dark'}`}>
                                       {it.quantity}x {it.name} {it.size ? `(${it.size})` : ''}
                                     </span>
                                     {it.cancelled && (
-                                      <span className="inline-block text-[10px] uppercase font-bold text-rose-600 bg-rose-50 border border-rose-200 px-1 py-0.2 not-italic">
+                                      <span className="inline-block text-[9px] uppercase font-bold text-rose-600 bg-rose-50 border border-rose-200 px-1 py-0.2 not-italic">
                                         Cancelled {it.cancelReason ? `— ${it.cancelReason}` : ''}
                                       </span>
                                     )}
@@ -2345,18 +2345,18 @@ Beverages | Tea or Coffee`);
                                   )}
                                 </div>
                                 {it.modifiers && it.modifiers.length > 0 && (
-                                  <div className="space-y-1 bg-brand-beige/20 p-2 border-l-2 border-brand-accent/50 text-[11px] font-mono">
+                                  <div className="space-y-0.5 bg-brand-beige/20 p-1.5 border-l-2 border-brand-accent/50 text-[10px] font-mono">
                                     {it.modifiers.map((m, mIdx) => {
                                       const qty = m.quantity || 1;
                                       const isFree = !m.price || m.price === 0;
                                       const totalModPrice = (m.price || 0) * qty;
                                       return (
-                                        <div key={mIdx} className="flex items-center justify-between gap-1.5">
-                                          <span className="flex items-center gap-1.5 flex-wrap">
-                                            <span className={`text-[9px] px-1.5 py-0.5 uppercase font-bold tracking-wider ${
-                                              isFree ? 'bg-emerald-100 text-emerald-800 border border-emerald-300' : 'bg-amber-100 text-amber-900 border border-amber-300'
+                                        <div key={mIdx} className="flex items-center justify-between gap-1">
+                                          <span className="flex items-center gap-1 flex-wrap">
+                                            <span className={`text-[8px] px-1 py-0.2 uppercase font-bold tracking-wider ${
+                                              isFree ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-900'
                                             }`}>
-                                              {isFree ? 'INCLUDED / FREE' : 'PAID EXTRA'}
+                                              {isFree ? 'FREE' : 'EXTRA'}
                                             </span>
                                             <span className="text-brand-dark font-medium">
                                               {m.groupTitle ? `${m.groupTitle}: ` : ''}
@@ -2377,21 +2377,27 @@ Beverages | Tea or Coffee`);
                           </ul>
                         </div>
 
-                        <div className="pt-2 border-t border-brand-dark/5 flex items-center justify-between gap-2">
+                        {order.customerInfo.notes && (
+                          <div className="p-1.5 bg-amber-50/50 border border-amber-100 text-[11px] font-sans text-amber-800 italic leading-relaxed">
+                            ★ "{order.customerInfo.notes}"
+                          </div>
+                        )}
+
+                        <div className="pt-1.5 border-t border-brand-dark/5 flex items-center justify-between gap-2">
                           <button
                             type="button"
                             onClick={() => handleOpenRejectOrderModal(order)}
-                            className="border border-rose-300 text-rose-700 hover:bg-rose-50 px-2.5 py-2 font-mono text-[11px] font-bold uppercase tracking-wider rounded-none active:scale-95 transition-all"
+                            className="border border-rose-300 text-rose-700 hover:bg-rose-50 px-2.5 py-1.5 font-mono text-[11px] font-bold uppercase tracking-wider rounded-none active:scale-95 transition-all"
                           >
                             CANCEL
                           </button>
                           <button
                             type="button"
                             onClick={() => handleUpdateOrderStatus(order.id, 'Ready for Collection')}
-                            className="bg-emerald-700 text-white hover:bg-emerald-800 px-4 py-2 font-mono text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 rounded-none active:scale-95 transition-all"
+                            className="bg-emerald-700 text-white hover:bg-emerald-800 px-3 py-1.5 font-mono text-xs font-bold uppercase tracking-wider flex items-center gap-1 rounded-none active:scale-95 transition-all"
                           >
                             <Check className="w-3.5 h-3.5" />
-                            <span>MARK READY</span>
+                            <span>READY</span>
                           </button>
                         </div>
                       </div>
@@ -2401,8 +2407,8 @@ Beverages | Tea or Coffee`);
               </div>
 
               {/* COLUMN 3: READY / DELIVERING */}
-              <div className="bg-white border border-brand-dark/10 p-5 space-y-4">
-                <div className="flex justify-between items-center border-b border-brand-dark/10 pb-3">
+              <div className="bg-white border border-brand-dark/10 p-3 sm:p-4 space-y-3">
+                <div className="flex justify-between items-center border-b border-brand-dark/10 pb-2.5">
                   <span className="font-mono text-xs font-bold uppercase tracking-wider text-emerald-700 flex items-center gap-1.5">
                     <span className="w-2 h-2 bg-emerald-500 inline-block"></span>
                     READY FOR DISPATCH
@@ -2412,44 +2418,44 @@ Beverages | Tea or Coffee`);
                   </span>
                 </div>
 
-                <div className="space-y-4 overflow-y-auto max-h-[65vh] pr-1">
+                <div className="space-y-3 overflow-y-auto max-h-[65vh] pr-0.5">
                   {orders.filter(o => o.status === 'Ready for Collection' || o.status === 'Out for Delivery').length === 0 ? (
-                    <p className="text-sm text-brand-muted font-mono italic text-center py-10">No orders waiting on dispatch.</p>
+                    <p className="text-xs text-brand-muted font-mono italic text-center py-8">No orders waiting on dispatch.</p>
                   ) : (
                     orders.filter(o => o.status === 'Ready for Collection' || o.status === 'Out for Delivery').map(order => (
-                      <div key={order.id} className="p-4 border border-emerald-600/20 hover:border-emerald-600/40 bg-emerald-50/5 space-y-4 relative transition-all shadow-[0_4px_12px_rgba(44,38,33,0.008)]">
-                        <div className="flex justify-between items-start font-mono text-sm">
+                      <div key={order.id} className="p-3 sm:p-3.5 border border-emerald-600/20 hover:border-emerald-600/40 bg-emerald-50/5 space-y-2.5 relative transition-all">
+                        <div className="flex justify-between items-start font-mono text-xs sm:text-sm">
                           <div>
                             <span className="font-bold text-brand-dark block">ORDER: {order.id}</span>
-                            <span className="text-xs text-brand-muted">Placed: {new Date(order.createdAt).toLocaleTimeString()}</span>
+                            <span className="text-[11px] text-brand-muted">Placed: {new Date(order.createdAt).toLocaleTimeString()}</span>
                           </div>
-                          <span className="text-emerald-800 font-bold text-base">&euro;{order.total.toFixed(2)}</span>
+                          <span className="text-emerald-800 font-bold text-sm sm:text-base">&euro;{order.total.toFixed(2)}</span>
                         </div>
 
-                        <div className="text-xs font-mono border-t border-b border-brand-dark/5 py-2 space-y-1 text-brand-muted">
+                        <div className="text-xs font-mono border-t border-b border-brand-dark/5 py-1.5 space-y-0.5 text-brand-muted">
                           <div>Customer: <span className="font-bold text-brand-dark">{order.customerInfo.name}</span></div>
                           <div>Contact: <span className="underline">{order.customerInfo.phone}</span></div>
                           <div>Time: <span className="font-bold text-brand-dark uppercase">{order.customerInfo.preferredTime}</span></div>
                           <div>Type: <span className="font-bold uppercase text-brand-accent">{order.serviceType}</span>{order.deliveryZone && <span className="ml-1.5 font-sans font-bold text-brand-dark bg-brand-accent/10 px-1.5 py-0.5 rounded text-[10px]">Zone: {order.deliveryZone}</span>}</div>
                           {order.customerInfo.address && (
-                            <div className="pt-1 font-sans text-brand-dark border-t border-dashed border-brand-dark/5 mt-1 font-medium">
+                            <div className="pt-1 font-sans text-brand-dark border-t border-dashed border-brand-dark/5 mt-1 font-medium text-xs">
                               Deliver: {order.customerInfo.address}
                             </div>
                           )}
                         </div>
 
                         <div className="space-y-1">
-                          <span className="font-mono text-xs font-bold text-brand-dark uppercase block">Items:</span>
-                          <ul className="text-xs font-mono text-brand-muted space-y-2 list-none">
+                          <span className="font-mono text-[11px] font-bold text-brand-dark uppercase block">Items:</span>
+                          <ul className="text-xs font-mono text-brand-muted space-y-1.5 list-none">
                             {order.items.map((it, i) => (
-                              <li key={i} className={`space-y-1 pb-1.5 border-b border-brand-dark/5 last:border-0 ${it.cancelled ? 'opacity-50 line-through' : ''}`}>
+                              <li key={i} className={`space-y-0.5 pb-1 border-b border-brand-dark/5 last:border-0 ${it.cancelled ? 'opacity-50 line-through' : ''}`}>
                                 <div className="flex items-start justify-between gap-2">
                                   <div className="flex-1 min-w-0">
-                                    <span className={`font-bold block ${it.cancelled ? 'text-rose-700' : 'text-brand-dark'}`}>
+                                    <span className={`font-bold block text-xs ${it.cancelled ? 'text-rose-700' : 'text-brand-dark'}`}>
                                       {it.quantity}x {it.name} {it.size ? `(${it.size})` : ''}
                                     </span>
                                     {it.cancelled && (
-                                      <span className="inline-block text-[10px] uppercase font-bold text-rose-600 bg-rose-50 border border-rose-200 px-1 py-0.2 not-italic">
+                                      <span className="inline-block text-[9px] uppercase font-bold text-rose-600 bg-rose-50 border border-rose-200 px-1 py-0.2 not-italic">
                                         Cancelled {it.cancelReason ? `— ${it.cancelReason}` : ''}
                                       </span>
                                     )}
@@ -2470,18 +2476,18 @@ Beverages | Tea or Coffee`);
                                   )}
                                 </div>
                                 {it.modifiers && it.modifiers.length > 0 && (
-                                  <div className="space-y-1 bg-brand-beige/20 p-2 border-l-2 border-brand-accent/50 text-[11px] font-mono">
+                                  <div className="space-y-0.5 bg-brand-beige/20 p-1.5 border-l-2 border-brand-accent/50 text-[10px] font-mono">
                                     {it.modifiers.map((m, mIdx) => {
                                       const qty = m.quantity || 1;
                                       const isFree = !m.price || m.price === 0;
                                       const totalModPrice = (m.price || 0) * qty;
                                       return (
-                                        <div key={mIdx} className="flex items-center justify-between gap-1.5">
-                                          <span className="flex items-center gap-1.5 flex-wrap">
-                                            <span className={`text-[9px] px-1.5 py-0.5 uppercase font-bold tracking-wider ${
-                                              isFree ? 'bg-emerald-100 text-emerald-800 border border-emerald-300' : 'bg-amber-100 text-amber-900 border border-amber-300'
+                                        <div key={mIdx} className="flex items-center justify-between gap-1">
+                                          <span className="flex items-center gap-1 flex-wrap">
+                                            <span className={`text-[8px] px-1 py-0.2 uppercase font-bold tracking-wider ${
+                                              isFree ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-900'
                                             }`}>
-                                              {isFree ? 'INCLUDED / FREE' : 'PAID EXTRA'}
+                                              {isFree ? 'FREE' : 'EXTRA'}
                                             </span>
                                             <span className="text-brand-dark font-medium">
                                               {m.groupTitle ? `${m.groupTitle}: ` : ''}
@@ -2502,22 +2508,23 @@ Beverages | Tea or Coffee`);
                           </ul>
                         </div>
 
-                        <div className="pt-2 border-t border-brand-dark/5 flex gap-2 justify-end">
+                        <div className="pt-1.5 border-t border-brand-dark/5 flex flex-wrap gap-1.5 justify-end">
                           {order.serviceType === 'delivery' && order.status === 'Ready for Collection' && (
                             <button
                               type="button"
                               onClick={() => handleUpdateOrderStatus(order.id, 'Out for Delivery')}
-                              className="bg-brand-dark text-white hover:bg-brand-accent px-3 py-2 font-mono text-[10px] font-bold uppercase tracking-wider rounded-none active:scale-95 transition-all"
+                              className="bg-brand-dark text-white hover:bg-brand-accent px-2.5 py-1 font-mono text-[10px] font-bold uppercase tracking-wider rounded-none active:scale-95 transition-all"
                             >
-                              OUT FOR DELIVERY
+                              DISPATCH
                             </button>
                           )}
                           <button
                             type="button"
                             onClick={() => handleUpdateOrderStatus(order.id, 'Completed')}
-                            className="bg-emerald-700 text-white hover:bg-emerald-800 px-3 py-2 font-mono text-[10px] font-bold uppercase tracking-wider rounded-none active:scale-95 transition-all"
+                            className="bg-emerald-700 text-white hover:bg-emerald-800 px-3 py-1 font-mono text-xs font-bold uppercase tracking-wider flex items-center gap-1 rounded-none active:scale-95 transition-all"
                           >
-                            COMPLETE &amp; CLOSE
+                            <Check className="w-3 h-3" />
+                            <span>COMPLETE</span>
                           </button>
                         </div>
                       </div>
@@ -2568,26 +2575,26 @@ Beverages | Tea or Coffee`);
               });
 
             return (
-              <div className="bg-white border border-brand-dark/10 p-6 space-y-6">
+              <div className="bg-white border border-brand-dark/10 p-3 sm:p-5 space-y-4">
                 
                 {/* Header & Date Range Filter Toolbar */}
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-brand-dark/10 pb-4">
-                  <div className="space-y-1">
-                    <span className="font-mono text-sm font-bold uppercase tracking-wider text-rose-800 flex items-center gap-2">
-                      <Ban className="w-4 h-4 text-rose-700" />
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-brand-dark/10 pb-3">
+                  <div className="space-y-0.5">
+                    <span className="font-mono text-xs sm:text-sm font-bold uppercase tracking-wider text-rose-800 flex items-center gap-1.5">
+                      <Ban className="w-4 h-4 text-rose-700 shrink-0" />
                       Cancelled Orders Audit Log
                     </span>
-                    <p className="text-xs font-mono text-brand-muted">
-                      Showing records for: <strong className="text-brand-dark uppercase">{historyDateFilter === 'last7days' ? 'Last 7 Days (Default)' : historyDateFilter === 'today' ? 'Today' : historyDateFilter === 'month' ? 'This Month' : 'All Time'}</strong> ({filteredCancelledOrders.length} orders found)
+                    <p className="text-[11px] font-mono text-brand-muted">
+                      Showing: <strong className="text-brand-dark uppercase">{historyDateFilter === 'last7days' ? 'Last 7 Days' : historyDateFilter === 'today' ? 'Today' : historyDateFilter === 'month' ? 'This Month' : 'All Time'}</strong> ({filteredCancelledOrders.length} orders found)
                     </p>
                   </div>
 
                   {/* Date Range Chips */}
-                  <div className="flex flex-wrap items-center gap-1.5 bg-[#FDFBF7] p-1 border border-brand-dark/10">
+                  <div className="flex flex-wrap items-center gap-1 bg-[#FDFBF7] p-1 border border-brand-dark/10">
                     <button
                       type="button"
                       onClick={() => setHistoryDateFilter('today')}
-                      className={`px-3 py-1.5 font-mono text-xs font-bold uppercase tracking-wider transition-all ${
+                      className={`px-2.5 py-1 font-mono text-[11px] font-bold uppercase tracking-wider transition-all ${
                         historyDateFilter === 'today'
                           ? 'bg-rose-700 text-white shadow-sm'
                           : 'text-brand-dark hover:bg-white'
@@ -2598,7 +2605,7 @@ Beverages | Tea or Coffee`);
                     <button
                       type="button"
                       onClick={() => setHistoryDateFilter('last7days')}
-                      className={`px-3 py-1.5 font-mono text-xs font-bold uppercase tracking-wider transition-all ${
+                      className={`px-2.5 py-1 font-mono text-[11px] font-bold uppercase tracking-wider transition-all ${
                         historyDateFilter === 'last7days'
                           ? 'bg-rose-700 text-white shadow-sm'
                           : 'text-brand-dark hover:bg-white'
@@ -2609,7 +2616,7 @@ Beverages | Tea or Coffee`);
                     <button
                       type="button"
                       onClick={() => setHistoryDateFilter('month')}
-                      className={`px-3 py-1.5 font-mono text-xs font-bold uppercase tracking-wider transition-all ${
+                      className={`px-2.5 py-1 font-mono text-[11px] font-bold uppercase tracking-wider transition-all ${
                         historyDateFilter === 'month'
                           ? 'bg-rose-700 text-white shadow-sm'
                           : 'text-brand-dark hover:bg-white'
@@ -2620,7 +2627,7 @@ Beverages | Tea or Coffee`);
                     <button
                       type="button"
                       onClick={() => setHistoryDateFilter('all')}
-                      className={`px-3 py-1.5 font-mono text-xs font-bold uppercase tracking-wider transition-all ${
+                      className={`px-2.5 py-1 font-mono text-[11px] font-bold uppercase tracking-wider transition-all ${
                         historyDateFilter === 'all'
                           ? 'bg-rose-700 text-white shadow-sm'
                           : 'text-brand-dark hover:bg-white'
@@ -2632,22 +2639,22 @@ Beverages | Tea or Coffee`);
                 </div>
 
                 {/* Search & Filter Bar */}
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2">
                   <div className="relative flex-1">
-                    <Search className="w-4 h-4 text-brand-muted absolute left-3 top-1/2 -translate-y-1/2" />
+                    <Search className="w-3.5 h-3.5 text-brand-muted absolute left-2.5 top-1/2 -translate-y-1/2" />
                     <input
                       type="text"
                       placeholder="Search cancelled orders by ID, customer name, phone, or reason..."
                       value={historySearchQuery}
                       onChange={(e) => setHistorySearchQuery(e.target.value)}
-                      className="w-full pl-9 pr-4 py-2 border border-brand-dark/15 text-xs font-mono focus:border-rose-600 outline-none bg-brand-beige/5"
+                      className="w-full pl-8 pr-3 py-1.5 border border-brand-dark/15 text-xs font-mono focus:border-rose-600 outline-none bg-brand-beige/5"
                     />
                   </div>
                   {historySearchQuery && (
                     <button
                       type="button"
                       onClick={() => setHistorySearchQuery('')}
-                      className="px-3 py-2 border border-brand-dark/15 font-mono text-xs text-brand-dark hover:bg-brand-dark/5"
+                      className="px-2.5 py-1.5 border border-brand-dark/15 font-mono text-xs text-brand-dark hover:bg-brand-dark/5 shrink-0"
                     >
                       Clear
                     </button>
@@ -2655,68 +2662,68 @@ Beverages | Tea or Coffee`);
                 </div>
 
                 {filteredCancelledOrders.length === 0 ? (
-                  <div className="text-center py-16 border border-dashed border-brand-dark/15 space-y-2 bg-[#FDFBF7]/50">
-                    <CheckCircle2 className="w-8 h-8 mx-auto text-emerald-600" />
+                  <div className="text-center py-10 sm:py-14 border border-dashed border-brand-dark/15 space-y-1.5 bg-[#FDFBF7]/50 p-4">
+                    <CheckCircle2 className="w-7 h-7 mx-auto text-emerald-600" />
                     <p className="font-serif text-sm font-bold text-brand-dark">No cancelled orders in this timeframe.</p>
-                    <p className="font-mono text-xs text-brand-muted">
+                    <p className="font-mono text-[11px] text-brand-muted">
                       {historyDateFilter === 'last7days' ? 'No cancellations occurred in the last 7 days.' : 'Try changing your date filter or search criteria above.'}
                     </p>
                   </div>
                 ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-4">
                     {filteredCancelledOrders.map(order => (
-                      <div key={order.id} className="p-4 border border-rose-300 bg-rose-50/20 space-y-3 shadow-sm">
-                        <div className="flex justify-between items-start font-mono text-sm">
-                          <div>
-                            <span className="font-bold text-brand-dark block">ORDER: {order.id}</span>
-                            <span className="text-xs text-brand-muted">Placed: {new Date(order.createdAt).toLocaleString()}</span>
+                      <div key={order.id} className="p-3 sm:p-3.5 border border-rose-300 bg-rose-50/20 space-y-2.5 shadow-sm">
+                        <div className="flex justify-between items-start font-mono text-xs gap-2">
+                          <div className="min-w-0">
+                            <span className="font-bold text-brand-dark block truncate">ORDER: {order.id}</span>
+                            <span className="text-[10px] text-brand-muted">{new Date(order.createdAt).toLocaleString()}</span>
                           </div>
-                          <span className="font-mono text-xs font-bold uppercase px-2 py-0.5 bg-rose-100 text-rose-800 border border-rose-300">
+                          <span className="font-mono text-[10px] font-bold uppercase px-1.5 py-0.5 bg-rose-100 text-rose-800 border border-rose-300 shrink-0">
                             Cancelled
                           </span>
                         </div>
 
                         {/* Reason Description Card */}
-                        <div className="p-2.5 bg-rose-50 border-l-4 border-rose-600 text-xs font-sans text-rose-900 space-y-1">
-                          <span className="font-mono font-bold text-[10px] uppercase tracking-wider text-rose-800 block">
+                        <div className="p-2 bg-rose-50 border-l-2 border-rose-600 text-xs font-sans text-rose-900 space-y-0.5">
+                          <span className="font-mono font-bold text-[9px] uppercase tracking-wider text-rose-800 block">
                             Reason for Cancellation:
                           </span>
-                          <p className="leading-relaxed font-medium">
+                          <p className="leading-relaxed text-[11px] font-medium">
                             {order.cancellationReason || 'No specific cancellation description recorded.'}
                           </p>
                         </div>
 
-                        <div className="text-xs font-mono border-t border-b border-brand-dark/5 py-2 space-y-1 text-brand-muted">
+                        <div className="text-[11px] font-mono border-t border-b border-brand-dark/5 py-1.5 space-y-0.5 text-brand-muted">
                           <div>Customer: <span className="font-bold text-brand-dark">{order.customerInfo.name}</span></div>
                           <div>Contact: <span className="underline">{order.customerInfo.phone}</span></div>
                           <div>Time: <span className="font-bold text-brand-dark uppercase">{order.customerInfo.preferredTime}</span></div>
-                          <div>Fulfillment: <span className="font-bold uppercase text-brand-accent">{order.serviceType}</span></div>
+                          <div>Fulfillment: <span className="font-bold uppercase text-brand-accent">{order.serviceType}</span>{order.deliveryZone && <span className="ml-1 font-sans font-bold text-brand-dark bg-brand-accent/10 px-1 py-0.5 text-[9px]">Zone: {order.deliveryZone}</span>}</div>
                           {order.customerInfo.address && (
-                            <div className="pt-1 font-sans text-brand-dark">Address: {order.customerInfo.address}</div>
+                            <div className="pt-0.5 font-sans text-brand-dark text-xs">Address: {order.customerInfo.address}</div>
                           )}
                         </div>
 
                         <div className="space-y-1 text-xs font-mono text-brand-muted">
-                          <span className="font-bold text-brand-dark block">Items:</span>
-                          <ul className="space-y-2 list-none">
+                          <span className="font-bold text-brand-dark text-[11px] block">Items:</span>
+                          <ul className="space-y-1.5 list-none max-h-36 overflow-y-auto pr-1">
                             {order.items.map((it, idx) => (
-                              <li key={idx} className="space-y-1 pb-1.5 border-b border-brand-dark/5 last:border-0">
-                                <div className="flex justify-between items-start gap-2">
+                              <li key={idx} className="space-y-0.5 pb-1 border-b border-brand-dark/5 last:border-0">
+                                <div className="flex justify-between items-start gap-1 text-[11px]">
                                   <span className="font-bold text-brand-dark truncate">{it.quantity}x {it.name} {it.size ? `(${it.size})` : ''}</span>
                                 </div>
                                 {it.modifiers && it.modifiers.length > 0 && (
-                                  <div className="space-y-1 bg-brand-beige/20 p-2 border-l-2 border-brand-accent/50 text-[11px] font-mono">
+                                  <div className="space-y-0.5 bg-brand-beige/20 p-1.5 border-l-2 border-brand-accent/50 text-[10px] font-mono">
                                     {it.modifiers.map((m, mIdx) => {
                                       const qty = m.quantity || 1;
                                       const isFree = !m.price || m.price === 0;
                                       const totalModPrice = (m.price || 0) * qty;
                                       return (
-                                        <div key={mIdx} className="flex items-center justify-between gap-1.5">
-                                          <span className="flex items-center gap-1.5 flex-wrap">
-                                            <span className={`text-[9px] px-1.5 py-0.5 uppercase font-bold tracking-wider ${
-                                              isFree ? 'bg-emerald-100 text-emerald-800 border border-emerald-300' : 'bg-amber-100 text-amber-900 border border-amber-300'
+                                        <div key={mIdx} className="flex items-center justify-between gap-1">
+                                          <span className="flex items-center gap-1 flex-wrap">
+                                            <span className={`text-[8px] px-1 py-0.2 uppercase font-bold tracking-wider ${
+                                              isFree ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-900'
                                             }`}>
-                                              {isFree ? 'INCLUDED / FREE' : 'PAID EXTRA'}
+                                              {isFree ? 'FREE' : 'EXTRA'}
                                             </span>
                                             <span className="text-brand-dark font-medium">
                                               {m.groupTitle ? `${m.groupTitle}: ` : ''}
@@ -2724,7 +2731,7 @@ Beverages | Tea or Coffee`);
                                               {m.optionName}
                                             </span>
                                           </span>
-                                          <span className={`font-bold shrink-0 ${isFree ? 'text-emerald-700' : 'text-brand-dark'}`}>
+                                          <span className={`font-bold shrink-0 text-[10px] ${isFree ? 'text-emerald-700' : 'text-brand-dark'}`}>
                                             {isFree ? 'FREE' : `+€${totalModPrice.toFixed(2)}`}
                                           </span>
                                         </div>
@@ -2737,7 +2744,7 @@ Beverages | Tea or Coffee`);
                           </ul>
                         </div>
 
-                        <div className="pt-2 border-t border-brand-dark/5 flex justify-between font-mono text-xs font-bold text-brand-dark">
+                        <div className="pt-1.5 border-t border-brand-dark/5 flex justify-between font-mono text-xs font-bold text-brand-dark">
                           <span>Original Total:</span>
                           <span className="line-through text-brand-muted">€{order.total.toFixed(2)}</span>
                         </div>
@@ -2802,26 +2809,26 @@ Beverages | Tea or Coffee`);
               .reduce((sum, o) => sum + (o.total || 0), 0);
 
             return (
-              <div className="bg-white border border-brand-dark/10 p-6 space-y-6">
+              <div className="bg-white border border-brand-dark/10 p-3 sm:p-5 space-y-4">
                 
                 {/* Header & Date Range Toolbar */}
-                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-brand-dark/10 pb-4">
-                  <div className="space-y-1">
-                    <span className="font-mono text-sm font-bold uppercase tracking-wider text-brand-dark flex items-center gap-2">
-                      <Clock className="w-4 h-4 text-brand-accent" />
+                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 border-b border-brand-dark/10 pb-3">
+                  <div className="space-y-0.5">
+                    <span className="font-mono text-xs sm:text-sm font-bold uppercase tracking-wider text-brand-dark flex items-center gap-1.5">
+                      <Clock className="w-4 h-4 text-brand-accent shrink-0" />
                       Complete Orders History
                     </span>
-                    <p className="text-xs font-mono text-brand-muted">
-                      Filtered by date: <strong className="text-brand-dark uppercase">{historyDateFilter === 'last7days' ? 'Last 7 Days (Default)' : historyDateFilter === 'today' ? 'Today' : historyDateFilter === 'month' ? 'This Month' : 'All Time'}</strong> &bull; Showing {filteredOrders.length} of {orders.length} total records
+                    <p className="text-[11px] font-mono text-brand-muted">
+                      Filtered: <strong className="text-brand-dark uppercase">{historyDateFilter === 'last7days' ? 'Last 7 Days' : historyDateFilter === 'today' ? 'Today' : historyDateFilter === 'month' ? 'This Month' : 'All Time'}</strong> &bull; Showing {filteredOrders.length} of {orders.length} total
                     </p>
                   </div>
 
                   {/* Date Filter Buttons */}
-                  <div className="flex flex-wrap items-center gap-1.5 bg-[#FDFBF7] p-1 border border-brand-dark/10">
+                  <div className="flex flex-wrap items-center gap-1 bg-[#FDFBF7] p-1 border border-brand-dark/10">
                     <button
                       type="button"
                       onClick={() => setHistoryDateFilter('today')}
-                      className={`px-3 py-1.5 font-mono text-xs font-bold uppercase tracking-wider transition-all ${
+                      className={`px-2.5 py-1 font-mono text-[11px] font-bold uppercase tracking-wider transition-all ${
                         historyDateFilter === 'today'
                           ? 'bg-brand-dark text-white shadow-sm'
                           : 'text-brand-dark hover:bg-white'
@@ -2832,7 +2839,7 @@ Beverages | Tea or Coffee`);
                     <button
                       type="button"
                       onClick={() => setHistoryDateFilter('last7days')}
-                      className={`px-3 py-1.5 font-mono text-xs font-bold uppercase tracking-wider transition-all ${
+                      className={`px-2.5 py-1 font-mono text-[11px] font-bold uppercase tracking-wider transition-all ${
                         historyDateFilter === 'last7days'
                           ? 'bg-brand-dark text-white shadow-sm'
                           : 'text-brand-dark hover:bg-white'
@@ -2843,7 +2850,7 @@ Beverages | Tea or Coffee`);
                     <button
                       type="button"
                       onClick={() => setHistoryDateFilter('month')}
-                      className={`px-3 py-1.5 font-mono text-xs font-bold uppercase tracking-wider transition-all ${
+                      className={`px-2.5 py-1 font-mono text-[11px] font-bold uppercase tracking-wider transition-all ${
                         historyDateFilter === 'month'
                           ? 'bg-brand-dark text-white shadow-sm'
                           : 'text-brand-dark hover:bg-white'
@@ -2854,7 +2861,7 @@ Beverages | Tea or Coffee`);
                     <button
                       type="button"
                       onClick={() => setHistoryDateFilter('all')}
-                      className={`px-3 py-1.5 font-mono text-xs font-bold uppercase tracking-wider transition-all ${
+                      className={`px-2.5 py-1 font-mono text-[11px] font-bold uppercase tracking-wider transition-all ${
                         historyDateFilter === 'all'
                           ? 'bg-brand-dark text-white shadow-sm'
                           : 'text-brand-dark hover:bg-white'
@@ -2866,46 +2873,46 @@ Beverages | Tea or Coffee`);
                 </div>
 
                 {/* Period KPI Summary Cards */}
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-[#FDFBF7] p-4 border border-brand-dark/10">
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3 bg-[#FDFBF7] p-3 border border-brand-dark/10">
                   <div className="space-y-0.5">
-                    <span className="font-mono text-[11px] text-brand-muted uppercase font-semibold">Total Orders:</span>
-                    <p className="font-mono text-lg font-bold text-brand-dark">{totalOrdersInRange}</p>
+                    <span className="font-mono text-[10px] text-brand-muted uppercase font-semibold">Total Orders</span>
+                    <p className="font-mono text-base sm:text-lg font-bold text-brand-dark">{totalOrdersInRange}</p>
                   </div>
                   <div className="space-y-0.5">
-                    <span className="font-mono text-[11px] text-brand-muted uppercase font-semibold">Total Sales:</span>
-                    <p className="font-mono text-lg font-bold text-emerald-800">€{totalRevenue.toFixed(2)}</p>
+                    <span className="font-mono text-[10px] text-brand-muted uppercase font-semibold">Total Sales</span>
+                    <p className="font-mono text-base sm:text-lg font-bold text-emerald-800">€{totalRevenue.toFixed(2)}</p>
                   </div>
                   <div className="space-y-0.5">
-                    <span className="font-mono text-[11px] text-brand-muted uppercase font-semibold">Completed:</span>
-                    <p className="font-mono text-lg font-bold text-emerald-700">{completedCount}</p>
+                    <span className="font-mono text-[10px] text-brand-muted uppercase font-semibold">Completed</span>
+                    <p className="font-mono text-base sm:text-lg font-bold text-emerald-700">{completedCount}</p>
                   </div>
                   <div className="space-y-0.5">
-                    <span className="font-mono text-[11px] text-brand-muted uppercase font-semibold">Cancelled:</span>
-                    <p className="font-mono text-lg font-bold text-rose-700">{cancelledCount}</p>
+                    <span className="font-mono text-[10px] text-brand-muted uppercase font-semibold">Cancelled</span>
+                    <p className="font-mono text-base sm:text-lg font-bold text-rose-700">{cancelledCount}</p>
                   </div>
                 </div>
 
                 {/* Status & Search Sub-bar */}
-                <div className="flex flex-col md:flex-row items-center gap-3">
-                  <div className="relative flex-1 w-full">
-                    <Search className="w-4 h-4 text-brand-muted absolute left-3 top-1/2 -translate-y-1/2" />
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                  <div className="relative flex-1">
+                    <Search className="w-3.5 h-3.5 text-brand-muted absolute left-2.5 top-1/2 -translate-y-1/2" />
                     <input
                       type="text"
-                      placeholder="Search orders by ID (e.g. ORD-1234), customer name, phone, address, dish..."
+                      placeholder="Search orders by ID, name, phone, address..."
                       value={historySearchQuery}
                       onChange={(e) => setHistorySearchQuery(e.target.value)}
-                      className="w-full pl-9 pr-4 py-2 border border-brand-dark/15 text-xs font-mono focus:border-brand-accent outline-none bg-brand-beige/5"
+                      className="w-full pl-8 pr-3 py-1.5 border border-brand-dark/15 text-xs font-mono focus:border-brand-accent outline-none bg-brand-beige/5"
                     />
                   </div>
 
-                  <div className="flex items-center gap-1.5 w-full md:w-auto overflow-x-auto pb-1 md:pb-0">
-                    <span className="font-mono text-xs text-brand-muted uppercase font-bold pl-1">Status:</span>
+                  <div className="flex items-center gap-1 overflow-x-auto pb-0.5 shrink-0">
+                    <span className="font-mono text-[10px] text-brand-muted uppercase font-bold pr-0.5">Status:</span>
                     {(['all', 'Completed', 'Cancelled', 'Active'] as const).map(statusTab => (
                       <button
                         key={statusTab}
                         type="button"
                         onClick={() => setHistoryStatusFilter(statusTab)}
-                        className={`px-2.5 py-1 font-mono text-xs font-bold uppercase border transition-all ${
+                        className={`px-2 py-1 font-mono text-[11px] font-bold uppercase border transition-all ${
                           historyStatusFilter === statusTab
                             ? 'bg-brand-dark text-white border-brand-dark'
                             : 'bg-white text-brand-dark border-brand-dark/15 hover:bg-brand-dark/5'
@@ -2918,7 +2925,7 @@ Beverages | Tea or Coffee`);
                       <button
                         type="button"
                         onClick={() => setHistorySearchQuery('')}
-                        className="px-2.5 py-1 font-mono text-xs text-brand-muted hover:text-brand-dark underline"
+                        className="px-2 py-1 font-mono text-[11px] text-brand-muted hover:text-brand-dark underline shrink-0"
                       >
                         Reset
                       </button>
@@ -2928,23 +2935,23 @@ Beverages | Tea or Coffee`);
 
                 {/* Orders Grid */}
                 {filteredOrders.length === 0 ? (
-                  <div className="text-center py-16 border border-dashed border-brand-dark/15 space-y-2 bg-[#FDFBF7]/50">
-                    <Clock className="w-8 h-8 mx-auto text-brand-muted/50" />
+                  <div className="text-center py-10 sm:py-14 border border-dashed border-brand-dark/15 space-y-1.5 bg-[#FDFBF7]/50 p-4">
+                    <Clock className="w-7 h-7 mx-auto text-brand-muted/50" />
                     <p className="font-serif text-sm font-bold text-brand-dark">No orders found matching the filter.</p>
-                    <p className="font-mono text-xs text-brand-muted">
+                    <p className="font-mono text-[11px] text-brand-muted">
                       {historyDateFilter === 'last7days' ? 'No orders recorded in the last 7 days.' : 'Try changing your date filter or search query above.'}
                     </p>
                   </div>
                 ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-4">
                     {filteredOrders.map(order => (
-                      <div key={order.id} className="p-4 border border-brand-dark/15 bg-white space-y-3 relative hover:border-brand-dark/30 transition-all shadow-sm">
-                        <div className="flex justify-between items-start font-mono text-sm">
-                          <div>
-                            <span className="font-bold text-brand-dark block">ORDER: {order.id}</span>
-                            <span className="text-xs text-brand-muted">Placed: {new Date(order.createdAt).toLocaleString()}</span>
+                      <div key={order.id} className="p-3 sm:p-3.5 border border-brand-dark/15 bg-white space-y-2.5 relative hover:border-brand-dark/30 transition-all shadow-sm">
+                        <div className="flex justify-between items-start font-mono text-xs gap-2">
+                          <div className="min-w-0">
+                            <span className="font-bold text-brand-dark block truncate">ORDER: {order.id}</span>
+                            <span className="text-[10px] text-brand-muted">{new Date(order.createdAt).toLocaleString()}</span>
                           </div>
-                          <span className={`font-mono text-xs font-bold uppercase px-2 py-0.5 border ${
+                          <span className={`font-mono text-[10px] font-bold uppercase px-1.5 py-0.5 border shrink-0 ${
                             order.status === 'Cancelled'
                               ? 'bg-rose-50 text-rose-800 border-rose-200'
                               : order.status === 'Completed'
@@ -2958,48 +2965,48 @@ Beverages | Tea or Coffee`);
                         </div>
 
                         {order.cancellationReason && (
-                          <div className="p-2.5 bg-rose-50 border-l-4 border-rose-600 text-xs font-sans text-rose-900 space-y-0.5">
-                            <span className="font-mono font-bold text-[10px] uppercase tracking-wider text-rose-800 block">
+                          <div className="p-2 bg-rose-50 border-l-2 border-rose-600 text-xs font-sans text-rose-900 space-y-0.5">
+                            <span className="font-mono font-bold text-[9px] uppercase tracking-wider text-rose-800 block">
                               Cancellation Reason:
                             </span>
-                            <p className="font-medium">{order.cancellationReason}</p>
+                            <p className="text-[11px] font-medium">{order.cancellationReason}</p>
                           </div>
                         )}
 
-                        <div className="text-xs font-mono border-t border-b border-brand-dark/5 py-2 space-y-1 text-brand-muted">
+                        <div className="text-[11px] font-mono border-t border-b border-brand-dark/5 py-1.5 space-y-0.5 text-brand-muted">
                           <div>Customer: <span className="font-bold text-brand-dark">{order.customerInfo.name}</span></div>
                           <div>Contact: <span className="underline">{order.customerInfo.phone}</span></div>
-                          <div>Fulfillment: <span className="font-bold uppercase text-brand-accent">{order.serviceType}</span>{order.deliveryZone && <span className="ml-1.5 font-sans font-bold text-brand-dark bg-brand-accent/10 px-1.5 py-0.5 rounded text-[10px]">Zone: {order.deliveryZone}</span>} &bull; Time: <span className="font-bold text-brand-dark uppercase">{order.customerInfo.preferredTime}</span></div>
+                          <div>Fulfillment: <span className="font-bold uppercase text-brand-accent">{order.serviceType}</span>{order.deliveryZone && <span className="ml-1 font-sans font-bold text-brand-dark bg-brand-accent/10 px-1 py-0.5 text-[9px]">Zone: {order.deliveryZone}</span>} &bull; Time: <span className="font-bold text-brand-dark uppercase">{order.customerInfo.preferredTime}</span></div>
                           {order.customerInfo.address && (
-                            <div className="pt-1 font-sans text-brand-dark font-medium">Deliver to: {order.customerInfo.address}</div>
+                            <div className="pt-0.5 font-sans text-brand-dark font-medium text-xs">Deliver to: {order.customerInfo.address}</div>
                           )}
                           {order.customerInfo.notes && (
-                            <div className="font-sans italic text-amber-800 pt-0.5">Note: "{order.customerInfo.notes}"</div>
+                            <div className="font-sans italic text-amber-800 pt-0.5 text-[11px]">Note: "{order.customerInfo.notes}"</div>
                           )}
                         </div>
 
                         <div className="space-y-1 text-xs font-mono text-brand-muted">
-                          <span className="font-bold text-brand-dark block">Items:</span>
-                          <ul className="space-y-2 list-none">
+                          <span className="font-bold text-brand-dark text-[11px] block">Items:</span>
+                          <ul className="space-y-1 list-none max-h-36 overflow-y-auto pr-1">
                             {order.items.map((it, idx) => (
-                              <li key={idx} className={`space-y-1 pb-1.5 border-b border-brand-dark/5 last:border-0 ${it.cancelled ? 'line-through text-rose-700 opacity-60' : ''}`}>
-                                <div className="flex justify-between items-start gap-2">
-                                  <span className="truncate pr-2 font-bold text-brand-dark">{it.quantity}x {it.name} {it.size ? `(${it.size})` : ''}</span>
+                              <li key={idx} className={`space-y-0.5 pb-1 border-b border-brand-dark/5 last:border-0 ${it.cancelled ? 'line-through text-rose-700 opacity-60' : ''}`}>
+                                <div className="flex justify-between items-start gap-1 text-[11px]">
+                                  <span className="truncate pr-1 font-bold text-brand-dark">{it.quantity}x {it.name} {it.size ? `(${it.size})` : ''}</span>
                                   <span className="font-bold text-brand-dark shrink-0">€{(it.price * it.quantity).toFixed(2)}</span>
                                 </div>
                                 {it.modifiers && it.modifiers.length > 0 && (
-                                  <div className="space-y-1 bg-brand-beige/20 p-2 border-l-2 border-brand-accent/50 text-[11px] font-mono">
+                                  <div className="space-y-0.5 bg-brand-beige/20 p-1.5 border-l-2 border-brand-accent/50 text-[10px] font-mono">
                                     {it.modifiers.map((m, mIdx) => {
                                       const qty = m.quantity || 1;
                                       const isFree = !m.price || m.price === 0;
                                       const totalModPrice = (m.price || 0) * qty;
                                       return (
-                                        <div key={mIdx} className="flex items-center justify-between gap-1.5">
-                                          <span className="flex items-center gap-1.5 flex-wrap">
-                                            <span className={`text-[9px] px-1.5 py-0.5 uppercase font-bold tracking-wider ${
-                                              isFree ? 'bg-emerald-100 text-emerald-800 border border-emerald-300' : 'bg-amber-100 text-amber-900 border border-amber-300'
+                                        <div key={mIdx} className="flex items-center justify-between gap-1">
+                                          <span className="flex items-center gap-1 flex-wrap">
+                                            <span className={`text-[8px] px-1 py-0.2 uppercase font-bold tracking-wider ${
+                                              isFree ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-900'
                                             }`}>
-                                              {isFree ? 'INCLUDED / FREE' : 'PAID EXTRA'}
+                                              {isFree ? 'FREE' : 'EXTRA'}
                                             </span>
                                             <span className="text-brand-dark font-medium">
                                               {m.groupTitle ? `${m.groupTitle}: ` : ''}
@@ -3007,7 +3014,7 @@ Beverages | Tea or Coffee`);
                                               {m.optionName}
                                             </span>
                                           </span>
-                                          <span className={`font-bold shrink-0 ${isFree ? 'text-emerald-700' : 'text-brand-dark'}`}>
+                                          <span className={`font-bold shrink-0 text-[10px] ${isFree ? 'text-emerald-700' : 'text-brand-dark'}`}>
                                             {isFree ? 'FREE' : `+€${totalModPrice.toFixed(2)}`}
                                           </span>
                                         </div>
@@ -3020,7 +3027,7 @@ Beverages | Tea or Coffee`);
                           </ul>
                         </div>
 
-                        <div className="pt-2 border-t border-brand-dark/5 flex justify-between font-mono text-xs font-bold text-brand-dark">
+                        <div className="pt-1.5 border-t border-brand-dark/5 flex justify-between font-mono text-xs font-bold text-brand-dark">
                           <span>Total Amount:</span>
                           <span className={order.status === 'Cancelled' ? 'line-through text-brand-muted' : 'text-brand-accent text-sm'}>
                             €{order.total.toFixed(2)}
@@ -3039,34 +3046,43 @@ Beverages | Tea or Coffee`);
 
       {/* 2. TAB: DINING RESERVATIONS PLANNER */}
       {adminTab === 'bookings' && (
-        <div className="bg-white border border-brand-dark/10 p-6 space-y-6 animate-fade-in" id="admin-bookings-tab">
+        <div className="bg-white border border-brand-dark/10 p-3 sm:p-5 space-y-4 animate-fade-in" id="admin-bookings-tab">
           
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-brand-dark/5 pb-4">
-            <h2 className="font-serif text-xl font-bold text-brand-dark flex items-center">
-              <Calendar className="w-5 h-5 mr-2 text-brand-accent" />
-              Dining Reservations Log
-            </h2>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-brand-dark/10 pb-3">
+            <div className="space-y-0.5">
+              <h2 className="font-serif text-lg sm:text-xl font-bold text-brand-dark flex items-center">
+                <Calendar className="w-4 h-4 sm:w-5 sm:h-5 mr-2 text-brand-accent shrink-0" />
+                Dining Reservations Log
+              </h2>
+              <p className="text-[11px] font-mono text-brand-muted">
+                Showing {filteredBookings.length} total active reservations
+              </p>
+            </div>
             
             {/* Search Input Filter */}
-            <div className="relative max-w-xs w-full">
-              <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-brand-muted">
-                <Search className="w-4 h-4" />
+            <div className="relative w-full sm:w-72">
+              <span className="absolute inset-y-0 left-0 pl-2.5 flex items-center text-brand-muted">
+                <Search className="w-3.5 h-3.5" />
               </span>
               <input
                 type="text"
                 placeholder="Search by name, phone or ID..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-9 pr-4 py-2 border border-brand-dark/10 font-mono text-xs focus:border-brand-dark focus:outline-none bg-brand-beige/5 rounded-none"
+                className="w-full pl-8 pr-3 py-1.5 border border-brand-dark/15 font-mono text-xs focus:border-brand-dark focus:outline-none bg-brand-beige/5 rounded-none"
               />
             </div>
           </div>
 
           <div>
             {filteredBookings.length === 0 ? (
-              <p className="text-sm font-mono text-brand-muted text-center py-20 italic">
-                No matching dining reservations mapped.
-              </p>
+              <div className="text-center py-12 border border-dashed border-brand-dark/15 space-y-1.5 bg-[#FDFBF7]/50 p-4">
+                <Calendar className="w-7 h-7 mx-auto text-brand-muted/50" />
+                <p className="font-serif text-sm font-bold text-brand-dark">No matching reservations found.</p>
+                <p className="font-mono text-[11px] text-brand-muted italic">
+                  {searchQuery ? 'Try adjusting your search keyword.' : 'No reservations have been recorded yet.'}
+                </p>
+              </div>
             ) : (
               <>
                 {/* Desktop View Table */}
@@ -3074,14 +3090,14 @@ Beverages | Tea or Coffee`);
                   <table className="w-full border-collapse font-mono text-xs text-left">
                     <thead>
                       <tr className="border-b border-brand-dark/15 text-brand-muted uppercase text-[10px] tracking-wider bg-brand-beige/10">
-                        <th className="py-3 px-4">REF ID</th>
-                        <th className="py-3 px-4">CUSTOMER Details</th>
-                        <th className="py-3 px-4">GUESTS</th>
-                        <th className="py-3 px-4">TIMINGS</th>
-                        <th className="py-3 px-4">ZONE SECTION</th>
-                        <th className="py-3 px-4">SPECIAL REQUESTS</th>
-                        <th className="py-3 px-4">STATUS</th>
-                        <th className="py-3 px-4 text-right">ACTIONS</th>
+                        <th className="py-2.5 px-3">REF ID</th>
+                        <th className="py-2.5 px-3">CUSTOMER</th>
+                        <th className="py-2.5 px-3">GUESTS</th>
+                        <th className="py-2.5 px-3">TIMINGS</th>
+                        <th className="py-2.5 px-3">ZONE</th>
+                        <th className="py-2.5 px-3">SPECIAL REQUESTS</th>
+                        <th className="py-2.5 px-3">STATUS</th>
+                        <th className="py-2.5 px-3 text-right">ACTIONS</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-brand-dark/5">
@@ -3089,26 +3105,26 @@ Beverages | Tea or Coffee`);
                         const isCancelled = b.status === 'Cancelled';
                         return (
                           <tr key={b.id} className={`hover:bg-brand-beige/20 transition-colors ${isCancelled ? 'opacity-50' : ''}`}>
-                            <td className="py-4 px-4 font-bold text-brand-dark">{b.id}</td>
-                            <td className="py-4 px-4 font-sans text-sm">
-                              <div className="font-bold text-brand-dark font-mono text-xs">{b.name}</div>
-                              <div className="text-xs text-brand-muted">{b.email}</div>
-                              <div className="text-xs text-brand-muted font-mono">{b.phone}</div>
+                            <td className="py-3 px-3 font-bold text-brand-dark">{b.id}</td>
+                            <td className="py-3 px-3 font-sans text-xs">
+                              <div className="font-bold text-brand-dark font-mono">{b.name}</div>
+                              <div className="text-[11px] text-brand-muted truncate max-w-[160px]">{b.email}</div>
+                              <div className="text-[11px] text-brand-muted font-mono">{b.phone}</div>
                             </td>
-                            <td className="py-4 px-4 font-bold text-brand-dark">{b.partySize} Pax</td>
-                            <td className="py-4 px-4">
+                            <td className="py-3 px-3 font-bold text-brand-dark">{b.partySize} Pax</td>
+                            <td className="py-3 px-3">
                               <div className="font-bold text-brand-dark">{b.date}</div>
-                              <div className="text-brand-muted">{b.time}</div>
+                              <div className="text-brand-muted text-[11px]">{b.time}</div>
                             </td>
-                            <td className="py-4 px-4">
-                              <span className="bg-brand-dark/5 px-2 py-0.5 border border-brand-dark/5 font-semibold text-brand-dark">
+                            <td className="py-3 px-3">
+                              <span className="bg-brand-dark/5 px-2 py-0.5 border border-brand-dark/5 font-semibold text-brand-dark text-[11px]">
                                 {b.diningArea}
                               </span>
                             </td>
-                            <td className="py-4 px-4 max-w-xs font-sans text-brand-muted text-xs leading-relaxed italic">
+                            <td className="py-3 px-3 max-w-xs font-sans text-brand-muted text-[11px] leading-relaxed italic">
                               {b.specialRequests || <span className="text-brand-muted/30 font-mono">&mdash; None</span>}
                             </td>
-                            <td className="py-4 px-4">
+                            <td className="py-3 px-3">
                               <span className={`px-2 py-0.5 border text-[10px] font-bold uppercase ${
                                 isCancelled
                                   ? 'bg-red-50 text-red-700 border-red-200'
@@ -3119,22 +3135,22 @@ Beverages | Tea or Coffee`);
                                 {b.status}
                               </span>
                             </td>
-                            <td className="py-4 px-4 text-right">
-                              <div className="flex gap-2 justify-end items-center">
+                            <td className="py-3 px-3 text-right">
+                              <div className="flex gap-1.5 justify-end items-center">
                                 {b.status === 'Pending' && (
                                   <>
                                     <button
                                       type="button"
                                       onClick={() => handleUpdateBookingStatus(b.id, 'Confirmed', true)}
-                                      className="bg-emerald-700 hover:bg-emerald-800 text-white px-2 py-1 font-bold uppercase rounded-none transition-all active:scale-95 border border-emerald-800"
+                                      className="bg-emerald-700 hover:bg-emerald-800 text-white px-2 py-1 font-bold uppercase rounded-none transition-all active:scale-95 border border-emerald-800 text-[10px]"
                                       title="Confirm booking and send receipt"
                                     >
-                                      CONFIRM &amp; EMAIL
+                                      CONFIRM
                                     </button>
                                     <button
                                       type="button"
                                       onClick={() => handleUpdateBookingStatus(b.id, 'Cancelled')}
-                                      className="border border-red-200 hover:border-red-600 text-red-600 px-2 py-1 font-bold uppercase rounded-none transition-all active:scale-95"
+                                      className="border border-red-200 hover:border-red-600 text-red-600 px-2 py-1 font-bold uppercase rounded-none transition-all active:scale-95 text-[10px]"
                                     >
                                       CANCEL
                                     </button>
@@ -3142,21 +3158,21 @@ Beverages | Tea or Coffee`);
                                 )}
                                 {b.status === 'Confirmed' && (
                                   <>
-                                    <span className="text-[10px] font-bold text-emerald-800 bg-emerald-50 px-2 py-1 border border-emerald-300 uppercase tracking-wider">
-                                      ✓ CONFIRMED (DONE)
+                                    <span className="text-[10px] font-bold text-emerald-800 bg-emerald-50 px-1.5 py-0.5 border border-emerald-300 uppercase">
+                                      ✓ CONFIRMED
                                     </span>
                                     <button
                                       type="button"
                                       onClick={() => handleUpdateBookingStatus(b.id, 'Confirmed', true)}
-                                      className="border border-brand-dark/15 hover:border-brand-dark text-brand-dark px-2 py-1 font-bold uppercase rounded-none transition-all active:scale-95 text-[10px]"
+                                      className="border border-brand-dark/15 hover:border-brand-dark text-brand-dark px-2 py-0.5 font-bold uppercase rounded-none transition-all active:scale-95 text-[10px]"
                                       title="Resend confirmation email"
                                     >
-                                      RESEND EMAIL
+                                      RESEND
                                     </button>
                                     <button
                                       type="button"
                                       onClick={() => handleUpdateBookingStatus(b.id, 'Cancelled')}
-                                      className="border border-red-200 hover:border-red-600 text-red-600 px-2 py-1 font-bold uppercase rounded-none transition-all active:scale-95"
+                                      className="border border-red-200 hover:border-red-600 text-red-600 px-2 py-0.5 font-bold uppercase rounded-none transition-all active:scale-95 text-[10px]"
                                     >
                                       CANCEL
                                     </button>
@@ -3166,7 +3182,7 @@ Beverages | Tea or Coffee`);
                                   <button
                                     type="button"
                                     onClick={() => handleUpdateBookingStatus(b.id, 'Confirmed')}
-                                    className="border border-brand-dark/15 hover:border-brand-dark text-brand-dark px-2 py-1 font-bold uppercase rounded-none transition-all active:scale-95"
+                                    className="border border-brand-dark/15 hover:border-brand-dark text-brand-dark px-2 py-1 font-bold uppercase rounded-none transition-all active:scale-95 text-[10px]"
                                   >
                                     RESTORE
                                   </button>
@@ -3181,14 +3197,14 @@ Beverages | Tea or Coffee`);
                 </div>
 
                 {/* Mobile View Cards */}
-                <div className="block md:hidden space-y-4">
+                <div className="block md:hidden space-y-3">
                   {filteredBookings.map((b) => {
                     const isCancelled = b.status === 'Cancelled';
                     return (
-                      <div key={b.id} className={`p-4 border border-brand-dark/10 bg-[#FDFBF7]/40 space-y-3 font-mono text-xs text-left ${isCancelled ? 'opacity-50' : ''}`}>
-                        <div className="flex justify-between items-center border-b border-brand-dark/5 pb-2">
+                      <div key={b.id} className={`p-3 border border-brand-dark/10 bg-[#FDFBF7]/40 space-y-2.5 font-mono text-xs text-left ${isCancelled ? 'opacity-50' : ''}`}>
+                        <div className="flex justify-between items-center border-b border-brand-dark/5 pb-1.5">
                           <span className="font-bold text-brand-dark">{b.id}</span>
-                          <span className={`px-2 py-0.5 border text-[9px] font-bold uppercase ${
+                          <span className={`px-1.5 py-0.5 border text-[9px] font-bold uppercase ${
                             isCancelled
                               ? 'bg-red-50 text-red-700 border-red-200'
                               : b.status === 'Pending'
@@ -3198,44 +3214,44 @@ Beverages | Tea or Coffee`);
                             {b.status}
                           </span>
                         </div>
-                        <div className="space-y-1">
+                        <div className="space-y-0.5">
                           <div className="font-sans font-bold text-brand-dark text-sm">{b.name}</div>
                           <div className="text-brand-muted text-[11px] truncate">{b.email}</div>
-                          <div className="underline text-brand-muted">{b.phone}</div>
+                          <div className="underline text-brand-muted text-[11px]">{b.phone}</div>
                         </div>
-                        <div className="grid grid-cols-2 gap-2 text-[10px] bg-brand-dark/5 p-2.5">
+                        <div className="grid grid-cols-2 gap-1.5 text-[10px] bg-brand-dark/5 p-2">
                           <div>
                             <span className="block text-brand-muted text-[8px] uppercase">Guests</span>
                             <span className="font-bold text-brand-dark">{b.partySize} Pax</span>
                           </div>
                           <div>
                             <span className="block text-brand-muted text-[8px] uppercase">Zone</span>
-                            <span className="font-bold text-brand-dark truncate block max-w-[120px]">{b.diningArea}</span>
+                            <span className="font-bold text-brand-dark truncate block">{b.diningArea}</span>
                           </div>
-                          <div className="col-span-2 border-t border-brand-dark/5 pt-1 mt-1">
+                          <div className="col-span-2 border-t border-brand-dark/5 pt-1 mt-0.5">
                             <span className="block text-brand-muted text-[8px] uppercase">Timings</span>
                             <span className="font-bold text-brand-dark">{b.date} &bull; {b.time}</span>
                           </div>
                         </div>
                         {b.specialRequests && (
-                          <div className="text-xs italic font-sans text-brand-muted leading-relaxed bg-brand-beige/30 p-2">
+                          <div className="text-[11px] italic font-sans text-brand-muted leading-relaxed bg-brand-beige/30 p-2">
                             ★ "{b.specialRequests}"
                           </div>
                         )}
-                        <div className="pt-2 border-t border-brand-dark/5 flex flex-wrap gap-1.5 justify-end">
+                        <div className="pt-1.5 border-t border-brand-dark/5 flex flex-wrap gap-1 justify-end">
                           {b.status === 'Pending' && (
                             <>
                               <button
                                 type="button"
                                 onClick={() => handleUpdateBookingStatus(b.id, 'Confirmed', true)}
-                                className="bg-emerald-700 text-white px-2.5 py-1.5 font-bold uppercase text-[9px] rounded-none"
+                                className="bg-emerald-700 text-white px-2 py-1 font-bold uppercase text-[9px] rounded-none"
                               >
                                 CONFIRM &amp; EMAIL
                               </button>
                               <button
                                 type="button"
                                 onClick={() => handleUpdateBookingStatus(b.id, 'Cancelled')}
-                                className="border border-red-200 text-red-600 px-2.5 py-1.5 font-bold uppercase text-[9px] rounded-none"
+                                className="border border-red-200 text-red-600 px-2 py-1 font-bold uppercase text-[9px] rounded-none"
                               >
                                 CANCEL
                               </button>
@@ -3246,14 +3262,14 @@ Beverages | Tea or Coffee`);
                               <button
                                 type="button"
                                 onClick={() => handleUpdateBookingStatus(b.id, 'Confirmed', true)}
-                                className="border border-brand-dark/15 text-brand-dark px-2.5 py-1.5 font-bold uppercase text-[9px] rounded-none"
+                                className="border border-brand-dark/15 text-brand-dark px-2 py-1 font-bold uppercase text-[9px] rounded-none"
                               >
                                 RESEND EMAIL
                               </button>
                               <button
                                 type="button"
                                 onClick={() => handleUpdateBookingStatus(b.id, 'Cancelled')}
-                                className="border border-red-200 text-red-600 px-2.5 py-1.5 font-bold uppercase text-[9px] rounded-none"
+                                className="border border-red-200 text-red-600 px-2 py-1 font-bold uppercase text-[9px] rounded-none"
                               >
                                 CANCEL
                               </button>
@@ -3263,7 +3279,7 @@ Beverages | Tea or Coffee`);
                             <button
                               type="button"
                               onClick={() => handleUpdateBookingStatus(b.id, 'Confirmed')}
-                              className="border border-brand-dark/15 text-brand-dark px-2.5 py-1.5 font-bold uppercase text-[9px] rounded-none"
+                              className="border border-brand-dark/15 text-brand-dark px-2 py-1 font-bold uppercase text-[9px] rounded-none"
                             >
                               RESTORE
                             </button>
@@ -3281,16 +3297,16 @@ Beverages | Tea or Coffee`);
 
       {/* 3. TAB: MENU, MODIFIERS & DEALS STUDIO */}
       {adminTab === 'catalog' && (
-        <div className="bg-white border border-brand-dark/10 p-4 sm:p-8 space-y-8 animate-fade-in text-left" id="admin-catalog-tab">
+        <div className="bg-white border border-brand-dark/10 p-3 sm:p-5 space-y-4 animate-fade-in text-left" id="admin-catalog-tab">
           
           {/* Studio Header & Stats */}
-          <div className="border-b border-brand-dark/10 pb-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+          <div className="border-b border-brand-dark/10 pb-3 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
             <div>
-              <h2 className="font-serif text-2xl font-bold text-brand-dark flex items-center gap-2.5">
-                <CookingPot className="w-6 h-6 text-brand-accent" />
-                <span>Restaurant Menu &amp; Modifiers Studio</span>
+              <h2 className="font-serif text-lg sm:text-xl font-bold text-brand-dark flex items-center gap-2">
+                <CookingPot className="w-5 h-5 text-brand-accent shrink-0" />
+                <span>Menu &amp; Modifiers Studio</span>
               </h2>
-              <p className="font-sans text-xs text-brand-muted mt-1">
+              <p className="font-sans text-[11px] text-brand-muted mt-0.5">
                 Real-time control over categories, dishes, modifiers, dips, cold drinks, and combo packages.
               </p>
             </div>
@@ -3299,32 +3315,32 @@ Beverages | Tea or Coffee`);
                 type="button"
                 onClick={fetchMenuCatalog}
                 disabled={catalogLoading}
-                className="border border-brand-dark/15 hover:border-brand-dark text-brand-dark px-3.5 py-2 font-mono text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 rounded-none transition-all active:scale-95"
+                className="border border-brand-dark/15 hover:border-brand-dark text-brand-dark px-3 py-1.5 font-mono text-[11px] font-bold uppercase tracking-wider flex items-center gap-1.5 rounded-none transition-all active:scale-95"
               >
                 <RefreshCw className={`w-3.5 h-3.5 ${catalogLoading ? 'animate-spin' : ''}`} />
-                <span>SYNC LIVE CATALOG</span>
+                <span>SYNC LIVE</span>
               </button>
             </div>
           </div>
 
           {/* Sub-Tabs: Dishes | Categories | Modifiers & Dips | Deals */}
-          <div className="flex space-x-2 border-b border-brand-dark/10 pb-2 overflow-x-auto whitespace-nowrap scrollbar-none">
+          <div className="flex space-x-1 border-b border-brand-dark/10 pb-1.5 overflow-x-auto whitespace-nowrap scrollbar-none">
             <button
               type="button"
               onClick={() => setCatalogSubTab('dishes')}
-              className={`px-4 py-2 font-mono text-xs font-bold uppercase tracking-wider flex items-center gap-2 rounded-none transition-all ${
+              className={`px-3 py-1.5 font-mono text-[11px] font-bold uppercase tracking-wider flex items-center gap-1.5 rounded-none transition-all ${
                 catalogSubTab === 'dishes'
                   ? 'bg-brand-dark text-white shadow-sm'
                   : 'bg-brand-dark/5 text-brand-muted hover:text-brand-dark hover:bg-brand-dark/10'
               }`}
             >
               <UtensilsCrossed className="w-3.5 h-3.5" />
-              <span>Dishes &amp; Products ({catalogProducts.length})</span>
+              <span>Dishes ({catalogProducts.length})</span>
             </button>
             <button
               type="button"
               onClick={() => setCatalogSubTab('categories')}
-              className={`px-4 py-2 font-mono text-xs font-bold uppercase tracking-wider flex items-center gap-2 rounded-none transition-all ${
+              className={`px-3 py-1.5 font-mono text-[11px] font-bold uppercase tracking-wider flex items-center gap-1.5 rounded-none transition-all ${
                 catalogSubTab === 'categories'
                   ? 'bg-brand-dark text-white shadow-sm'
                   : 'bg-brand-dark/5 text-brand-muted hover:text-brand-dark hover:bg-brand-dark/10'
@@ -3336,38 +3352,38 @@ Beverages | Tea or Coffee`);
             <button
               type="button"
               onClick={() => setCatalogSubTab('modifiers')}
-              className={`px-4 py-2 font-mono text-xs font-bold uppercase tracking-wider flex items-center gap-2 rounded-none transition-all ${
+              className={`px-3 py-1.5 font-mono text-[11px] font-bold uppercase tracking-wider flex items-center gap-1.5 rounded-none transition-all ${
                 catalogSubTab === 'modifiers'
                   ? 'bg-brand-dark text-white shadow-sm'
                   : 'bg-brand-dark/5 text-brand-muted hover:text-brand-dark hover:bg-brand-dark/10'
               }`}
             >
               <Sliders className="w-3.5 h-3.5" />
-              <span>Modifiers &amp; Dips ({catalogOptionGroups.length})</span>
+              <span>Modifiers ({catalogOptionGroups.length})</span>
             </button>
             <button
               type="button"
               onClick={() => setCatalogSubTab('deals')}
-              className={`px-4 py-2 font-mono text-xs font-bold uppercase tracking-wider flex items-center gap-2 rounded-none transition-all ${
+              className={`px-3 py-1.5 font-mono text-[11px] font-bold uppercase tracking-wider flex items-center gap-1.5 rounded-none transition-all ${
                 catalogSubTab === 'deals'
                   ? 'bg-brand-dark text-white shadow-sm'
                   : 'bg-brand-dark/5 text-brand-muted hover:text-brand-dark hover:bg-brand-dark/10'
               }`}
             >
               <Tag className="w-3.5 h-3.5" />
-              <span>Deals &amp; Combos ({catalogDeals.length})</span>
+              <span>Deals ({catalogDeals.length})</span>
             </button>
           </div>
 
           {/* 1. DISHES & PRODUCTS VIEW */}
           {catalogSubTab === 'dishes' && (
-            <div className="space-y-6">
+            <div className="space-y-4">
               {/* Action Toolbar */}
-              <div className="flex flex-col md:flex-row justify-between items-stretch md:items-center gap-3 bg-brand-beige/10 p-3.5 border border-brand-dark/10">
+              <div className="flex flex-col lg:flex-row justify-between items-stretch lg:items-center gap-2.5 bg-brand-beige/10 p-2.5 sm:p-3 border border-brand-dark/10">
                 <div className="flex flex-wrap items-center gap-2 flex-grow">
                   {/* Search Bar */}
-                  <div className="relative min-w-[200px] flex-grow sm:flex-grow-0 sm:w-64">
-                    <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-brand-muted" />
+                  <div className="relative flex-grow sm:flex-grow-0 sm:w-60">
+                    <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-brand-muted" />
                     <input
                       type="text"
                       placeholder="Search dish by name or ID..."
@@ -3380,7 +3396,7 @@ Beverages | Tea or Coffee`);
                   <select
                     value={dishCategoryFilter}
                     onChange={(e) => setDishCategoryFilter(e.target.value)}
-                    className="py-1.5 px-3 text-xs font-mono border border-brand-dark/15 focus:border-brand-dark outline-none bg-white rounded-none"
+                    className="py-1.5 px-2.5 text-xs font-mono border border-brand-dark/15 focus:border-brand-dark outline-none bg-white rounded-none flex-grow sm:flex-grow-0"
                   >
                     <option value="ALL">All Categories ({catalogProducts.length})</option>
                     {catalogCategories.map(c => (
@@ -3394,7 +3410,7 @@ Beverages | Tea or Coffee`);
                     <button
                       type="button"
                       onClick={() => setDishStockFilter('ALL')}
-                      className={`px-2.5 py-1 text-[10px] font-mono font-bold uppercase transition-colors ${
+                      className={`px-2 py-1 text-[10px] font-mono font-bold uppercase transition-colors ${
                         dishStockFilter === 'ALL' ? 'bg-brand-dark text-white' : 'text-brand-muted hover:text-brand-dark'
                       }`}
                     >
@@ -3403,7 +3419,7 @@ Beverages | Tea or Coffee`);
                     <button
                       type="button"
                       onClick={() => setDishStockFilter('IN_STOCK')}
-                      className={`px-2.5 py-1 text-[10px] font-mono font-bold uppercase transition-colors ${
+                      className={`px-2 py-1 text-[10px] font-mono font-bold uppercase transition-colors ${
                         dishStockFilter === 'IN_STOCK' ? 'bg-emerald-700 text-white' : 'text-brand-muted hover:text-brand-dark'
                       }`}
                     >
@@ -3412,7 +3428,7 @@ Beverages | Tea or Coffee`);
                     <button
                       type="button"
                       onClick={() => setDishStockFilter('SOLD_OUT')}
-                      className={`px-2.5 py-1 text-[10px] font-mono font-bold uppercase transition-colors ${
+                      className={`px-2 py-1 text-[10px] font-mono font-bold uppercase transition-colors ${
                         dishStockFilter === 'SOLD_OUT' ? 'bg-rose-700 text-white' : 'text-brand-muted hover:text-brand-dark'
                       }`}
                     >
@@ -3424,15 +3440,15 @@ Beverages | Tea or Coffee`);
                 <button
                   type="button"
                   onClick={handleOpenCreateDishModal}
-                  className="bg-brand-accent hover:bg-brand-dark text-white px-5 py-2 font-mono text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-1.5 rounded-none shadow-md transition-all active:scale-95"
+                  className="bg-brand-accent hover:bg-brand-dark text-white px-4 py-1.5 font-mono text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-1.5 rounded-none transition-all active:scale-95 shrink-0"
                 >
-                  <Plus className="w-4 h-4" />
+                  <Plus className="w-3.5 h-3.5" />
                   <span>ADD NEW DISH</span>
                 </button>
               </div>
 
               {/* Dishes Grid */}
-              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-4">
                 {catalogProducts
                   .filter(p => {
                     const matchesSearch = dishSearch.trim() === '' || 
@@ -3459,36 +3475,36 @@ Beverages | Tea or Coffee`);
                         }`}
                       >
                         {/* Top Card Area */}
-                        <div className="p-4 space-y-3">
+                        <div className="p-3 sm:p-3.5 space-y-2.5">
                           <div className="flex justify-between items-start gap-2">
                             <div className="flex-1 min-w-0">
-                              <span className="text-[10px] font-mono text-brand-muted uppercase tracking-wider block">
+                              <span className="text-[10px] font-mono text-brand-muted uppercase tracking-wider block truncate">
                                 {product.category} &bull; ID: {product.id}
                               </span>
-                              <h3 className="font-serif text-base font-bold text-brand-dark flex items-center gap-1.5 truncate">
+                              <h3 className="font-serif text-sm sm:text-base font-bold text-brand-dark flex items-center gap-1.5 truncate">
                                 {product.name}
                                 {product.isVeg && (
                                   <span className="w-2 h-2 bg-emerald-600 rounded-full flex-shrink-0" title="Vegetarian"></span>
                                 )}
                               </h3>
                             </div>
-                            <span className="font-mono text-sm font-bold text-brand-dark bg-brand-beige/40 px-2 py-0.5 border border-brand-dark/10 shrink-0">
+                            <span className="font-mono text-xs sm:text-sm font-bold text-brand-dark bg-brand-beige/40 px-1.5 py-0.5 border border-brand-dark/10 shrink-0">
                               &euro;{product.price.toFixed(2)}
                             </span>
                           </div>
 
                           {product.description && (
-                            <p className="font-sans text-xs text-brand-muted leading-relaxed line-clamp-2">
+                            <p className="font-sans text-[11px] text-brand-muted leading-relaxed line-clamp-2">
                               {product.description}
                             </p>
                           )}
 
                           {/* Sizes Badges */}
                           {product.sizeOptions && product.sizeOptions.length > 0 && (
-                            <div className="flex flex-wrap items-center gap-1 pt-1">
+                            <div className="flex flex-wrap items-center gap-1">
                               <span className="text-[9px] font-mono text-brand-accent font-bold uppercase">Sizes:</span>
                               {product.sizeOptions.map(sz => (
-                                <span key={sz.name} className="bg-brand-dark/5 border border-brand-dark/10 px-1.5 py-0.5 text-[9px] font-mono text-brand-dark">
+                                <span key={sz.name} className="bg-brand-dark/5 border border-brand-dark/10 px-1 py-0.2 text-[9px] font-mono text-brand-dark">
                                   {sz.name} (&euro;{sz.price.toFixed(2)})
                                 </span>
                               ))}
@@ -3517,7 +3533,7 @@ Beverages | Tea or Coffee`);
                               {product.optionGroupIds.map(gId => {
                                 const grp = catalogOptionGroups.find(g => String(g.id) === String(gId));
                                 return (
-                                  <span key={gId} className="bg-brand-accent/10 text-brand-accent border border-brand-accent/20 px-1.5 py-0.5 text-[9px] font-mono font-bold">
+                                  <span key={gId} className="bg-brand-accent/10 text-brand-accent border border-brand-accent/20 px-1.5 py-0.2 text-[9px] font-mono font-bold">
                                     ⚡ {grp ? grp.title : `Group #${gId}`}
                                   </span>
                                 );
@@ -3527,11 +3543,11 @@ Beverages | Tea or Coffee`);
 
                           {/* Image preview & quick URL */}
                           <div className="flex items-center gap-2 pt-2 border-t border-dashed border-brand-dark/10">
-                            <div className="w-10 h-10 border border-brand-dark/15 overflow-hidden bg-brand-dark/5 flex-shrink-0 flex items-center justify-center">
+                            <div className="w-8 h-8 border border-brand-dark/15 overflow-hidden bg-brand-dark/5 flex-shrink-0 flex items-center justify-center">
                               {dishImage ? (
                                 <img src={dishImage} alt={product.name} className="w-full h-full object-cover" />
                               ) : (
-                                <span className="text-[8px] text-brand-muted font-mono uppercase text-center">No Pic</span>
+                                <span className="text-[7px] text-brand-muted font-mono uppercase text-center">No Pic</span>
                               )}
                             </div>
                             <div className="flex-1 min-w-0">
@@ -3552,20 +3568,20 @@ Beverages | Tea or Coffee`);
                                     console.error(err);
                                   }
                                 }}
-                                className="w-full border border-brand-dark/15 p-1 px-2 text-[10px] font-mono focus:border-brand-dark outline-none bg-white rounded-none"
+                                className="w-full border border-brand-dark/15 p-1 px-1.5 text-[10px] font-mono focus:border-brand-dark outline-none bg-white rounded-none"
                               />
                             </div>
                           </div>
                         </div>
 
                         {/* Bottom Actions Row */}
-                        <div className="p-3 bg-brand-beige/20 border-t border-brand-dark/10 flex flex-wrap items-center justify-between gap-2">
-                          <div className="flex items-center gap-1.5">
+                        <div className="p-2.5 bg-brand-beige/20 border-t border-brand-dark/10 flex flex-wrap items-center justify-between gap-1.5">
+                          <div className="flex items-center gap-1">
                             {/* In Stock / Sold Out Toggle */}
                             <button
                               type="button"
                               onClick={() => handleToggleDishStock(product.id, Boolean(product.isSoldOut))}
-                              className={`px-2 py-1 font-mono text-[10px] font-bold uppercase border transition-all active:scale-95 ${
+                              className={`px-1.5 py-0.5 font-mono text-[9px] font-bold uppercase border transition-all active:scale-95 ${
                                 product.isSoldOut
                                   ? 'bg-rose-700 text-white border-rose-800'
                                   : 'bg-emerald-700 text-white border-emerald-800'
@@ -3579,7 +3595,7 @@ Beverages | Tea or Coffee`);
                             <button
                               type="button"
                               onClick={() => handleToggleDishActive(product.id, product.isActive !== false)}
-                              className={`px-2 py-1 font-mono text-[10px] font-bold uppercase border transition-all active:scale-95 ${
+                              className={`px-1.5 py-0.5 font-mono text-[9px] font-bold uppercase border transition-all active:scale-95 ${
                                 product.isActive === false
                                   ? 'bg-gray-600 text-white border-gray-700'
                                   : 'bg-white text-brand-dark border-brand-dark/20 hover:border-brand-dark'
@@ -3590,22 +3606,22 @@ Beverages | Tea or Coffee`);
                             </button>
                           </div>
 
-                          <div className="flex items-center gap-1.5">
+                          <div className="flex items-center gap-1">
                             <button
                               type="button"
                               onClick={() => handleOpenEditDishModal(product)}
-                              className="border border-brand-dark/20 hover:border-brand-dark text-brand-dark bg-white px-2.5 py-1 font-mono text-[10px] font-bold uppercase rounded-none transition-all active:scale-95 flex items-center gap-1"
+                              className="border border-brand-dark/20 hover:border-brand-dark text-brand-dark bg-white px-2 py-0.5 font-mono text-[9px] font-bold uppercase rounded-none transition-all active:scale-95 flex items-center gap-0.5"
                             >
-                              <Edit3 className="w-3 h-3" />
+                              <Edit3 className="w-2.5 h-2.5" />
                               <span>EDIT</span>
                             </button>
                             <button
                               type="button"
                               onClick={() => handleDeleteDish(product.id, product.name)}
-                              className="border border-red-200 hover:border-red-600 text-red-600 bg-white px-2 py-1 font-mono text-[10px] font-bold uppercase rounded-none transition-all active:scale-95"
+                              className="border border-red-200 hover:border-red-600 text-red-600 bg-white px-1.5 py-0.5 font-mono text-[9px] font-bold uppercase rounded-none transition-all active:scale-95"
                               title="Delete Dish"
                             >
-                              <Trash2 className="w-3 h-3" />
+                              <Trash2 className="w-2.5 h-2.5" />
                             </button>
                           </div>
                         </div>
@@ -3618,18 +3634,18 @@ Beverages | Tea or Coffee`);
 
           {/* 2. CATEGORIES VIEW */}
           {catalogSubTab === 'categories' && (
-            <div className="space-y-6">
-              <div className="flex justify-between items-center bg-brand-beige/10 p-3.5 border border-brand-dark/10">
+            <div className="space-y-4">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 bg-brand-beige/10 p-2.5 sm:p-3 border border-brand-dark/10">
                 <div>
-                  <h3 className="font-serif text-lg font-bold text-brand-dark">Category Directory</h3>
-                  <p className="font-sans text-xs text-brand-muted">Organize menu order, display tabs, and assign default modifier groups.</p>
+                  <h3 className="font-serif text-base font-bold text-brand-dark">Category Directory</h3>
+                  <p className="font-sans text-[11px] text-brand-muted">Organize menu order, display tabs, and assign default modifier groups.</p>
                 </div>
                 <button
                   type="button"
                   onClick={handleOpenCreateCategoryModal}
-                  className="bg-brand-accent hover:bg-brand-dark text-white px-5 py-2 font-mono text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 rounded-none shadow-md transition-all active:scale-95"
+                  className="bg-brand-accent hover:bg-brand-dark text-white px-3.5 py-1.5 font-mono text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 rounded-none transition-all active:scale-95 shrink-0"
                 >
-                  <Plus className="w-4 h-4" />
+                  <Plus className="w-3.5 h-3.5" />
                   <span>ADD CATEGORY</span>
                 </button>
               </div>
@@ -3638,8 +3654,8 @@ Beverages | Tea or Coffee`);
                 {catalogCategories.map((category, index) => {
                   const dishCount = catalogProducts.filter(p => p.category === category.name).length;
                   return (
-                    <div key={category.id} className="p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 hover:bg-brand-beige/5 transition-colors">
-                      <div className="flex items-center gap-3 min-w-0 flex-1">
+                    <div key={category.id} className="p-3 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 hover:bg-brand-beige/5 transition-colors">
+                      <div className="flex items-center gap-2.5 min-w-0 flex-1">
                         <div className="flex flex-col gap-0.5">
                           <button
                             type="button"
@@ -3661,24 +3677,24 @@ Beverages | Tea or Coffee`);
                           </button>
                         </div>
 
-                        <div className="space-y-1 min-w-0">
+                        <div className="space-y-0.5 min-w-0">
                           <div className="flex items-center gap-2">
                             <span className="font-mono text-xs text-brand-muted font-bold">#{index + 1}</span>
-                            <h4 className="font-serif text-base font-bold text-brand-dark truncate">{category.name}</h4>
-                            <span className="font-mono text-[10px] bg-brand-dark/10 text-brand-dark px-2 py-0.5 font-bold">
+                            <h4 className="font-serif text-sm sm:text-base font-bold text-brand-dark truncate">{category.name}</h4>
+                            <span className="font-mono text-[9px] bg-brand-dark/10 text-brand-dark px-1.5 py-0.2 font-bold">
                               {dishCount} Dishes
                             </span>
                           </div>
                           {category.description && (
-                            <p className="font-sans text-xs text-brand-muted">{category.description}</p>
+                            <p className="font-sans text-[11px] text-brand-muted">{category.description}</p>
                           )}
                           {category.optionGroupIds && category.optionGroupIds.length > 0 && (
-                            <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                            <div className="flex flex-wrap items-center gap-1 pt-0.5">
                               <span className="text-[9px] font-mono text-brand-accent font-bold uppercase">Default Modifiers:</span>
                               {category.optionGroupIds.map(gId => {
                                 const grp = catalogOptionGroups.find(g => String(g.id) === String(gId));
                                 return (
-                                  <span key={gId} className="bg-brand-accent/10 text-brand-accent border border-brand-accent/20 px-2 py-0.5 text-[9px] font-mono font-bold">
+                                  <span key={gId} className="bg-brand-accent/10 text-brand-accent border border-brand-accent/20 px-1.5 py-0.2 text-[9px] font-mono font-bold">
                                     ⚡ {grp ? grp.title : `Group #${gId}`}
                                   </span>
                                 );
@@ -3688,11 +3704,11 @@ Beverages | Tea or Coffee`);
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-2 self-end sm:self-center shrink-0">
+                      <div className="flex items-center gap-1.5 self-end sm:self-center shrink-0">
                         <button
                           type="button"
                           onClick={() => handleOpenEditCategoryModal(category)}
-                          className="border border-brand-dark/20 hover:border-brand-dark text-brand-dark px-3 py-1.5 font-mono text-xs font-bold uppercase rounded-none transition-all active:scale-95 flex items-center gap-1"
+                          className="border border-brand-dark/20 hover:border-brand-dark text-brand-dark px-2.5 py-1 font-mono text-xs font-bold uppercase rounded-none transition-all active:scale-95 flex items-center gap-1"
                         >
                           <Edit3 className="w-3 h-3" />
                           <span>EDIT</span>
@@ -3700,7 +3716,7 @@ Beverages | Tea or Coffee`);
                         <button
                           type="button"
                           onClick={() => handleDeleteCategory(category.id, category.name)}
-                          className="border border-red-200 hover:border-red-600 text-red-600 px-3 py-1.5 font-mono text-xs font-bold uppercase rounded-none transition-all active:scale-95 flex items-center gap-1"
+                          className="border border-red-200 hover:border-red-600 text-red-600 px-2.5 py-1 font-mono text-xs font-bold uppercase rounded-none transition-all active:scale-95 flex items-center gap-1"
                         >
                           <Trash2 className="w-3 h-3" />
                           <span>DELETE</span>
@@ -3715,39 +3731,39 @@ Beverages | Tea or Coffee`);
 
           {/* 3. MODIFIERS & DIPS VIEW */}
           {catalogSubTab === 'modifiers' && (
-            <div className="space-y-6">
-              <div className="flex justify-between items-center bg-brand-beige/10 p-3.5 border border-brand-dark/10">
+            <div className="space-y-4">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 bg-brand-beige/10 p-2.5 sm:p-3 border border-brand-dark/10">
                 <div>
-                  <h3 className="font-serif text-lg font-bold text-brand-dark">Modifiers, Dips &amp; Choice Groups</h3>
-                  <p className="font-sans text-xs text-brand-muted">
+                  <h3 className="font-serif text-base font-bold text-brand-dark">Modifiers, Dips &amp; Choice Groups</h3>
+                  <p className="font-sans text-[11px] text-brand-muted">
                     Create reusable modifier popups (Included Sides, Free Cans, Paid Dips, Sauces, Spice levels) and attach to categories or dishes.
                   </p>
                 </div>
                 <button
                   type="button"
                   onClick={handleOpenCreateOptionGroupModal}
-                  className="bg-brand-accent hover:bg-brand-dark text-white px-5 py-2 font-mono text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 rounded-none shadow-md transition-all active:scale-95"
+                  className="bg-brand-accent hover:bg-brand-dark text-white px-3.5 py-1.5 font-mono text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 rounded-none transition-all active:scale-95 shrink-0"
                 >
-                  <Plus className="w-4 h-4" />
+                  <Plus className="w-3.5 h-3.5" />
                   <span>CREATE MODIFIER GROUP</span>
                 </button>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
                 {catalogOptionGroups.map((group) => {
                   const isMandatory = group.minSelection > 0;
                   const isSingleChoice = group.maxSelection === 1;
                   return (
-                    <div key={group.id} className="border border-brand-dark/15 bg-white p-5 space-y-4 shadow-sm flex flex-col justify-between">
-                      <div className="space-y-3">
-                        <div className="flex justify-between items-start gap-2 border-b border-brand-dark/10 pb-3">
+                    <div key={group.id} className="border border-brand-dark/15 bg-white p-3.5 space-y-3 shadow-sm flex flex-col justify-between">
+                      <div className="space-y-2.5">
+                        <div className="flex justify-between items-start gap-2 border-b border-brand-dark/10 pb-2">
                           <div>
-                            <span className="text-[10px] font-mono text-brand-muted uppercase tracking-wider block">
+                            <span className="text-[9px] font-mono text-brand-muted uppercase tracking-wider block">
                               GROUP ID: #{group.id}
                             </span>
-                            <h4 className="font-serif text-lg font-bold text-brand-dark">{group.title}</h4>
+                            <h4 className="font-serif text-base font-bold text-brand-dark">{group.title}</h4>
                           </div>
-                          <span className={`px-2.5 py-1 text-[10px] font-mono font-bold uppercase border ${
+                          <span className={`px-2 py-0.5 text-[9px] font-mono font-bold uppercase border shrink-0 ${
                             isMandatory
                               ? 'bg-amber-50 text-amber-900 border-amber-300'
                               : 'bg-blue-50 text-blue-900 border-blue-200'
@@ -3758,13 +3774,13 @@ Beverages | Tea or Coffee`);
                         </div>
 
                         {/* Options List */}
-                        <div className="space-y-1.5">
+                        <div className="space-y-1">
                           <span className="text-[10px] font-mono text-brand-muted uppercase font-bold block">Choices / Items:</span>
-                          <div className="divide-y divide-brand-dark/5 max-h-[220px] overflow-y-auto pr-1">
+                          <div className="divide-y divide-brand-dark/5 max-h-[180px] overflow-y-auto pr-1">
                             {group.options && group.options.length > 0 ? (
                               group.options.map((opt, i) => (
-                                <div key={opt.id || i} className="py-2 flex justify-between items-center text-xs font-mono">
-                                  <div className="flex items-center gap-2">
+                                <div key={opt.id || i} className="py-1.5 flex justify-between items-center text-xs font-mono">
+                                  <div className="flex items-center gap-1.5">
                                     <span className="text-brand-dark font-medium">{opt.name}</span>
                                     {opt.isDefault && (
                                       <span className="text-[8px] bg-emerald-50 text-emerald-800 border border-emerald-200 px-1 py-0.2 uppercase font-bold">Default</span>
@@ -3776,17 +3792,17 @@ Beverages | Tea or Coffee`);
                                 </div>
                               ))
                             ) : (
-                              <p className="text-xs font-mono text-brand-muted italic py-2">No options added yet.</p>
+                              <p className="text-xs font-mono text-brand-muted italic py-1.5">No options added yet.</p>
                             )}
                           </div>
                         </div>
                       </div>
 
-                      <div className="pt-3 border-t border-brand-dark/10 flex justify-end gap-2">
+                      <div className="pt-2.5 border-t border-brand-dark/10 flex justify-end gap-1.5">
                         <button
                           type="button"
                           onClick={() => handleOpenEditOptionGroupModal(group)}
-                          className="border border-brand-dark/20 hover:border-brand-dark text-brand-dark px-3 py-1.5 font-mono text-xs font-bold uppercase rounded-none transition-all active:scale-95 flex items-center gap-1"
+                          className="border border-brand-dark/20 hover:border-brand-dark text-brand-dark px-2.5 py-1 font-mono text-xs font-bold uppercase rounded-none transition-all active:scale-95 flex items-center gap-1"
                         >
                           <Edit3 className="w-3 h-3" />
                           <span>EDIT GROUP</span>
@@ -3794,7 +3810,7 @@ Beverages | Tea or Coffee`);
                         <button
                           type="button"
                           onClick={() => handleDeleteOptionGroup(group.id, group.title)}
-                          className="border border-red-200 hover:border-red-600 text-red-600 px-3 py-1.5 font-mono text-xs font-bold uppercase rounded-none transition-all active:scale-95 flex items-center gap-1"
+                          className="border border-red-200 hover:border-red-600 text-red-600 px-2.5 py-1 font-mono text-xs font-bold uppercase rounded-none transition-all active:scale-95 flex items-center gap-1"
                         >
                           <Trash2 className="w-3 h-3" />
                           <span>DELETE</span>
@@ -3809,53 +3825,53 @@ Beverages | Tea or Coffee`);
 
           {/* 4. DEALS & COMBOS VIEW */}
           {catalogSubTab === 'deals' && (
-            <div className="space-y-6">
-              <div className="flex justify-between items-center bg-brand-beige/10 p-3.5 border border-brand-dark/10">
+            <div className="space-y-4">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 bg-brand-beige/10 p-2.5 sm:p-3 border border-brand-dark/10">
                 <div>
-                  <h3 className="font-serif text-lg font-bold text-brand-dark">Meal Combos &amp; Promotional Deals</h3>
-                  <p className="font-sans text-xs text-brand-muted">
+                  <h3 className="font-serif text-base font-bold text-brand-dark">Meal Combos &amp; Promotional Deals</h3>
+                  <p className="font-sans text-[11px] text-brand-muted">
                     Create set-price combo bundles with step-by-step dish choices (e.g., Pizza Deals, Karahi Feast, Family Bundles).
                   </p>
                 </div>
                 <button
                   type="button"
                   onClick={handleOpenCreateDealModal}
-                  className="bg-brand-accent hover:bg-brand-dark text-white px-5 py-2 font-mono text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 rounded-none shadow-md transition-all active:scale-95"
+                  className="bg-brand-accent hover:bg-brand-dark text-white px-3.5 py-1.5 font-mono text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 rounded-none transition-all active:scale-95 shrink-0"
                 >
-                  <Plus className="w-4 h-4" />
+                  <Plus className="w-3.5 h-3.5" />
                   <span>CREATE DEAL PACKAGE</span>
                 </button>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
                 {catalogDeals.length > 0 ? (
                   catalogDeals.map((deal) => (
-                    <div key={deal.id} className="border border-brand-dark/15 bg-white p-5 space-y-4 shadow-sm flex flex-col justify-between">
-                      <div className="space-y-3">
-                        <div className="flex justify-between items-start gap-2 border-b border-brand-dark/10 pb-3">
+                    <div key={deal.id} className="border border-brand-dark/15 bg-white p-3.5 space-y-3 shadow-sm flex flex-col justify-between">
+                      <div className="space-y-2.5">
+                        <div className="flex justify-between items-start gap-2 border-b border-brand-dark/10 pb-2">
                           <div>
                             {deal.badgeText && (
-                              <span className="bg-brand-accent text-white px-2 py-0.5 text-[9px] font-mono font-bold uppercase tracking-wider block w-fit mb-1">
+                              <span className="bg-brand-accent text-white px-1.5 py-0.2 text-[9px] font-mono font-bold uppercase tracking-wider block w-fit mb-1">
                                 {deal.badgeText}
                               </span>
                             )}
-                            <h4 className="font-serif text-lg font-bold text-brand-dark">{deal.title}</h4>
+                            <h4 className="font-serif text-base font-bold text-brand-dark">{deal.title}</h4>
                           </div>
-                          <span className="font-mono text-base font-bold text-brand-accent bg-brand-beige/40 px-2.5 py-1 border border-brand-dark/10">
+                          <span className="font-mono text-sm font-bold text-brand-accent bg-brand-beige/40 px-2 py-0.5 border border-brand-dark/10">
                             &euro;{deal.bundlePrice.toFixed(2)}
                           </span>
                         </div>
 
                         {deal.description && (
-                          <p className="font-sans text-xs text-brand-muted leading-relaxed">{deal.description}</p>
+                          <p className="font-sans text-[11px] text-brand-muted leading-relaxed">{deal.description}</p>
                         )}
 
                         {/* Steps Preview */}
-                        <div className="space-y-1.5 bg-brand-dark/5 p-3">
+                        <div className="space-y-1 bg-brand-dark/5 p-2.5">
                           <span className="text-[10px] font-mono text-brand-muted uppercase font-bold block">Bundle Selection Steps:</span>
-                          <div className="space-y-1">
+                          <div className="space-y-0.5">
                             {deal.steps && deal.steps.map((step, idx) => (
-                              <div key={idx} className="text-xs font-mono text-brand-dark flex items-center gap-2">
+                              <div key={idx} className="text-xs font-mono text-brand-dark flex items-center gap-1.5">
                                 <span className="font-bold text-brand-accent">Step {idx + 1}:</span>
                                 <span>{step.stepName} (Pick {step.count})</span>
                               </div>
@@ -3864,11 +3880,11 @@ Beverages | Tea or Coffee`);
                         </div>
                       </div>
 
-                      <div className="pt-3 border-t border-brand-dark/10 flex justify-end gap-2">
+                      <div className="pt-2.5 border-t border-brand-dark/10 flex justify-end gap-1.5">
                         <button
                           type="button"
                           onClick={() => handleOpenEditDealModal(deal)}
-                          className="border border-brand-dark/20 hover:border-brand-dark text-brand-dark px-3 py-1.5 font-mono text-xs font-bold uppercase rounded-none transition-all active:scale-95 flex items-center gap-1"
+                          className="border border-brand-dark/20 hover:border-brand-dark text-brand-dark px-2.5 py-1 font-mono text-xs font-bold uppercase rounded-none transition-all active:scale-95 flex items-center gap-1"
                         >
                           <Edit3 className="w-3 h-3" />
                           <span>EDIT DEAL</span>
@@ -3876,7 +3892,7 @@ Beverages | Tea or Coffee`);
                         <button
                           type="button"
                           onClick={() => handleDeleteDeal(deal.id, deal.title)}
-                          className="border border-red-200 hover:border-red-600 text-red-600 px-3 py-1.5 font-mono text-xs font-bold uppercase rounded-none transition-all active:scale-95 flex items-center gap-1"
+                          className="border border-red-200 hover:border-red-600 text-red-600 px-2.5 py-1 font-mono text-xs font-bold uppercase rounded-none transition-all active:scale-95 flex items-center gap-1"
                         >
                           <Trash2 className="w-3 h-3" />
                           <span>DELETE</span>
@@ -3885,10 +3901,10 @@ Beverages | Tea or Coffee`);
                     </div>
                   ))
                 ) : (
-                  <div className="col-span-full border border-dashed border-brand-dark/20 p-12 text-center space-y-3">
-                    <Tag className="w-8 h-8 text-brand-muted mx-auto" />
-                    <h4 className="font-serif text-base font-bold text-brand-dark">No Combo Deals Configured Yet</h4>
-                    <p className="font-sans text-xs text-brand-muted max-w-md mx-auto">
+                  <div className="col-span-full border border-dashed border-brand-dark/20 p-8 text-center space-y-2">
+                    <Tag className="w-7 h-7 text-brand-muted mx-auto" />
+                    <h4 className="font-serif text-sm font-bold text-brand-dark">No Combo Deals Configured Yet</h4>
+                    <p className="font-sans text-[11px] text-brand-muted max-w-md mx-auto">
                       Click "CREATE DEAL PACKAGE" above to create bundle packages that boost order values (e.g. 1 Karahi + 2 Naans + 2 Cans for €29.95).
                     </p>
                   </div>
@@ -3902,64 +3918,64 @@ Beverages | Tea or Coffee`);
 
       {/* 4. TAB: TIMING & NOTICE SETTINGS */}
       {adminTab === 'settings' && (
-        <div className="bg-white border border-brand-dark/10 p-6 sm:p-8 space-y-8 animate-fade-in text-left font-sans" id="admin-settings-tab">
+        <div className="bg-white border border-brand-dark/10 p-3 sm:p-5 space-y-4 animate-fade-in text-left font-sans" id="admin-settings-tab">
           
-          <div className="border-b border-brand-dark/5 pb-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div className="border-b border-brand-dark/10 pb-3 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
             <div>
-              <h2 className="font-serif text-xl font-bold text-brand-dark flex items-center">
-                <Settings className="w-5 h-5 mr-2 text-brand-accent animate-pulse" />
+              <h2 className="font-serif text-lg sm:text-xl font-bold text-brand-dark flex items-center">
+                <Settings className="w-4 h-4 sm:w-5 sm:h-5 mr-2 text-brand-accent animate-pulse shrink-0" />
                 Store Controls &amp; Settings
               </h2>
-              <p className="text-xs text-brand-muted mt-1 font-sans">
+              <p className="text-[11px] text-brand-muted mt-0.5 font-sans">
                 Manage online ordering, table reservations, landing page notices, and weekly schedules.
               </p>
             </div>
             {saveSuccess && (
-              <span className="font-mono text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-300/40 px-3 py-1 animate-fade-in">
-                ✓ SETTINGS SAVED SUCCESSFULLY
+              <span className="font-mono text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-300/40 px-2.5 py-1 animate-fade-in">
+                ✓ SAVED SUCCESSFULLY
               </span>
             )}
           </div>
 
           {/* Sub-tab navigation */}
-          <div className="flex border-b border-brand-dark/10 overflow-x-auto whitespace-nowrap scrollbar-none pb-1">
+          <div className="flex border-b border-brand-dark/10 overflow-x-auto whitespace-nowrap scrollbar-none pb-0.5 gap-1">
             <button
               type="button"
               onClick={() => setSettingsSubTab('takeaway')}
-              className={`px-4 py-2.5 font-mono text-xs font-bold uppercase tracking-wider border-b-2 transition-all shrink-0 ${
+              className={`px-3 py-1.5 font-mono text-[11px] font-bold uppercase tracking-wider border-b-2 transition-all shrink-0 ${
                 settingsSubTab === 'takeaway'
                   ? 'border-brand-accent text-brand-accent bg-brand-beige/10'
                   : 'border-transparent text-brand-muted hover:text-brand-dark'
               }`}
             >
-              1. Takeaway Settings
+              1. Takeaway
             </button>
             <button
               type="button"
               onClick={() => setSettingsSubTab('reservations')}
-              className={`px-4 py-2.5 font-mono text-xs font-bold uppercase tracking-wider border-b-2 transition-all shrink-0 ${
+              className={`px-3 py-1.5 font-mono text-[11px] font-bold uppercase tracking-wider border-b-2 transition-all shrink-0 ${
                 settingsSubTab === 'reservations'
                   ? 'border-brand-accent text-brand-accent bg-brand-beige/10'
                   : 'border-transparent text-brand-muted hover:text-brand-dark'
               }`}
             >
-              2. Reservation Settings
+              2. Reservations
             </button>
             <button
               type="button"
               onClick={() => setSettingsSubTab('announcements')}
-              className={`px-4 py-2.5 font-mono text-xs font-bold uppercase tracking-wider border-b-2 transition-all shrink-0 ${
+              className={`px-3 py-1.5 font-mono text-[11px] font-bold uppercase tracking-wider border-b-2 transition-all shrink-0 ${
                 settingsSubTab === 'announcements'
                   ? 'border-brand-accent text-brand-accent bg-brand-beige/10'
                   : 'border-transparent text-brand-muted hover:text-brand-dark'
               }`}
             >
-              3. Announcements &amp; Timings
+              3. Announcements
             </button>
             <button
               type="button"
               onClick={() => setSettingsSubTab('festive')}
-              className={`px-4 py-2.5 font-mono text-xs font-bold uppercase tracking-wider border-b-2 transition-all shrink-0 ${
+              className={`px-3 py-1.5 font-mono text-[11px] font-bold uppercase tracking-wider border-b-2 transition-all shrink-0 ${
                 settingsSubTab === 'festive'
                   ? 'border-brand-accent text-brand-accent bg-brand-beige/10'
                   : 'border-transparent text-brand-muted hover:text-brand-dark'
@@ -3970,18 +3986,18 @@ Beverages | Tea or Coffee`);
             <button
               type="button"
               onClick={() => setSettingsSubTab('gallery')}
-              className={`px-4 py-2.5 font-mono text-xs font-bold uppercase tracking-wider border-b-2 transition-all shrink-0 ${
+              className={`px-3 py-1.5 font-mono text-[11px] font-bold uppercase tracking-wider border-b-2 transition-all shrink-0 ${
                 settingsSubTab === 'gallery'
                   ? 'border-brand-accent text-brand-accent bg-brand-beige/10'
                   : 'border-transparent text-brand-muted hover:text-brand-dark'
               }`}
             >
-              5. Gallery Images
+              5. Gallery
             </button>
             <button
               type="button"
               onClick={() => setSettingsSubTab('business')}
-              className={`px-4 py-2.5 font-mono text-xs font-bold uppercase tracking-wider border-b-2 transition-all shrink-0 ${
+              className={`px-3 py-1.5 font-mono text-[11px] font-bold uppercase tracking-wider border-b-2 transition-all shrink-0 ${
                 settingsSubTab === 'business'
                   ? 'border-brand-accent text-brand-accent bg-brand-beige/10'
                   : 'border-transparent text-brand-muted hover:text-brand-dark'
@@ -3992,7 +4008,7 @@ Beverages | Tea or Coffee`);
             <button
               type="button"
               onClick={() => setSettingsSubTab('notifications')}
-              className={`px-4 py-2.5 font-mono text-xs font-bold uppercase tracking-wider border-b-2 transition-all shrink-0 ${
+              className={`px-3 py-1.5 font-mono text-[11px] font-bold uppercase tracking-wider border-b-2 transition-all shrink-0 ${
                 settingsSubTab === 'notifications'
                   ? 'border-brand-accent text-brand-accent bg-brand-beige/10'
                   : 'border-transparent text-brand-muted hover:text-brand-dark'
@@ -4003,7 +4019,7 @@ Beverages | Tea or Coffee`);
             <button
               type="button"
               onClick={() => setSettingsSubTab('smtp')}
-              className={`px-4 py-2.5 font-mono text-xs font-bold uppercase tracking-wider border-b-2 transition-all shrink-0 ${
+              className={`px-3 py-1.5 font-mono text-[11px] font-bold uppercase tracking-wider border-b-2 transition-all shrink-0 ${
                 settingsSubTab === 'smtp'
                   ? 'border-brand-accent text-brand-accent bg-brand-beige/10'
                   : 'border-transparent text-brand-muted hover:text-brand-dark'
@@ -4013,24 +4029,24 @@ Beverages | Tea or Coffee`);
             </button>
           </div>
 
-          <form onSubmit={promptSaveSettings} className="space-y-8">
+          <form onSubmit={promptSaveSettings} className="space-y-4 sm:space-y-6">
             
             {/* SUBTAB 1: TAKEAWAY SETTINGS */}
             {settingsSubTab === 'takeaway' && (
-              <div className="space-y-6 animate-fade-in">
-                <div className="space-y-2 border-b border-brand-dark/5 pb-4">
-                  <h3 className="font-serif text-lg font-bold text-brand-dark">
+              <div className="space-y-4 animate-fade-in">
+                <div className="space-y-1 border-b border-brand-dark/5 pb-3">
+                  <h3 className="font-serif text-base sm:text-lg font-bold text-brand-dark">
                     Takeaway / Online Ordering Control
                   </h3>
-                  <p className="text-xs text-brand-muted leading-relaxed font-sans font-normal">
+                  <p className="text-[11px] text-brand-muted leading-relaxed font-sans font-normal">
                     Turn online takeaway ordering ON or OFF. When disabled, customers cannot place online takeaway orders and will see a notice popup and banner.
                   </p>
                 </div>
 
-                <div className="max-w-2xl space-y-6">
+                <div className="max-w-2xl space-y-4">
                   {/* Enabled Toggle */}
-                  <div className="flex items-center justify-between border border-brand-dark/10 p-5 bg-[#FDFBF7]">
-                    <div className="space-y-1">
+                  <div className="flex items-center justify-between border border-brand-dark/10 p-3 sm:p-4 bg-[#FDFBF7]">
+                    <div className="space-y-0.5">
                       <span className="block font-mono text-xs text-brand-dark font-bold uppercase tracking-wider">
                         ONLINE ORDERING (TAKEAWAY)
                       </span>
@@ -4054,24 +4070,24 @@ Beverages | Tea or Coffee`);
                   </div>
 
                   {/* Service Closed Notice Textarea */}
-                  <div className="space-y-2">
+                  <div className="space-y-1">
                     <label htmlFor="settings-takeaway-notice" className="block font-mono text-xs text-brand-accent uppercase tracking-widest font-bold">
                       TAKEAWAY CLOSED CUSTOM BANNER &amp; POPUP TEXT
                     </label>
                     <textarea
                       id="settings-takeaway-notice"
-                      rows={4}
+                      rows={3}
                       required
                       value={takeawayNoticeText}
                       onChange={(e) => setTakeawayNoticeText(e.target.value)}
-                      className="w-full border border-brand-dark/10 p-4 text-xs font-mono focus:border-brand-dark outline-none bg-brand-beige/10 rounded-none resize-y"
+                      className="w-full border border-brand-dark/10 p-2.5 text-xs font-mono focus:border-brand-dark outline-none bg-brand-beige/10 rounded-none resize-y"
                       placeholder="e.g. We are temporarily not taking online orders. Please phone us to order directly!"
                     />
                   </div>
 
                   {/* Takeaway & Delivery Charges settings */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-6 border-t border-brand-dark/10">
-                    <div className="space-y-2">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-3 border-t border-brand-dark/10">
+                    <div className="space-y-1">
                       <label htmlFor="settings-takeaway-charges" className="block font-mono text-xs text-brand-accent uppercase tracking-widest font-bold">
                         TAKEAWAY / PACKAGING CHARGE (€)
                       </label>
@@ -4083,12 +4099,12 @@ Beverages | Tea or Coffee`);
                         required
                         value={takeawayCharges}
                         onChange={(e) => setTakeawayCharges(e.target.value)}
-                        className="w-full border border-brand-dark/10 p-3 text-xs font-mono focus:border-brand-dark outline-none bg-brand-beige/10 rounded-none"
+                        className="w-full border border-brand-dark/10 p-2 text-xs font-mono focus:border-brand-dark outline-none bg-brand-beige/10 rounded-none"
                         placeholder="e.g. 0.95"
                       />
                     </div>
 
-                    <div className="space-y-2">
+                    <div className="space-y-1">
                       <label htmlFor="settings-delivery-charges" className="block font-mono text-xs text-brand-accent uppercase tracking-widest font-bold">
                         FALLBACK / BASE DELIVERY CHARGE (€)
                       </label>
@@ -4100,31 +4116,31 @@ Beverages | Tea or Coffee`);
                         required
                         value={deliveryCharges}
                         onChange={(e) => setDeliveryCharges(e.target.value)}
-                        className="w-full border border-brand-dark/10 p-3 text-xs font-mono focus:border-brand-dark outline-none bg-brand-beige/10 rounded-none"
+                        className="w-full border border-brand-dark/10 p-2 text-xs font-mono focus:border-brand-dark outline-none bg-brand-beige/10 rounded-none"
                         placeholder="e.g. 4.00"
                       />
                     </div>
                   </div>
 
                   {/* Delivery Zones & Tiered Pricing Section */}
-                  <div className="pt-6 border-t border-brand-dark/10 space-y-5">
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                      <div className="space-y-1">
-                        <span className="block font-mono text-xs text-brand-dark font-bold uppercase tracking-wider flex items-center gap-2">
-                          <MapPin className="w-4 h-4 text-brand-accent" />
+                  <div className="pt-4 border-t border-brand-dark/10 space-y-3">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                      <div className="space-y-0.5">
+                        <span className="block font-mono text-xs text-brand-dark font-bold uppercase tracking-wider flex items-center gap-1.5">
+                          <MapPin className="w-3.5 h-3.5 text-brand-accent shrink-0" />
                           Delivery Areas &amp; Tiered Pricing (€4.00, €7.00, etc.)
                         </span>
                         <span className="block text-[11px] text-brand-muted font-sans font-normal">
                           Customize delivery fees, covered areas (e.g. Shannon Town local vs Surrounding outer areas), and minimum order amounts.
                         </span>
                       </div>
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-1.5 shrink-0">
                         <button
                           type="button"
                           onClick={() => setDeliveryZones(getDefaultDeliveryZones())}
-                          className="px-3 py-1.5 border border-brand-dark/20 hover:border-brand-dark text-brand-dark font-mono text-[11px] font-bold uppercase tracking-wider transition-all"
+                          className="px-2.5 py-1 border border-brand-dark/20 hover:border-brand-dark text-brand-dark font-mono text-[10px] font-bold uppercase tracking-wider transition-all"
                         >
-                          Reset Defaults
+                          Defaults
                         </button>
                         <button
                           type="button"
@@ -4140,44 +4156,44 @@ Beverages | Tea or Coffee`);
                             };
                             setDeliveryZones([...deliveryZones, newZone]);
                           }}
-                          className="px-3 py-1.5 bg-brand-dark hover:bg-brand-accent text-white font-mono text-[11px] font-bold uppercase tracking-wider transition-all flex items-center gap-1.5 shadow-sm"
+                          className="px-2.5 py-1 bg-brand-dark hover:bg-brand-accent text-white font-mono text-[10px] font-bold uppercase tracking-wider transition-all flex items-center gap-1 shadow-sm"
                         >
-                          <Plus className="w-3.5 h-3.5" />
+                          <Plus className="w-3 h-3" />
                           Add Zone
                         </button>
                       </div>
                     </div>
 
-                    <div className="space-y-4">
+                    <div className="space-y-3">
                       {deliveryZones.map((zone, zIdx) => (
                         <div
                           key={zone.id}
-                          className={`border p-4 sm:p-5 transition-all space-y-4 ${
+                          className={`border p-3 sm:p-3.5 transition-all space-y-2.5 ${
                             zone.isActive
                               ? 'border-brand-dark/15 bg-brand-beige/5'
                               : 'border-brand-dark/10 bg-brand-dark/[0.02] opacity-75'
                           }`}
                         >
-                          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-brand-dark/10 pb-3">
-                            <div className="flex items-center gap-2">
-                              <span className="font-mono text-xs font-bold px-2 py-0.5 bg-brand-dark text-white uppercase">
+                          <div className="flex flex-wrap items-center justify-between gap-1.5 border-b border-brand-dark/10 pb-2">
+                            <div className="flex items-center gap-1.5">
+                              <span className="font-mono text-[10px] font-bold px-1.5 py-0.2 bg-brand-dark text-white uppercase">
                                 Tier {zIdx + 1}
                               </span>
-                              <span className="font-sans font-bold text-sm text-brand-dark">
+                              <span className="font-sans font-bold text-xs sm:text-sm text-brand-dark">
                                 {zone.name}
                               </span>
-                              <span className="font-mono font-bold text-xs text-brand-accent bg-brand-accent/10 px-2 py-0.5">
+                              <span className="font-mono font-bold text-[11px] text-brand-accent bg-brand-accent/10 px-1.5 py-0.2">
                                 €{Number(zone.fee || 0).toFixed(2)}
                               </span>
                             </div>
 
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-1.5">
                               <button
                                 type="button"
                                 onClick={() => {
                                   setDeliveryZones(deliveryZones.map((z, idx) => idx === zIdx ? { ...z, isActive: !z.isActive } : z));
                                 }}
-                                className={`px-2.5 py-1 text-[11px] font-mono font-bold uppercase tracking-wider border transition-all ${
+                                className={`px-2 py-0.5 text-[10px] font-mono font-bold uppercase tracking-wider border transition-all ${
                                   zone.isActive
                                     ? 'bg-emerald-50 text-emerald-800 border-emerald-300 hover:bg-emerald-100'
                                     : 'bg-gray-100 text-gray-600 border-gray-300 hover:bg-gray-200'
@@ -4196,15 +4212,15 @@ Beverages | Tea or Coffee`);
                                   className="p-1 text-red-600 hover:bg-red-50 border border-transparent hover:border-red-200 transition-all"
                                   title="Delete Zone"
                                 >
-                                  <Trash2 className="w-4 h-4" />
+                                  <Trash2 className="w-3.5 h-3.5" />
                                 </button>
                               )}
                             </div>
                           </div>
 
-                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                            <div className="space-y-1">
-                              <label className="block font-mono text-[10px] text-brand-accent uppercase tracking-wider font-bold">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3">
+                            <div className="space-y-0.5">
+                              <label className="block font-mono text-[9px] text-brand-accent uppercase tracking-wider font-bold">
                                 Zone Display Name
                               </label>
                               <input
@@ -4216,12 +4232,12 @@ Beverages | Tea or Coffee`);
                                   setDeliveryZones(deliveryZones.map((z, idx) => idx === zIdx ? { ...z, name: val } : z));
                                 }}
                                 placeholder="e.g. Shannon Town (Local)"
-                                className="w-full border border-brand-dark/10 p-2 text-xs font-sans focus:border-brand-dark outline-none bg-white"
+                                className="w-full border border-brand-dark/10 p-1.5 text-xs font-sans focus:border-brand-dark outline-none bg-white"
                               />
                             </div>
 
-                            <div className="space-y-1">
-                              <label className="block font-mono text-[10px] text-brand-accent uppercase tracking-wider font-bold">
+                            <div className="space-y-0.5">
+                              <label className="block font-mono text-[9px] text-brand-accent uppercase tracking-wider font-bold">
                                 Delivery Fee (€)
                               </label>
                               <input
@@ -4235,13 +4251,13 @@ Beverages | Tea or Coffee`);
                                   setDeliveryZones(deliveryZones.map((z, idx) => idx === zIdx ? { ...z, fee: val } : z));
                                 }}
                                 placeholder="e.g. 4.00"
-                                className="w-full border border-brand-dark/10 p-2 text-xs font-mono focus:border-brand-dark outline-none bg-white"
+                                className="w-full border border-brand-dark/10 p-1.5 text-xs font-mono focus:border-brand-dark outline-none bg-white"
                               />
                             </div>
 
-                            <div className="space-y-1">
-                              <label className="block font-mono text-[10px] text-brand-accent uppercase tracking-wider font-bold">
-                                Min Order Value (€)
+                            <div className="space-y-0.5">
+                              <label className="block font-mono text-[9px] text-brand-accent uppercase tracking-wider font-bold">
+                                Min Order (€)
                               </label>
                               <input
                                 type="number"
@@ -4253,13 +4269,13 @@ Beverages | Tea or Coffee`);
                                   setDeliveryZones(deliveryZones.map((z, idx) => idx === zIdx ? { ...z, minOrder: val } : z));
                                 }}
                                 placeholder="e.g. 15.00"
-                                className="w-full border border-brand-dark/10 p-2 text-xs font-mono focus:border-brand-dark outline-none bg-white"
+                                className="w-full border border-brand-dark/10 p-1.5 text-xs font-mono focus:border-brand-dark outline-none bg-white"
                               />
                             </div>
 
-                            <div className="space-y-1">
-                              <label className="block font-mono text-[10px] text-brand-accent uppercase tracking-wider font-bold">
-                                Estimated Delivery Time
+                            <div className="space-y-0.5">
+                              <label className="block font-mono text-[9px] text-brand-accent uppercase tracking-wider font-bold">
+                                Est. Delivery Time
                               </label>
                               <input
                                 type="text"
@@ -4269,13 +4285,13 @@ Beverages | Tea or Coffee`);
                                   setDeliveryZones(deliveryZones.map((z, idx) => idx === zIdx ? { ...z, estimatedTime: val } : z));
                                 }}
                                 placeholder="e.g. 30-45 mins"
-                                className="w-full border border-brand-dark/10 p-2 text-xs font-sans focus:border-brand-dark outline-none bg-white"
+                                className="w-full border border-brand-dark/10 p-1.5 text-xs font-sans focus:border-brand-dark outline-none bg-white"
                               />
                             </div>
                           </div>
 
-                          <div className="space-y-1">
-                            <label className="block font-mono text-[10px] text-brand-accent uppercase tracking-wider font-bold">
+                          <div className="space-y-0.5">
+                            <label className="block font-mono text-[9px] text-brand-accent uppercase tracking-wider font-bold">
                               Covered Towns, Estates &amp; Areas (Shown to Customers)
                             </label>
                             <input
@@ -4286,7 +4302,7 @@ Beverages | Tea or Coffee`);
                                 setDeliveryZones(deliveryZones.map((z, idx) => idx === zIdx ? { ...z, areas: val } : z));
                               }}
                               placeholder="e.g. Ballycasey, Tullyvarraga, Drumgeely, Smithstown, Airport"
-                              className="w-full border border-brand-dark/10 p-2 text-xs font-sans focus:border-brand-dark outline-none bg-white"
+                              className="w-full border border-brand-dark/10 p-1.5 text-xs font-sans focus:border-brand-dark outline-none bg-white"
                             />
                           </div>
                         </div>
@@ -4295,10 +4311,10 @@ Beverages | Tea or Coffee`);
                   </div>
 
                   {/* Delivery Schedule — Days & Times Configuration */}
-                  <div className="pt-6 border-t border-brand-dark/10 space-y-5">
-                    <div className="space-y-1">
-                      <span className="block font-mono text-xs text-brand-dark font-bold uppercase tracking-wider flex items-center gap-2">
-                        <Clock className="w-4 h-4 text-brand-accent" />
+                  <div className="pt-4 border-t border-brand-dark/10 space-y-3">
+                    <div className="space-y-0.5">
+                      <span className="block font-mono text-xs text-brand-dark font-bold uppercase tracking-wider flex items-center gap-1.5">
+                        <Clock className="w-3.5 h-3.5 text-brand-accent shrink-0" />
                         Delivery Schedule — Operating Days &amp; Time Windows
                       </span>
                       <span className="block text-[11px] text-brand-muted font-sans font-normal">
@@ -4307,9 +4323,9 @@ Beverages | Tea or Coffee`);
                     </div>
 
                     {/* Schedule Global Parameters */}
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 bg-brand-beige/5 border border-brand-dark/10 p-4">
-                      <div className="space-y-1.5">
-                        <label className="block font-mono text-[11px] text-brand-accent uppercase tracking-wider font-bold">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 bg-brand-beige/5 border border-brand-dark/10 p-2.5 sm:p-3">
+                      <div className="space-y-1">
+                        <label className="block font-mono text-[10px] text-brand-accent uppercase tracking-wider font-bold">
                           Slot Interval
                         </label>
                         <select
@@ -4320,7 +4336,7 @@ Beverages | Tea or Coffee`);
                               slot_interval_minutes: Number(e.target.value) || 30
                             }))
                           }
-                          className="w-full border border-brand-dark/10 p-2 text-xs font-mono focus:border-brand-dark outline-none bg-white rounded-none"
+                          className="w-full border border-brand-dark/10 p-1.5 text-xs font-mono focus:border-brand-dark outline-none bg-white rounded-none"
                         >
                           <option value={15}>15 Minutes</option>
                           <option value={30}>30 Minutes</option>
@@ -4329,8 +4345,8 @@ Beverages | Tea or Coffee`);
                         </select>
                       </div>
 
-                      <div className="space-y-1.5">
-                        <label className="block font-mono text-[11px] text-brand-accent uppercase tracking-wider font-bold">
+                      <div className="space-y-1">
+                        <label className="block font-mono text-[10px] text-brand-accent uppercase tracking-wider font-bold">
                           Lead Time Buffer
                         </label>
                         <div className="relative">
@@ -4345,17 +4361,17 @@ Beverages | Tea or Coffee`);
                                 lead_time_minutes: Number(e.target.value) || 0
                               }))
                             }
-                            className="w-full border border-brand-dark/10 p-2 text-xs font-mono focus:border-brand-dark outline-none bg-white rounded-none pr-10"
+                            className="w-full border border-brand-dark/10 p-1.5 text-xs font-mono focus:border-brand-dark outline-none bg-white rounded-none pr-8"
                             placeholder="45"
                           />
-                          <span className="absolute right-3 top-2 text-[10px] text-brand-muted font-mono pointer-events-none">
+                          <span className="absolute right-2 top-1.5 text-[9px] text-brand-muted font-mono pointer-events-none">
                             mins
                           </span>
                         </div>
                       </div>
 
-                      <div className="space-y-1.5">
-                        <label className="block font-mono text-[11px] text-brand-accent uppercase tracking-wider font-bold">
+                      <div className="space-y-1">
+                        <label className="block font-mono text-[10px] text-brand-accent uppercase tracking-wider font-bold">
                           Advance Ordering
                         </label>
                         <div className="relative">
@@ -4370,10 +4386,10 @@ Beverages | Tea or Coffee`);
                                 advance_days: Number(e.target.value) || 7
                               }))
                             }
-                            className="w-full border border-brand-dark/10 p-2 text-xs font-mono focus:border-brand-dark outline-none bg-white rounded-none pr-10"
+                            className="w-full border border-brand-dark/10 p-1.5 text-xs font-mono focus:border-brand-dark outline-none bg-white rounded-none pr-8"
                             placeholder="7"
                           />
-                          <span className="absolute right-3 top-2 text-[10px] text-brand-muted font-mono pointer-events-none">
+                          <span className="absolute right-2 top-1.5 text-[9px] text-brand-muted font-mono pointer-events-none">
                             days
                           </span>
                         </div>
@@ -4381,8 +4397,8 @@ Beverages | Tea or Coffee`);
                     </div>
 
                     {/* Day-by-Day Schedule Matrix */}
-                    <div className="space-y-2.5">
-                      <span className="block font-mono text-[11px] text-brand-muted uppercase tracking-wider">
+                    <div className="space-y-1.5">
+                      <span className="block font-mono text-[10px] text-brand-muted uppercase tracking-wider font-semibold">
                         Weekly Day &amp; Time Breakdown
                       </span>
                       <div className="border border-brand-dark/10 divide-y divide-brand-dark/10 bg-white">
@@ -4392,11 +4408,11 @@ Beverages | Tea or Coffee`);
                           return (
                             <div
                               key={dayKey}
-                              className={`p-3 sm:p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 transition-colors ${
+                              className={`p-2.5 sm:p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2 transition-colors ${
                                 config.active ? 'bg-white' : 'bg-brand-dark/[0.02]'
                               }`}
                             >
-                              <div className="flex items-center gap-3 min-w-[140px]">
+                              <div className="flex items-center gap-2.5 min-w-[120px]">
                                 <input
                                   type="checkbox"
                                   id={`sched-toggle-${dayKey}`}
@@ -4414,7 +4430,7 @@ Beverages | Tea or Coffee`);
                                       }
                                     }));
                                   }}
-                                  className="w-4 h-4 accent-brand-accent rounded-none cursor-pointer"
+                                  className="w-3.5 h-3.5 accent-brand-accent rounded-none cursor-pointer"
                                 />
                                 <label
                                   htmlFor={`sched-toggle-${dayKey}`}
@@ -4427,9 +4443,9 @@ Beverages | Tea or Coffee`);
                               </div>
 
                               {config.active ? (
-                                <div className="flex items-center gap-2 flex-1 sm:justify-end">
-                                  <div className="flex items-center gap-1.5">
-                                    <span className="text-[10px] font-mono text-brand-muted uppercase">Start</span>
+                                <div className="flex items-center gap-1.5 flex-1 sm:justify-end">
+                                  <div className="flex items-center gap-1">
+                                    <span className="text-[9px] font-mono text-brand-muted uppercase">Start</span>
                                     <input
                                       type="time"
                                       value={config.start}
@@ -4446,12 +4462,12 @@ Beverages | Tea or Coffee`);
                                           }
                                         }));
                                       }}
-                                      className="border border-brand-dark/10 p-1.5 text-xs font-mono focus:border-brand-dark outline-none bg-brand-beige/5 rounded-none"
+                                      className="border border-brand-dark/10 p-1 text-xs font-mono focus:border-brand-dark outline-none bg-brand-beige/5 rounded-none"
                                     />
                                   </div>
                                   <span className="text-brand-muted text-xs">–</span>
-                                  <div className="flex items-center gap-1.5">
-                                    <span className="text-[10px] font-mono text-brand-muted uppercase">End</span>
+                                  <div className="flex items-center gap-1">
+                                    <span className="text-[9px] font-mono text-brand-muted uppercase">End</span>
                                     <input
                                       type="time"
                                       value={config.end}
@@ -4468,17 +4484,17 @@ Beverages | Tea or Coffee`);
                                           }
                                         }));
                                       }}
-                                      className="border border-brand-dark/10 p-1.5 text-xs font-mono focus:border-brand-dark outline-none bg-brand-beige/5 rounded-none"
+                                      className="border border-brand-dark/10 p-1 text-xs font-mono focus:border-brand-dark outline-none bg-brand-beige/5 rounded-none"
                                     />
                                   </div>
-                                  <span className="ml-2 text-[10px] font-mono text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 uppercase hidden sm:inline-block font-bold">
+                                  <span className="ml-1 text-[9px] font-mono text-emerald-700 bg-emerald-50 border border-emerald-200 px-1.5 py-0.2 uppercase hidden sm:inline-block font-bold">
                                     Open
                                   </span>
                                 </div>
                               ) : (
                                 <div className="text-right flex-1">
-                                  <span className="text-[10px] font-mono text-brand-muted bg-brand-dark/5 px-2.5 py-1 uppercase inline-block">
-                                    Delivery Inactive
+                                  <span className="text-[9px] font-mono text-brand-muted bg-brand-dark/5 px-2 py-0.5 uppercase inline-block">
+                                    Inactive
                                   </span>
                                 </div>
                               )}
@@ -4490,18 +4506,18 @@ Beverages | Tea or Coffee`);
                   </div>
 
                   {/* New Order Alert & Sound Settings */}
-                  <div className="pt-6 border-t border-brand-dark/10 space-y-4">
-                    <div className="space-y-1">
-                      <span className="block font-mono text-xs text-brand-dark font-bold uppercase tracking-wider flex items-center gap-2">
-                        <Volume2 className="w-4 h-4 text-brand-accent animate-pulse" />
-                        New Order Notification &amp; Sound Settings
+                  <div className="pt-4 border-t border-brand-dark/10 space-y-3">
+                    <div className="space-y-0.5">
+                      <span className="block font-mono text-xs text-brand-dark font-bold uppercase tracking-wider flex items-center gap-1.5">
+                        <Volume2 className="w-3.5 h-3.5 text-brand-accent animate-pulse shrink-0" />
+                        Kitchen Alert Sound Settings
                       </span>
                       <span className="block text-[11px] text-brand-muted font-sans font-normal">
                         Customize the kitchen alert tone played automatically when a new order is received.
                       </span>
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
                       {[
                         { id: 'chime', name: 'Classic Chime', desc: 'Pleasant double-tone digital bell synthesizer sound.' },
                         { id: 'melody', name: 'Ambient Melody', desc: 'Short triple-tone major melody chime.' },
@@ -4515,13 +4531,13 @@ Beverages | Tea or Coffee`);
                             setNotificationTone(tone.id as any);
                             playNewOrderChime(tone.id as any);
                           }}
-                          className={`p-3 border text-left flex flex-col justify-between transition-all rounded-none active:scale-98 ${
+                          className={`p-2.5 border text-left flex flex-col justify-between transition-all rounded-none active:scale-98 ${
                             notificationTone === tone.id
                               ? 'border-brand-accent bg-brand-accent/5 ring-1 ring-brand-accent/25'
                               : 'border-brand-dark/10 hover:border-brand-dark/30 bg-white'
                           }`}
                         >
-                          <div className="flex justify-between items-center w-full mb-1">
+                          <div className="flex justify-between items-center w-full mb-0.5">
                             <span className="font-mono text-[10px] font-bold uppercase tracking-wider text-brand-dark">
                               {tone.name}
                             </span>
@@ -4540,7 +4556,7 @@ Beverages | Tea or Coffee`);
                       <button
                         type="button"
                         onClick={() => playNewOrderChime()}
-                        className="bg-brand-dark hover:bg-brand-accent text-white px-5 py-2.5 text-xs font-mono font-bold uppercase tracking-wider transition-colors rounded-none flex items-center gap-1.5 active:scale-95"
+                        className="bg-brand-dark hover:bg-brand-accent text-white px-4 py-2 text-xs font-mono font-bold uppercase tracking-wider transition-colors rounded-none flex items-center gap-1.5 active:scale-95"
                       >
                         <Play className="w-3 h-3 fill-current" />
                         Play Selected Tone
@@ -4554,20 +4570,20 @@ Beverages | Tea or Coffee`);
 
             {/* SUBTAB 2: RESERVATION SETTINGS */}
             {settingsSubTab === 'reservations' && (
-              <div className="space-y-6 animate-fade-in">
-                <div className="space-y-2 border-b border-brand-dark/5 pb-4">
-                  <h3 className="font-serif text-lg font-bold text-brand-dark">
+              <div className="space-y-4 animate-fade-in">
+                <div className="space-y-1 border-b border-brand-dark/5 pb-3">
+                  <h3 className="font-serif text-base sm:text-lg font-bold text-brand-dark">
                     Table Reservations Control
                   </h3>
-                  <p className="text-xs text-brand-muted leading-relaxed font-sans font-normal">
+                  <p className="text-[11px] text-brand-muted leading-relaxed font-sans font-normal">
                     Turn table booking reservations ON or OFF. When disabled, customers cannot book tables online and will see a notice popup and banner.
                   </p>
                 </div>
 
-                <div className="max-w-2xl space-y-6">
+                <div className="max-w-2xl space-y-4">
                   {/* Enabled Toggle */}
-                  <div className="flex items-center justify-between border border-brand-dark/10 p-5 bg-[#FDFBF7]">
-                    <div className="space-y-1">
+                  <div className="flex items-center justify-between border border-brand-dark/10 p-3 sm:p-4 bg-[#FDFBF7]">
+                    <div className="space-y-0.5">
                       <span className="block font-mono text-xs text-brand-dark font-bold uppercase tracking-wider">
                         TABLE RESERVATIONS (ONLINE BOOKING)
                       </span>
@@ -4591,17 +4607,17 @@ Beverages | Tea or Coffee`);
                   </div>
 
                   {/* Reservation Closed Notice Textarea */}
-                  <div className="space-y-2">
+                  <div className="space-y-1">
                     <label htmlFor="settings-reservations-notice" className="block font-mono text-xs text-brand-accent uppercase tracking-widest font-bold">
                       RESERVATIONS CLOSED CUSTOM BANNER &amp; POPUP TEXT
                     </label>
                     <textarea
                       id="settings-reservations-notice"
-                      rows={4}
+                      rows={3}
                       required
                       value={reservationsNoticeText}
                       onChange={(e) => setReservationsNoticeText(e.target.value)}
-                      className="w-full border border-brand-dark/10 p-4 text-xs font-mono focus:border-brand-dark outline-none bg-brand-beige/10 rounded-none resize-y"
+                      className="w-full border border-brand-dark/10 p-2.5 text-xs font-mono focus:border-brand-dark outline-none bg-brand-beige/10 rounded-none resize-y"
                       placeholder="e.g. Table reservations are temporarily closed. Please telephone us to book a table!"
                     />
                   </div>
@@ -4611,27 +4627,27 @@ Beverages | Tea or Coffee`);
 
             {/* SUBTAB 3: ANNOUNCEMENTS & TIMINGS */}
             {settingsSubTab === 'announcements' && (
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 animate-fade-in">
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 animate-fade-in">
                 
                 {/* COLUMN 1: POPUP NOTICE MESSAGE */}
-                <div className="lg:col-span-5 space-y-6">
-                  <div className="space-y-2">
-                    <h3 className="font-serif text-lg font-bold text-brand-dark border-b border-brand-dark/5 pb-2">
+                <div className="lg:col-span-5 space-y-4">
+                  <div className="space-y-1">
+                    <h3 className="font-serif text-base sm:text-lg font-bold text-brand-dark border-b border-brand-dark/5 pb-2">
                       Popup Timing Notice
                     </h3>
-                    <p className="text-xs text-brand-muted leading-relaxed font-sans font-normal">
+                    <p className="text-[11px] text-brand-muted leading-relaxed font-sans font-normal">
                       Customize the temporary under-construction notice that pops up on both the homepage and takeaway ordering page.
                     </p>
                   </div>
 
-                  <div className="space-y-4">
+                  <div className="space-y-3">
                     {/* Enabled Toggle */}
-                    <div className="flex items-center justify-between border border-brand-dark/10 p-4 bg-brand-beige/5">
+                    <div className="flex items-center justify-between border border-brand-dark/10 p-3 bg-brand-beige/5">
                       <div className="space-y-0.5">
                         <span className="block font-mono text-xs text-brand-dark font-bold uppercase tracking-wider">
                           SHOW POPUP ON LANDING PAGE
                         </span>
-                        <span className="block text-[11px] text-brand-muted font-sans font-normal">
+                        <span className="block text-[10px] text-brand-muted font-sans font-normal">
                           When enabled, the under-construction dialog pops up automatically.
                         </span>
                       </div>
@@ -4661,7 +4677,7 @@ Beverages | Tea or Coffee`);
                         required
                         value={noticeText}
                         onChange={(e) => setNoticeText(e.target.value)}
-                        className="w-full border border-brand-dark/10 p-3 text-sm font-mono focus:border-brand-dark outline-none bg-brand-beige/10 rounded-none resize-none"
+                        className="w-full border border-brand-dark/10 p-2.5 text-xs font-mono focus:border-brand-dark outline-none bg-brand-beige/10 rounded-none resize-none"
                       />
                     </div>
 
@@ -4676,23 +4692,23 @@ Beverages | Tea or Coffee`);
                         required
                         value={noticePhone}
                         onChange={(e) => setNoticePhone(e.target.value)}
-                        className="w-full border border-brand-dark/10 p-2.5 text-sm font-mono focus:border-brand-dark outline-none bg-brand-beige/10 rounded-none"
+                        className="w-full border border-brand-dark/10 p-2 text-xs font-mono focus:border-brand-dark outline-none bg-brand-beige/10 rounded-none"
                       />
                     </div>
 
                     {/* Booking Page Specific Notice */}
-                    <div className="border-t border-brand-dark/10 pt-4 mt-4 space-y-4">
+                    <div className="border-t border-brand-dark/10 pt-3 mt-3 space-y-3">
                       <h4 className="font-serif text-sm font-bold text-brand-dark uppercase">
                         Book Table / Functions Specific Notice
                       </h4>
                       
-                      <div className="flex items-center justify-between border border-brand-dark/10 p-4 bg-brand-beige/5">
+                      <div className="flex items-center justify-between border border-brand-dark/10 p-3 bg-brand-beige/5">
                         <div className="space-y-0.5">
                           <span className="block font-mono text-xs text-brand-dark font-bold uppercase tracking-wider">
                             SHOW POPUP ON BOOKING PAGE
                           </span>
-                          <span className="block text-[11px] text-brand-muted font-sans font-normal">
-                            When enabled, the custom timing notice pops up automatically on the Book Table / Functions page.
+                          <span className="block text-[10px] text-brand-muted font-sans font-normal">
+                            When enabled, the custom timing notice pops up on the Book Table page.
                           </span>
                         </div>
                         <button
@@ -4716,11 +4732,11 @@ Beverages | Tea or Coffee`);
                         </label>
                         <textarea
                           id="settings-booking-notice-text"
-                          rows={6}
+                          rows={4}
                           required
                           value={bookingNoticeText}
                           onChange={(e) => setBookingNoticeText(e.target.value)}
-                          className="w-full border border-brand-dark/10 p-3 text-xs font-mono focus:border-brand-dark outline-none bg-brand-beige/10 rounded-none resize-none"
+                          className="w-full border border-brand-dark/10 p-2.5 text-xs font-mono focus:border-brand-dark outline-none bg-brand-beige/10 rounded-none resize-none"
                         />
                       </div>
                     </div>
@@ -4728,17 +4744,17 @@ Beverages | Tea or Coffee`);
                 </div>
 
                 {/* COLUMN 2: WEEKLY OPENING TIMINGS */}
-                <div className="lg:col-span-7 space-y-6">
-                  <div className="space-y-2">
-                    <h3 className="font-serif text-lg font-bold text-brand-dark border-b border-brand-dark/5 pb-2">
+                <div className="lg:col-span-7 space-y-4">
+                  <div className="space-y-1">
+                    <h3 className="font-serif text-base sm:text-lg font-bold text-brand-dark border-b border-brand-dark/5 pb-2">
                       Weekly Opening Timings
                     </h3>
-                    <p className="text-xs text-brand-muted leading-relaxed font-sans font-normal">
+                    <p className="text-[11px] text-brand-muted leading-relaxed font-sans font-normal">
                       Modify the hours schedule presented inside the Opening Hours widget on the landing page.
                     </p>
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     {renderTimingField('time-mon', timingMonday, setTimingMonday, 'MONDAY HOURS')}
                     {renderTimingField('time-tue', timingTuesday, setTimingTuesday, 'TUESDAY HOURS')}
                     {renderTimingField('time-wed', timingWednesday, setTimingWednesday, 'WEDNESDAY HOURS')}
@@ -4764,27 +4780,27 @@ Beverages | Tea or Coffee`);
 
             {/* SUBTAB 4: FESTIVE OFFER SETTINGS */}
             {settingsSubTab === 'festive' && (
-              <div className="space-y-6 animate-fade-in max-w-4xl">
-                <div className="space-y-2 border-b border-brand-dark/5 pb-4">
-                  <h3 className="font-serif text-lg font-bold text-brand-dark flex items-center gap-2">
-                    <Sparkles className="w-5 h-5 text-brand-accent" />
+              <div className="space-y-4 animate-fade-in max-w-4xl">
+                <div className="space-y-1 border-b border-brand-dark/5 pb-3">
+                  <h3 className="font-serif text-base sm:text-lg font-bold text-brand-dark flex items-center gap-2">
+                    <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 text-brand-accent shrink-0" />
                     Special Offer
                   </h3>
-                  <p className="text-xs text-brand-muted leading-relaxed font-sans font-normal">
+                  <p className="text-[11px] text-brand-muted leading-relaxed font-sans font-normal">
                     Manage the Special Offer / Event Platter section displayed prominently at the top of the landing page.
                   </p>
                 </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-6">
                   {/* Left Column: Basic Details */}
-                  <div className="lg:col-span-6 space-y-5">
+                  <div className="lg:col-span-6 space-y-3">
                     {/* Toggle Switch */}
-                    <div className="flex items-center justify-between border border-brand-dark/10 p-5 bg-[#FDFBF7]">
-                      <div className="space-y-1">
+                    <div className="flex items-center justify-between border border-brand-dark/10 p-3 sm:p-4 bg-[#FDFBF7]">
+                      <div className="space-y-0.5">
                         <span className="block font-mono text-xs text-brand-dark font-bold uppercase tracking-wider">
                           DISPLAY ON LANDING PAGE
                         </span>
-                        <span className="block text-[11px] text-brand-muted font-sans font-normal">
+                        <span className="block text-[10px] text-brand-muted font-sans font-normal">
                           Toggle to show or hide the special offer block on the main page.
                         </span>
                       </div>
@@ -4814,7 +4830,7 @@ Beverages | Tea or Coffee`);
                         required
                         value={festiveHeader}
                         onChange={(e) => setFestiveHeader(e.target.value)}
-                        className="w-full border border-brand-dark/10 p-3 text-sm font-mono focus:border-brand-dark outline-none bg-brand-beige/10 rounded-none"
+                        className="w-full border border-brand-dark/10 p-2 text-xs font-mono focus:border-brand-dark outline-none bg-brand-beige/10 rounded-none"
                         placeholder="e.g. FATHER'S DAY DINNER"
                       />
                     </div>
@@ -4830,46 +4846,47 @@ Beverages | Tea or Coffee`);
                         required
                         value={festiveSubheader}
                         onChange={(e) => setFestiveSubheader(e.target.value)}
-                        className="w-full border border-brand-dark/10 p-3 text-sm font-mono focus:border-brand-dark outline-none bg-brand-beige/10 rounded-none"
+                        className="w-full border border-brand-dark/10 p-2 text-xs font-mono focus:border-brand-dark outline-none bg-brand-beige/10 rounded-none"
                         placeholder="e.g. Running: Thursday — Friday — Monday"
                       />
                     </div>
 
-                    {/* Price */}
-                    <div className="space-y-1">
-                      <label htmlFor="settings-festive-price" className="block font-mono text-xs text-brand-accent uppercase tracking-widest font-bold">
-                        Offer Price (&euro;)
-                      </label>
-                      <input
-                        id="settings-festive-price"
-                        type="text"
-                        required
-                        value={festivePrice}
-                        onChange={(e) => setFestivePrice(e.target.value)}
-                        className="w-full border border-brand-dark/10 p-3 text-sm font-mono focus:border-brand-dark outline-none bg-brand-beige/10 rounded-none"
-                        placeholder="e.g. 35.00"
-                      />
-                    </div>
+                    {/* Price & Label Row */}
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="space-y-1">
+                        <label htmlFor="settings-festive-price" className="block font-mono text-[10px] text-brand-accent uppercase tracking-widest font-bold">
+                          Offer Price (&euro;)
+                        </label>
+                        <input
+                          id="settings-festive-price"
+                          type="text"
+                          required
+                          value={festivePrice}
+                          onChange={(e) => setFestivePrice(e.target.value)}
+                          className="w-full border border-brand-dark/10 p-2 text-xs font-mono focus:border-brand-dark outline-none bg-brand-beige/10 rounded-none"
+                          placeholder="e.g. 35.00"
+                        />
+                      </div>
 
-                    {/* Price Label */}
-                    <div className="space-y-1">
-                      <label htmlFor="settings-festive-price-label" className="block font-mono text-xs text-brand-accent uppercase tracking-widest font-bold">
-                        Price Label (e.g. FOR 2 PEOPLE:)
-                      </label>
-                      <input
-                        id="settings-festive-price-label"
-                        type="text"
-                        required
-                        value={festivePriceLabel}
-                        onChange={(e) => setFestivePriceLabel(e.target.value)}
-                        className="w-full border border-brand-dark/10 p-3 text-sm font-mono focus:border-brand-dark outline-none bg-brand-beige/10 rounded-none"
-                        placeholder="e.g. FOR 2 PEOPLE:"
-                      />
+                      <div className="space-y-1">
+                        <label htmlFor="settings-festive-price-label" className="block font-mono text-[10px] text-brand-accent uppercase tracking-widest font-bold">
+                          Price Label
+                        </label>
+                        <input
+                          id="settings-festive-price-label"
+                          type="text"
+                          required
+                          value={festivePriceLabel}
+                          onChange={(e) => setFestivePriceLabel(e.target.value)}
+                          className="w-full border border-brand-dark/10 p-2 text-xs font-mono focus:border-brand-dark outline-none bg-brand-beige/10 rounded-none"
+                          placeholder="e.g. FOR 2 PEOPLE:"
+                        />
+                      </div>
                     </div>
                   </div>
 
                   {/* Right Column: Description & Items */}
-                  <div className="lg:col-span-6 space-y-5">
+                  <div className="lg:col-span-6 space-y-3">
                     {/* Offer Description */}
                     <div className="space-y-1">
                       <label htmlFor="settings-festive-desc" className="block font-mono text-xs text-brand-accent uppercase tracking-widest font-bold">
@@ -4877,11 +4894,11 @@ Beverages | Tea or Coffee`);
                       </label>
                       <textarea
                         id="settings-festive-desc"
-                        rows={3}
+                        rows={2}
                         required
                         value={festiveDescription}
                         onChange={(e) => setFestiveDescription(e.target.value)}
-                        className="w-full border border-brand-dark/10 p-3 text-xs font-mono focus:border-brand-dark outline-none bg-brand-beige/10 rounded-none resize-none"
+                        className="w-full border border-brand-dark/10 p-2 text-xs font-mono focus:border-brand-dark outline-none bg-brand-beige/10 rounded-none resize-none"
                         placeholder="Celebrate the festive weekend with..."
                       />
                     </div>
@@ -4892,19 +4909,19 @@ Beverages | Tea or Coffee`);
                         <label htmlFor="settings-festive-items" className="block font-mono text-xs text-brand-accent uppercase tracking-widest font-bold">
                           Platter Items List
                         </label>
-                        <span className="text-[10px] font-mono text-brand-muted uppercase">Format: Name | Description</span>
+                        <span className="text-[9px] font-mono text-brand-muted uppercase">Format: Name | Description</span>
                       </div>
                       <textarea
                         id="settings-festive-items"
-                        rows={8}
+                        rows={6}
                         required
                         value={festiveItems}
                         onChange={(e) => setFestiveItems(e.target.value)}
-                        className="w-full border border-brand-dark/10 p-3 text-xs font-mono focus:border-brand-dark outline-none bg-brand-beige/10 rounded-none resize-y"
+                        className="w-full border border-brand-dark/10 p-2 text-xs font-mono focus:border-brand-dark outline-none bg-brand-beige/10 rounded-none resize-y"
                         placeholder="Beef Nihari | Slow-cooked beef shank..."
                       />
-                      <span className="block text-[10px] text-brand-muted leading-relaxed font-sans font-normal mt-1">
-                        * Input each platter item on a new line. Separate the item name and its description with a vertical pipe character (<code>|</code>).
+                      <span className="block text-[9px] text-brand-muted leading-relaxed font-sans font-normal">
+                        * Input each platter item on a new line. Separate item name and description with a pipe (<code>|</code>).
                       </span>
                     </div>
                   </div>
@@ -4914,21 +4931,21 @@ Beverages | Tea or Coffee`);
 
             {/* SUBTAB 5: GALLERY IMAGES SETTINGS */}
             {settingsSubTab === 'gallery' && (
-              <div className="space-y-6 animate-fade-in">
-                <div className="space-y-2 border-b border-brand-dark/5 pb-4 text-left">
-                  <h3 className="font-serif text-lg font-bold text-brand-dark">
+              <div className="space-y-4 animate-fade-in">
+                <div className="space-y-1 border-b border-brand-dark/5 pb-3 text-left">
+                  <h3 className="font-serif text-base sm:text-lg font-bold text-brand-dark">
                     Self-Hosted Gallery Settings
                   </h3>
-                  <p className="font-sans text-xs text-brand-muted font-normal">
+                  <p className="font-sans text-[11px] text-brand-muted font-normal">
                     Directly upload images onto your server hosting to replace Unsplash defaults. Supports JPG, PNG, and WEBP formats.
                   </p>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-left">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 text-left">
                   
                   {/* HERO BG IMAGE UPLOAD */}
-                  <div className="border border-brand-dark/15 bg-white p-5 space-y-4">
-                    <span className="font-mono text-[10px] text-brand-accent uppercase font-bold tracking-widest block">1. HERO BANNER BACKGROUND</span>
+                  <div className="border border-brand-dark/15 bg-white p-3 sm:p-4 space-y-2.5">
+                    <span className="font-mono text-[9px] text-brand-accent uppercase font-bold tracking-widest block">1. HERO BANNER BACKGROUND</span>
                     <div className="aspect-video bg-brand-beige border border-brand-dark/5 overflow-hidden flex items-center justify-center relative">
                       {imageHeroBg ? (
                         <img src={imageHeroBg} alt="Hero Banner Preview" className="w-full h-full object-cover" />
@@ -4941,9 +4958,9 @@ Beverages | Tea or Coffee`);
                         </div>
                       )}
                     </div>
-                    <div className="space-y-2">
-                      <label className="block bg-brand-dark hover:bg-brand-accent text-white py-2.5 text-center font-mono text-xs font-bold uppercase tracking-wider cursor-pointer active:scale-98 transition-all">
-                        <span>SELECT HERO IMAGE</span>
+                    <div className="space-y-1">
+                      <label className="block bg-brand-dark hover:bg-brand-accent text-white py-2 text-center font-mono text-[11px] font-bold uppercase tracking-wider cursor-pointer active:scale-98 transition-all">
+                        <span>SELECT IMAGE</span>
                         <input
                           type="file"
                           accept="image/*"
@@ -4951,15 +4968,15 @@ Beverages | Tea or Coffee`);
                           className="hidden"
                         />
                       </label>
-                      <p className="text-[9px] font-mono text-brand-muted text-center uppercase tracking-wide">
+                      <p className="text-[8px] font-mono text-brand-muted text-center uppercase tracking-wide">
                         * Ideal size: 1600x800px
                       </p>
                     </div>
                   </div>
 
                   {/* HERITAGE LEFT IMAGE UPLOAD */}
-                  <div className="border border-brand-dark/15 bg-white p-5 space-y-4">
-                    <span className="font-mono text-[10px] text-brand-accent uppercase font-bold tracking-widest block">2. HERITAGE KARAHI COOKING</span>
+                  <div className="border border-brand-dark/15 bg-white p-3 sm:p-4 space-y-2.5">
+                    <span className="font-mono text-[9px] text-brand-accent uppercase font-bold tracking-widest block">2. HERITAGE KARAHI COOKING</span>
                     <div className="aspect-video bg-brand-beige border border-brand-dark/5 overflow-hidden flex items-center justify-center relative">
                       {imageHeritageLeft ? (
                         <img src={imageHeritageLeft} alt="Heritage Left Preview" className="w-full h-full object-cover" />
@@ -4972,9 +4989,9 @@ Beverages | Tea or Coffee`);
                         </div>
                       )}
                     </div>
-                    <div className="space-y-2">
-                      <label className="block bg-brand-dark hover:bg-brand-accent text-white py-2.5 text-center font-mono text-xs font-bold uppercase tracking-wider cursor-pointer active:scale-98 transition-all">
-                        <span>SELECT LEFT IMAGE</span>
+                    <div className="space-y-1">
+                      <label className="block bg-brand-dark hover:bg-brand-accent text-white py-2 text-center font-mono text-[11px] font-bold uppercase tracking-wider cursor-pointer active:scale-98 transition-all">
+                        <span>SELECT IMAGE</span>
                         <input
                           type="file"
                           accept="image/*"
@@ -4982,15 +4999,15 @@ Beverages | Tea or Coffee`);
                           className="hidden"
                         />
                       </label>
-                      <p className="text-[9px] font-mono text-brand-muted text-center uppercase tracking-wide">
-                        * Ideal size: 600x600px (Square)
+                      <p className="text-[8px] font-mono text-brand-muted text-center uppercase tracking-wide">
+                        * Ideal size: 600x600px
                       </p>
                     </div>
                   </div>
 
                   {/* HERITAGE RIGHT IMAGE UPLOAD */}
-                  <div className="border border-brand-dark/15 bg-white p-5 space-y-4">
-                    <span className="font-mono text-[10px] text-brand-accent uppercase font-bold tracking-widest block">3. HERITAGE SKEWERS ROASTING</span>
+                  <div className="border border-brand-dark/15 bg-white p-3 sm:p-4 space-y-2.5">
+                    <span className="font-mono text-[9px] text-brand-accent uppercase font-bold tracking-widest block">3. HERITAGE SKEWERS ROASTING</span>
                     <div className="aspect-video bg-brand-beige border border-brand-dark/5 overflow-hidden flex items-center justify-center relative">
                       {imageHeritageRight ? (
                         <img src={imageHeritageRight} alt="Heritage Right Preview" className="w-full h-full object-cover" />
@@ -5003,9 +5020,9 @@ Beverages | Tea or Coffee`);
                         </div>
                       )}
                     </div>
-                    <div className="space-y-2">
-                      <label className="block bg-brand-dark hover:bg-brand-accent text-white py-2.5 text-center font-mono text-xs font-bold uppercase tracking-wider cursor-pointer active:scale-98 transition-all">
-                        <span>SELECT RIGHT IMAGE</span>
+                    <div className="space-y-1">
+                      <label className="block bg-brand-dark hover:bg-brand-accent text-white py-2 text-center font-mono text-[11px] font-bold uppercase tracking-wider cursor-pointer active:scale-98 transition-all">
+                        <span>SELECT IMAGE</span>
                         <input
                           type="file"
                           accept="image/*"
@@ -5013,8 +5030,8 @@ Beverages | Tea or Coffee`);
                           className="hidden"
                         />
                       </label>
-                      <p className="text-[9px] font-mono text-brand-muted text-center uppercase tracking-wide">
-                        * Ideal size: 600x600px (Square)
+                      <p className="text-[8px] font-mono text-brand-muted text-center uppercase tracking-wide">
+                        * Ideal size: 600x600px
                       </p>
                     </div>
                   </div>
@@ -5022,21 +5039,22 @@ Beverages | Tea or Coffee`);
                 </div>
               </div>
             )}
+
             {/* SUBTAB 6: BUSINESS BASIC INFORMATION SETTINGS */}
             {settingsSubTab === 'business' && (
-              <div className="space-y-6 animate-fade-in text-left">
-                <div className="space-y-2 border-b border-brand-dark/5 pb-4">
-                  <h3 className="font-serif text-lg font-bold text-brand-dark">
+              <div className="space-y-4 animate-fade-in text-left">
+                <div className="space-y-1 border-b border-brand-dark/5 pb-3">
+                  <h3 className="font-serif text-base sm:text-lg font-bold text-brand-dark">
                     Business Basic Information Settings
                   </h3>
-                  <p className="font-sans text-xs text-brand-muted font-normal">
+                  <p className="font-sans text-[11px] text-brand-muted font-normal">
                     Update the contact details, address, maps link, and emails shown in the footer and across the pages.
                   </p>
                 </div>
 
-                <div className="max-w-3xl grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="max-w-3xl grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
                   {/* Business Name */}
-                  <div className="space-y-2">
+                  <div className="space-y-1">
                     <label htmlFor="settings-business-name" className="block font-mono text-xs text-brand-accent uppercase tracking-widest font-bold">
                       Business/Restaurant Name
                     </label>
@@ -5045,13 +5063,13 @@ Beverages | Tea or Coffee`);
                       id="settings-business-name"
                       value={businessName}
                       onChange={(e) => setBusinessName(e.target.value)}
-                      className="w-full bg-[#FDFBF7] border border-brand-dark/15 p-3 font-mono text-xs focus:outline-none focus:border-brand-accent"
+                      className="w-full bg-[#FDFBF7] border border-brand-dark/15 p-2 font-mono text-xs focus:outline-none focus:border-brand-accent"
                       required
                     />
                   </div>
 
                   {/* Contact Email */}
-                  <div className="space-y-2">
+                  <div className="space-y-1">
                     <label htmlFor="settings-business-email" className="block font-mono text-xs text-brand-accent uppercase tracking-widest font-bold">
                       Contact Email Address
                     </label>
@@ -5060,13 +5078,13 @@ Beverages | Tea or Coffee`);
                       id="settings-business-email"
                       value={businessEmail}
                       onChange={(e) => setBusinessEmail(e.target.value)}
-                      className="w-full bg-[#FDFBF7] border border-brand-dark/15 p-3 font-mono text-xs focus:outline-none focus:border-brand-accent"
+                      className="w-full bg-[#FDFBF7] border border-brand-dark/15 p-2 font-mono text-xs focus:outline-none focus:border-brand-accent"
                       required
                     />
                   </div>
 
                   {/* Phone */}
-                  <div className="space-y-2">
+                  <div className="space-y-1">
                     <label htmlFor="settings-business-phone" className="block font-mono text-xs text-brand-accent uppercase tracking-widest font-bold">
                       Telephone / Direct Line
                     </label>
@@ -5075,13 +5093,13 @@ Beverages | Tea or Coffee`);
                       id="settings-business-phone"
                       value={businessPhone}
                       onChange={(e) => setBusinessPhone(e.target.value)}
-                      className="w-full bg-[#FDFBF7] border border-brand-dark/15 p-3 font-mono text-xs focus:outline-none focus:border-brand-accent"
+                      className="w-full bg-[#FDFBF7] border border-brand-dark/15 p-2 font-mono text-xs focus:outline-none focus:border-brand-accent"
                       required
                     />
                   </div>
 
                   {/* Mobile */}
-                  <div className="space-y-2">
+                  <div className="space-y-1">
                     <label htmlFor="settings-business-mobile" className="block font-mono text-xs text-brand-accent uppercase tracking-widest font-bold">
                       Mobile Number
                     </label>
@@ -5090,13 +5108,13 @@ Beverages | Tea or Coffee`);
                       id="settings-business-mobile"
                       value={businessMobile}
                       onChange={(e) => setBusinessMobile(e.target.value)}
-                      className="w-full bg-[#FDFBF7] border border-brand-dark/15 p-3 font-mono text-xs focus:outline-none focus:border-brand-accent"
+                      className="w-full bg-[#FDFBF7] border border-brand-dark/15 p-2 font-mono text-xs focus:outline-none focus:border-brand-accent"
                       required
                     />
                   </div>
 
                   {/* WhatsApp */}
-                  <div className="space-y-2">
+                  <div className="space-y-1">
                     <label htmlFor="settings-business-whatsapp" className="block font-mono text-xs text-brand-accent uppercase tracking-widest font-bold">
                       WhatsApp Number
                     </label>
@@ -5105,13 +5123,13 @@ Beverages | Tea or Coffee`);
                       id="settings-business-whatsapp"
                       value={businessWhatsapp}
                       onChange={(e) => setBusinessWhatsapp(e.target.value)}
-                      className="w-full bg-[#FDFBF7] border border-brand-dark/15 p-3 font-mono text-xs focus:outline-none focus:border-brand-accent"
+                      className="w-full bg-[#FDFBF7] border border-brand-dark/15 p-2 font-mono text-xs focus:outline-none focus:border-brand-accent"
                       required
                     />
                   </div>
 
                   {/* Google Maps Embed/Query Link */}
-                  <div className="space-y-2 md:col-span-2">
+                  <div className="space-y-1 md:col-span-2">
                     <label htmlFor="settings-business-maps-url" className="block font-mono text-xs text-brand-accent uppercase tracking-widest font-bold">
                       Google Maps Location URL
                     </label>
@@ -5120,13 +5138,13 @@ Beverages | Tea or Coffee`);
                       id="settings-business-maps-url"
                       value={businessMapsUrl}
                       onChange={(e) => setBusinessMapsUrl(e.target.value)}
-                      className="w-full bg-[#FDFBF7] border border-brand-dark/15 p-3 font-mono text-xs focus:outline-none focus:border-brand-accent"
+                      className="w-full bg-[#FDFBF7] border border-brand-dark/15 p-2 font-mono text-xs focus:outline-none focus:border-brand-accent"
                       required
                     />
                   </div>
 
                   {/* Address Textarea */}
-                  <div className="space-y-2 md:col-span-2">
+                  <div className="space-y-1 md:col-span-2">
                     <label htmlFor="settings-business-address" className="block font-mono text-xs text-brand-accent uppercase tracking-widest font-bold">
                       Restaurant Address (Newlines allowed)
                     </label>
@@ -5134,8 +5152,8 @@ Beverages | Tea or Coffee`);
                       id="settings-business-address"
                       value={businessAddress}
                       onChange={(e) => setBusinessAddress(e.target.value)}
-                      rows={3}
-                      className="w-full bg-[#FDFBF7] border border-brand-dark/15 p-3 font-mono text-xs focus:outline-none focus:border-brand-accent"
+                      rows={2}
+                      className="w-full bg-[#FDFBF7] border border-brand-dark/15 p-2 font-mono text-xs focus:outline-none focus:border-brand-accent"
                       required
                     />
                   </div>
@@ -5146,20 +5164,20 @@ Beverages | Tea or Coffee`);
 
             {/* SUBTAB 7: ORDER NOTIFICATION EMAILS */}
             {settingsSubTab === 'notifications' && (
-              <div className="space-y-6 animate-fade-in text-left">
-                <div className="space-y-2 border-b border-brand-dark/5 pb-4">
-                  <h3 className="font-serif text-lg font-bold text-brand-dark flex items-center gap-2">
-                    <Mail className="w-5 h-5 text-brand-accent" />
+              <div className="space-y-4 animate-fade-in text-left">
+                <div className="space-y-1 border-b border-brand-dark/5 pb-3">
+                  <h3 className="font-serif text-base sm:text-lg font-bold text-brand-dark flex items-center gap-2">
+                    <Mail className="w-4 h-4 sm:w-5 sm:h-5 text-brand-accent shrink-0" />
                     Order Notification Email Alerts
                   </h3>
-                  <p className="font-sans text-xs text-brand-muted font-normal">
+                  <p className="font-sans text-[11px] text-brand-muted font-normal">
                     Manage the email addresses that receive complete order details automatically in real-time when new orders are placed.
                   </p>
                 </div>
 
-                <div className="max-w-2xl space-y-6">
+                <div className="max-w-2xl space-y-4">
                   {/* Add Email Form */}
-                  <div className="border border-brand-dark/10 p-5 bg-[#FDFBF7] space-y-4">
+                  <div className="border border-brand-dark/10 p-3 sm:p-4 bg-[#FDFBF7] space-y-3">
                     <span className="block font-mono text-xs text-brand-dark font-bold uppercase tracking-wider">
                       Add Recipient Email Address
                     </span>
@@ -5169,12 +5187,12 @@ Beverages | Tea or Coffee`);
                         placeholder="e.g. personal@example.com"
                         value={newNotificationEmail}
                         onChange={(e) => setNewNotificationEmail(e.target.value)}
-                        className="flex-1 bg-white border border-brand-dark/15 p-3 font-mono text-xs focus:outline-none focus:border-brand-accent"
+                        className="flex-1 bg-white border border-brand-dark/15 p-2 font-mono text-xs focus:outline-none focus:border-brand-accent"
                       />
                       <button
                         type="button"
                         onClick={handleAddNotificationEmail}
-                        className="bg-brand-dark hover:bg-brand-accent text-white px-6 py-3 text-xs font-mono font-bold uppercase tracking-wider transition-colors rounded-none"
+                        className="bg-brand-dark hover:bg-brand-accent text-white px-4 py-2 text-xs font-mono font-bold uppercase tracking-wider transition-colors rounded-none"
                       >
                         Add Email
                       </button>
@@ -5186,22 +5204,22 @@ Beverages | Tea or Coffee`);
                     <table className="w-full text-left font-sans text-xs border-collapse">
                       <thead>
                         <tr className="bg-brand-dark text-white font-mono uppercase tracking-wider text-[10px]">
-                          <th className="p-3">Notification Recipient Emails</th>
-                          <th className="p-3 text-right">Actions</th>
+                          <th className="p-2.5">Notification Recipient Emails</th>
+                          <th className="p-2.5 text-right">Actions</th>
                         </tr>
                       </thead>
                       <tbody>
                         {notificationEmails.length === 0 ? (
                           <tr>
-                            <td colSpan={2} className="p-5 text-center text-brand-muted font-mono italic">
+                            <td colSpan={2} className="p-4 text-center text-brand-muted font-mono italic">
                               No notification emails configured.
                             </td>
                           </tr>
                         ) : (
                           notificationEmails.map((email) => (
                             <tr key={email} className="border-b border-brand-dark/5 hover:bg-brand-beige/5">
-                              <td className="p-3 font-mono text-xs text-brand-dark font-medium">{email}</td>
-                              <td className="p-3 text-right">
+                              <td className="p-2.5 font-mono text-xs text-brand-dark font-medium">{email}</td>
+                              <td className="p-2.5 text-right">
                                 <button
                                   type="button"
                                   onClick={() => handleDeleteNotificationEmail(email)}
@@ -5222,28 +5240,28 @@ Beverages | Tea or Coffee`);
 
             {/* SUBTAB 8: SMTP SERVER SETTINGS */}
             {settingsSubTab === 'smtp' && (
-              <div className="space-y-6 animate-fade-in text-left">
-                <div className="space-y-2 border-b border-brand-dark/5 pb-4 flex justify-between items-center">
+              <div className="space-y-4 animate-fade-in text-left">
+                <div className="space-y-1 border-b border-brand-dark/5 pb-3 flex justify-between items-center">
                   <div>
-                    <h3 className="font-serif text-lg font-bold text-brand-dark flex items-center gap-2">
-                      <Settings className="w-5 h-5 text-brand-accent" />
+                    <h3 className="font-serif text-base sm:text-lg font-bold text-brand-dark flex items-center gap-2">
+                      <Settings className="w-4 h-4 sm:w-5 sm:h-5 text-brand-accent shrink-0" />
                       SMTP Mail Server Configuration
                     </h3>
-                    <p className="font-sans text-xs text-brand-muted font-normal">
+                    <p className="font-sans text-[11px] text-brand-muted font-normal">
                       Configure your outgoing mail server parameters to dispatch confirmation emails and OTP access codes securely.
                     </p>
                   </div>
                   {smtpSuccess && (
-                    <span className="font-mono text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-300/40 px-3 py-1">
+                    <span className="font-mono text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-300/40 px-2.5 py-1">
                       ✓ SMTP UPDATED
                     </span>
                   )}
                 </div>
 
-                <div className="max-w-2xl space-y-6">
-                  <div className="border border-brand-dark/10 p-5 bg-[#FDFBF7] space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <div className="space-y-1.5 md:col-span-2">
+                <div className="max-w-2xl space-y-4">
+                  <div className="border border-brand-dark/10 p-3 sm:p-4 bg-[#FDFBF7] space-y-3">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                      <div className="space-y-1 md:col-span-2">
                         <label className="block font-mono text-[10px] text-brand-dark font-bold uppercase tracking-wider">
                           SMTP HOST IP/DOMAIN
                         </label>
@@ -5253,10 +5271,10 @@ Beverages | Tea or Coffee`);
                           placeholder="e.g. smtp.gmail.com"
                           value={smtpHost}
                           onChange={(e) => setSmtpHost(e.target.value)}
-                          className="w-full bg-white border border-brand-dark/15 p-2.5 font-mono text-xs focus:outline-none focus:border-brand-accent"
+                          className="w-full bg-white border border-brand-dark/15 p-2 font-mono text-xs focus:outline-none focus:border-brand-accent"
                         />
                       </div>
-                      <div className="space-y-1.5">
+                      <div className="space-y-1">
                         <label className="block font-mono text-[10px] text-brand-dark font-bold uppercase tracking-wider">
                           PORT
                         </label>
@@ -5266,25 +5284,25 @@ Beverages | Tea or Coffee`);
                           placeholder="e.g. 465"
                           value={smtpPort}
                           onChange={(e) => setSmtpPort(e.target.value)}
-                          className="w-full bg-white border border-brand-dark/15 p-2.5 font-mono text-xs focus:outline-none focus:border-brand-accent"
+                          className="w-full bg-white border border-brand-dark/15 p-2 font-mono text-xs focus:outline-none focus:border-brand-accent"
                         />
                       </div>
                     </div>
 
-                    <div className="flex items-center space-x-3 pt-2">
+                    <div className="flex items-center space-x-2 pt-1">
                       <input
                         type="checkbox"
                         id="smtp-secure"
                         checked={smtpSecure}
                         onChange={(e) => setSmtpSecure(e.target.checked)}
-                        className="w-4 h-4 border-brand-dark/15 rounded-none accent-brand-accent"
+                        className="w-3.5 h-3.5 border-brand-dark/15 rounded-none accent-brand-accent"
                       />
                       <label htmlFor="smtp-secure" className="font-mono text-xs text-brand-dark uppercase font-bold cursor-pointer">
                         Use SSL/TLS Connection (Secure port 465)
                       </label>
                     </div>
 
-                    <div className="space-y-1.5 pt-2 border-t border-brand-dark/10">
+                    <div className="space-y-1 pt-1.5 border-t border-brand-dark/10">
                       <label className="block font-mono text-[10px] text-brand-dark font-bold uppercase tracking-wider">
                         SMTP USERNAME (SENDER EMAIL)
                       </label>
@@ -5294,11 +5312,11 @@ Beverages | Tea or Coffee`);
                         placeholder="e.g. accounts@clayoven.ie"
                         value={smtpUser}
                         onChange={(e) => setSmtpUser(e.target.value)}
-                        className="w-full bg-white border border-brand-dark/15 p-2.5 font-mono text-xs focus:outline-none focus:border-brand-accent"
+                        className="w-full bg-white border border-brand-dark/15 p-2 font-mono text-xs focus:outline-none focus:border-brand-accent"
                       />
                     </div>
 
-                    <div className="space-y-1.5">
+                    <div className="space-y-1">
                       <label className="block font-mono text-[10px] text-brand-dark font-bold uppercase tracking-wider">
                         SMTP PASSWORD / GOOGLE APP PASSWORD
                       </label>
@@ -5307,19 +5325,19 @@ Beverages | Tea or Coffee`);
                         placeholder={smtpHasPassword ? "******** (unchanged)" : "Enter password..."}
                         value={smtpPassword}
                         onChange={(e) => setSmtpPassword(e.target.value)}
-                        className="w-full bg-white border border-brand-dark/15 p-2.5 font-mono text-xs focus:outline-none focus:border-brand-accent"
+                        className="w-full bg-white border border-brand-dark/15 p-2 font-mono text-xs focus:outline-none focus:border-brand-accent"
                       />
                       <p className="text-[10px] text-brand-muted font-sans leading-relaxed">
                         ★ For security, passwords are encrypted. If using Google Workspace, enter your generated **Google App Password**.
                       </p>
                     </div>
 
-                    <div className="pt-2 flex justify-end">
+                    <div className="pt-1.5 flex justify-end">
                       <button
                         type="button"
                         onClick={handleSaveSmtpSettings}
                         disabled={smtpLoading}
-                        className="bg-brand-accent hover:bg-brand-dark text-white px-8 py-3 text-xs font-mono font-bold uppercase tracking-wider transition-colors rounded-none disabled:opacity-50"
+                        className="bg-brand-accent hover:bg-brand-dark text-white px-5 py-2 text-xs font-mono font-bold uppercase tracking-wider transition-colors rounded-none disabled:opacity-50"
                       >
                         {smtpLoading ? 'SAVING...' : 'SAVE SMTP CONFIGURATION'}
                       </button>
@@ -5329,16 +5347,15 @@ Beverages | Tea or Coffee`);
               </div>
             )}
             {settingsSubTab !== 'notifications' && settingsSubTab !== 'smtp' && (
-              <div className="pt-6 border-t border-brand-dark/10 flex justify-end">
+              <div className="pt-4 border-t border-brand-dark/10 flex justify-end">
                 <button
                   type="submit"
-                  className="bg-brand-accent text-white hover:bg-brand-dark px-8 py-3.5 text-sm font-mono font-bold uppercase tracking-wider transition-colors rounded-none"
+                  className="bg-brand-accent text-white hover:bg-brand-dark px-6 py-2.5 text-xs sm:text-sm font-mono font-bold uppercase tracking-wider transition-colors rounded-none shadow-sm active:scale-95"
                 >
                   SAVE CONFIGURATIONS &amp; UPDATE LANDING
                 </button>
               </div>
             )}
-
           </form>
         </div>
       )}
@@ -5351,40 +5368,45 @@ Beverages | Tea or Coffee`);
           b.partySize >= 12
         );
         return (
-          <div className="bg-white border border-brand-dark/10 p-6 space-y-8 animate-fade-in text-left" id="admin-functions-tab">
+          <div className="bg-white border border-brand-dark/10 p-3 sm:p-5 space-y-4 animate-fade-in text-left" id="admin-functions-tab">
             
-            <div className="border-b border-brand-dark/5 pb-4 flex justify-between items-center">
-              <h2 className="font-serif text-xl font-bold text-brand-dark flex items-center">
-                <Sparkles className="w-5 h-5 mr-2 text-brand-accent animate-pulse" />
-                Functions &amp; Large Banquets Manager
-              </h2>
-              <span className="font-mono text-xs text-brand-muted bg-brand-dark/5 px-2 py-0.5 border border-brand-dark/5">
-                {functionsList.length} Registered Events
+            <div className="border-b border-brand-dark/10 pb-3 flex justify-between items-center gap-3">
+              <div className="space-y-0.5">
+                <h2 className="font-serif text-lg sm:text-xl font-bold text-brand-dark flex items-center">
+                  <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 mr-2 text-brand-accent animate-pulse shrink-0" />
+                  Functions &amp; Banquets Manager
+                </h2>
+                <p className="text-[11px] font-mono text-brand-muted">
+                  Manage private venue hire, catering packages, and large party bookings.
+                </p>
+              </div>
+              <span className="font-mono text-[11px] text-brand-muted bg-brand-dark/5 px-2 py-0.5 border border-brand-dark/10 shrink-0">
+                {functionsList.length} Events
               </span>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-6 items-start">
               
               {/* Create a New Function Booking Form */}
-              <form onSubmit={handleCreateFunction} className="lg:col-span-5 bg-brand-beige/5 border border-brand-dark/10 p-6 space-y-4">
-                <h3 className="font-serif text-lg font-bold text-brand-dark border-b border-brand-dark/5 pb-2">
+              <form onSubmit={handleCreateFunction} className="lg:col-span-5 bg-brand-beige/5 border border-brand-dark/10 p-3.5 sm:p-4 space-y-3">
+                <h3 className="font-serif text-base font-bold text-brand-dark border-b border-brand-dark/5 pb-1.5">
                   Register New Private Function
                 </h3>
 
                 {funcSuccess && (
-                  <div className="p-3 bg-emerald-50 text-emerald-800 text-xs font-mono border border-emerald-200">
+                  <div className="p-2.5 bg-emerald-50 text-emerald-800 text-xs font-mono border border-emerald-200">
                     ✓ FUNCTION EVENT REGISTERED SUCCESSFULLY!
                   </div>
                 )}
 
                 {funcError && (
-                  <div className="p-3 bg-amber-50 text-amber-800 text-xs font-mono border border-amber-200">
+                  <div className="p-2.5 bg-amber-50 text-amber-800 text-xs font-mono border border-amber-200">
                     ⚠ {funcError}
                   </div>
                 )}
 
-                <div className="space-y-1">
-                  <label className="block font-mono text-[10px] text-brand-accent uppercase tracking-widest font-bold">
+                <div className="space-y-0.5">
+                  <label className="block font-mono text-[9px] text-brand-accent uppercase tracking-widest font-bold">
                     Event / Customer Name
                   </label>
                   <input
@@ -5393,13 +5415,13 @@ Beverages | Tea or Coffee`);
                     placeholder="e.g. Tanveer Birthday Bash"
                     value={funcName}
                     onChange={(e) => setFuncName(e.target.value)}
-                    className="w-full border border-brand-dark/10 p-2.5 text-xs font-mono focus:border-brand-dark outline-none bg-white"
+                    className="w-full border border-brand-dark/10 p-2 text-xs font-mono focus:border-brand-dark outline-none bg-white"
                   />
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div className="space-y-1">
-                    <label className="block font-mono text-[10px] text-brand-accent uppercase tracking-widest font-bold">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                  <div className="space-y-0.5">
+                    <label className="block font-mono text-[9px] text-brand-accent uppercase tracking-widest font-bold">
                       Email
                     </label>
                     <input
@@ -5408,11 +5430,11 @@ Beverages | Tea or Coffee`);
                       placeholder="customer@email.com"
                       value={funcEmail}
                       onChange={(e) => setFuncEmail(e.target.value)}
-                      className="w-full border border-brand-dark/10 p-2.5 text-xs font-mono focus:border-brand-dark outline-none bg-white"
+                      className="w-full border border-brand-dark/10 p-2 text-xs font-mono focus:border-brand-dark outline-none bg-white"
                     />
                   </div>
-                  <div className="space-y-1">
-                    <label className="block font-mono text-[10px] text-brand-accent uppercase tracking-widest font-bold">
+                  <div className="space-y-0.5">
+                    <label className="block font-mono text-[9px] text-brand-accent uppercase tracking-widest font-bold">
                       Telephone
                     </label>
                     <input
@@ -5421,14 +5443,14 @@ Beverages | Tea or Coffee`);
                       placeholder="089 489 9950"
                       value={funcPhone}
                       onChange={(e) => setFuncPhone(e.target.value)}
-                      className="w-full border border-brand-dark/10 p-2.5 text-xs font-mono focus:border-brand-dark outline-none bg-white"
+                      className="w-full border border-brand-dark/10 p-2 text-xs font-mono focus:border-brand-dark outline-none bg-white"
                     />
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                  <div className="space-y-1">
-                    <label className="block font-mono text-[10px] text-brand-accent uppercase tracking-widest font-bold">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                  <div className="space-y-0.5">
+                    <label className="block font-mono text-[9px] text-brand-accent uppercase tracking-widest font-bold">
                       Date
                     </label>
                     <input
@@ -5436,11 +5458,11 @@ Beverages | Tea or Coffee`);
                       required
                       value={funcDate}
                       onChange={(e) => setFuncDate(e.target.value)}
-                      className="w-full border border-brand-dark/10 p-2.5 text-xs font-mono focus:border-brand-dark outline-none bg-white animate-none"
+                      className="w-full border border-brand-dark/10 p-1.5 text-xs font-mono focus:border-brand-dark outline-none bg-white"
                     />
                   </div>
-                  <div className="space-y-1">
-                    <label className="block font-mono text-[10px] text-brand-accent uppercase tracking-widest font-bold">
+                  <div className="space-y-0.5">
+                    <label className="block font-mono text-[9px] text-brand-accent uppercase tracking-widest font-bold">
                       Time Slot
                     </label>
                     <input
@@ -5449,11 +5471,11 @@ Beverages | Tea or Coffee`);
                       placeholder="e.g. 18:00"
                       value={funcTime}
                       onChange={(e) => setFuncTime(e.target.value)}
-                      className="w-full border border-brand-dark/10 p-2.5 text-xs font-mono focus:border-brand-dark outline-none bg-white"
+                      className="w-full border border-brand-dark/10 p-1.5 text-xs font-mono focus:border-brand-dark outline-none bg-white"
                     />
                   </div>
-                  <div className="space-y-1">
-                    <label className="block font-mono text-[10px] text-brand-accent uppercase tracking-widest font-bold">
+                  <div className="space-y-0.5">
+                    <label className="block font-mono text-[9px] text-brand-accent uppercase tracking-widest font-bold">
                       Guests (Pax)
                     </label>
                     <input
@@ -5463,20 +5485,20 @@ Beverages | Tea or Coffee`);
                       required
                       value={funcGuests}
                       onChange={(e) => setFuncGuests(parseInt(e.target.value) || 15)}
-                      className="w-full border border-brand-dark/10 p-2.5 text-xs font-mono focus:border-brand-dark outline-none bg-white"
+                      className="w-full border border-brand-dark/10 p-1.5 text-xs font-mono focus:border-brand-dark outline-none bg-white"
                     />
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div className="space-y-1">
-                    <label className="block font-mono text-[10px] text-brand-accent uppercase tracking-widest font-bold">
-                      Dining Layout Area
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                  <div className="space-y-0.5">
+                    <label className="block font-mono text-[9px] text-brand-accent uppercase tracking-widest font-bold">
+                      Dining Area
                     </label>
                     <select
                       value={funcArea}
                       onChange={(e) => setFuncArea(e.target.value)}
-                      className="w-full border border-brand-dark/10 p-2.5 text-xs font-mono focus:border-brand-dark outline-none bg-white"
+                      className="w-full border border-brand-dark/10 p-2 text-xs font-mono focus:border-brand-dark outline-none bg-white"
                     >
                       <option value="Private Hall (Up to 50)">Private Vault (Up to 50)</option>
                       <option value="Indoor">Indoor Main Hall</option>
@@ -5484,14 +5506,14 @@ Beverages | Tea or Coffee`);
                       <option value="Whole Restaurant Venue">Whole Restaurant Venue (100+)</option>
                     </select>
                   </div>
-                  <div className="space-y-1">
-                    <label className="block font-mono text-[10px] text-brand-accent uppercase tracking-widest font-bold">
+                  <div className="space-y-0.5">
+                    <label className="block font-mono text-[9px] text-brand-accent uppercase tracking-widest font-bold">
                       Catering Package
                     </label>
                     <select
                       value={funcPackage}
                       onChange={(e) => setFuncPackage(e.target.value)}
-                      className="w-full border border-brand-dark/10 p-2.5 text-xs font-mono focus:border-brand-dark outline-none bg-white"
+                      className="w-full border border-brand-dark/10 p-2 text-xs font-mono focus:border-brand-dark outline-none bg-white"
                     >
                       <option value="Custom Karahi Feast">Custom Karahi Feast</option>
                       <option value="Pakistani Banquet Feast (Silver)">Pakistani Banquet Feast (Silver)</option>
@@ -5501,49 +5523,51 @@ Beverages | Tea or Coffee`);
                   </div>
                 </div>
 
-                <div className="space-y-1">
-                  <label className="block font-mono text-[10px] text-brand-accent uppercase tracking-widest font-bold">
-                    Special Requests / Setup Requirements
+                <div className="space-y-0.5">
+                  <label className="block font-mono text-[9px] text-brand-accent uppercase tracking-widest font-bold">
+                    Special Requests / Setup
                   </label>
                   <textarea
                     rows={2}
-                    placeholder="Need sound system, mic, customized balloon arches, or vegetarian specific buffet options..."
+                    placeholder="Sound system, mic, customized balloons, or vegetarian buffet options..."
                     value={funcRequests}
                     onChange={(e) => setFuncRequests(e.target.value)}
-                    className="w-full border border-brand-dark/10 p-2.5 text-xs font-mono focus:border-brand-dark outline-none bg-white resize-none"
+                    className="w-full border border-brand-dark/10 p-2 text-xs font-mono focus:border-brand-dark outline-none bg-white resize-none"
                   />
                 </div>
 
                 <button
                   type="submit"
-                  className="w-full bg-brand-accent hover:bg-brand-dark text-white py-3 text-xs font-mono uppercase tracking-widest font-bold transition-all rounded-none"
+                  className="w-full bg-brand-accent hover:bg-brand-dark text-white py-2.5 text-xs font-mono uppercase tracking-widest font-bold transition-all rounded-none shadow-sm active:scale-95"
                 >
-                  CONFIRM &amp; BOOK PRIVATE EVENT
+                  CONFIRM &amp; BOOK EVENT
                 </button>
               </form>
 
               {/* Registered Functions Event List Display */}
-              <div className="lg:col-span-7 space-y-4">
-                <h3 className="font-serif text-lg font-bold text-brand-dark border-b border-brand-dark/5 pb-2">
-                  Upcoming Registered Functions List
+              <div className="lg:col-span-7 space-y-3">
+                <h3 className="font-serif text-base font-bold text-brand-dark border-b border-brand-dark/5 pb-1.5">
+                  Upcoming Registered Functions
                 </h3>
 
-                <div className="space-y-3 max-h-[60vh] overflow-y-auto pr-1">
+                <div className="space-y-2.5 max-h-[60vh] overflow-y-auto pr-1">
                   {functionsList.length === 0 ? (
-                    <p className="text-sm font-mono text-brand-muted italic text-center py-20 bg-brand-beige/5 border border-brand-dark/5">
-                      No private functions or large banquets registered.
-                    </p>
+                    <div className="text-center py-12 bg-brand-beige/5 border border-dashed border-brand-dark/15 p-4 space-y-1">
+                      <Sparkles className="w-6 h-6 mx-auto text-brand-muted/40" />
+                      <p className="font-serif text-sm font-bold text-brand-dark">No private functions registered yet.</p>
+                      <p className="font-mono text-[11px] text-brand-muted italic">Register a new function using the form.</p>
+                    </div>
                   ) : (
                     functionsList.map((fn) => {
                       const isCancelled = fn.status === 'Cancelled';
                       return (
-                        <div key={fn.id} className={`p-4 border border-brand-dark/15 hover:border-brand-dark bg-[#FDFBF7]/40 space-y-3 relative transition-all ${isCancelled ? 'opacity-40' : ''}`}>
-                          <div className="flex justify-between items-start font-mono text-xs">
-                            <div>
-                              <span className="font-bold text-brand-dark block">EVENT ID: {fn.id}</span>
-                              <span className="text-[10px] text-brand-muted">Registered: {new Date(fn.createdAt).toLocaleDateString()}</span>
+                        <div key={fn.id} className={`p-3 sm:p-3.5 border border-brand-dark/15 hover:border-brand-dark bg-[#FDFBF7]/40 space-y-2.5 relative transition-all ${isCancelled ? 'opacity-40' : ''}`}>
+                          <div className="flex justify-between items-start font-mono text-xs gap-2">
+                            <div className="min-w-0">
+                              <span className="font-bold text-brand-dark block truncate">EVENT ID: {fn.id}</span>
+                              <span className="text-[10px] text-brand-muted">{new Date(fn.createdAt).toLocaleDateString()}</span>
                             </div>
-                            <span className={`px-2 py-0.5 border text-[9px] font-bold uppercase ${
+                            <span className={`px-1.5 py-0.5 border text-[9px] font-bold uppercase shrink-0 ${
                               isCancelled
                                 ? 'bg-red-50 text-red-700 border-red-200'
                                 : fn.status === 'Pending'
@@ -5554,63 +5578,62 @@ Beverages | Tea or Coffee`);
                             </span>
                           </div>
 
-                          <div className="grid grid-cols-2 gap-4 text-xs font-mono text-brand-muted border-t border-b border-brand-dark/5 py-2">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs font-mono text-brand-muted border-t border-b border-brand-dark/5 py-1.5">
                             <div>
-                              <span className="font-bold text-brand-dark block">{fn.name}</span>
-                              <span className="block">{fn.email}</span>
-                              <span className="underline block">{fn.phone}</span>
+                              <span className="font-bold text-brand-dark block text-xs">{fn.name}</span>
+                              <span className="block text-[11px] truncate">{fn.email}</span>
+                              <span className="underline block text-[11px]">{fn.phone}</span>
                             </div>
-                            <div>
-                              <div>Date: <span className="font-bold text-brand-dark">{fn.date}</span></div>
-                              <div>Time: <span className="font-bold text-brand-dark">{fn.time}</span></div>
+                            <div className="text-[11px] space-y-0.5">
+                              <div>Date: <span className="font-bold text-brand-dark">{fn.date} &bull; {fn.time}</span></div>
                               <div>Guests: <span className="font-bold text-brand-accent">{fn.partySize} Pax</span></div>
                               <div>Area: <span className="font-bold text-brand-dark">{fn.diningArea}</span></div>
                             </div>
                           </div>
 
                           {fn.specialRequests && (
-                            <div className="p-2.5 bg-brand-beige border border-brand-dark/5 text-[11px] font-sans text-brand-dark/80 italic leading-relaxed">
-                              {fn.specialRequests}
+                            <div className="p-2 bg-brand-beige border border-brand-dark/5 text-[11px] font-sans text-brand-dark/80 italic leading-relaxed">
+                              ★ "{fn.specialRequests}"
                             </div>
                           )}
 
-                          <div className="flex justify-end gap-2 items-center">
+                          <div className="flex flex-wrap justify-end gap-1.5 items-center pt-1">
                             {fn.status === 'Pending' && (
                               <>
                                 <button
                                   type="button"
                                   onClick={() => handleUpdateBookingStatus(fn.id, 'Confirmed', true)}
-                                  className="bg-emerald-700 hover:bg-emerald-800 text-white px-3 py-1 font-mono text-[10px] font-bold uppercase rounded-none transition-all border border-emerald-800"
+                                  className="bg-emerald-700 hover:bg-emerald-800 text-white px-2.5 py-1 font-mono text-[10px] font-bold uppercase rounded-none transition-all border border-emerald-800"
                                 >
                                   CONFIRM &amp; EMAIL
                                 </button>
                                 <button
                                   type="button"
                                   onClick={() => handleUpdateBookingStatus(fn.id, 'Cancelled')}
-                                  className="border border-red-200 hover:border-red-600 text-red-600 px-3 py-1 font-mono text-[10px] font-bold uppercase rounded-none transition-all"
+                                  className="border border-red-200 hover:border-red-600 text-red-600 px-2.5 py-1 font-mono text-[10px] font-bold uppercase rounded-none transition-all"
                                 >
-                                  CANCEL EVENT
+                                  CANCEL
                                 </button>
                               </>
                             )}
                             {fn.status === 'Confirmed' && (
                               <>
-                                <span className="text-[9px] font-bold text-emerald-800 bg-emerald-50 px-2 py-1 border border-emerald-300 uppercase tracking-wider">
-                                  ✓ CONFIRMED (DONE)
+                                <span className="text-[9px] font-bold text-emerald-800 bg-emerald-50 px-1.5 py-0.5 border border-emerald-300 uppercase">
+                                  ✓ CONFIRMED
                                 </span>
                                 <button
                                   type="button"
                                   onClick={() => handleUpdateBookingStatus(fn.id, 'Confirmed', true)}
-                                  className="border border-brand-dark/15 hover:border-brand-dark text-brand-dark px-3 py-1 font-mono text-[10px] font-bold uppercase rounded-none transition-all"
+                                  className="border border-brand-dark/15 hover:border-brand-dark text-brand-dark px-2 py-0.5 font-mono text-[10px] font-bold uppercase rounded-none transition-all"
                                 >
                                   RESEND EMAIL
                                 </button>
                                 <button
                                   type="button"
                                   onClick={() => handleUpdateBookingStatus(fn.id, 'Cancelled')}
-                                  className="border border-red-200 hover:border-red-600 text-red-600 px-3 py-1 font-mono text-[10px] font-bold uppercase rounded-none transition-all"
+                                  className="border border-red-200 hover:border-red-600 text-red-600 px-2 py-0.5 font-mono text-[10px] font-bold uppercase rounded-none transition-all"
                                 >
-                                  CANCEL EVENT
+                                  CANCEL
                                 </button>
                               </>
                             )}
@@ -5618,9 +5641,9 @@ Beverages | Tea or Coffee`);
                               <button
                                 type="button"
                                 onClick={() => handleUpdateBookingStatus(fn.id, 'Confirmed')}
-                                className="border border-brand-dark/15 hover:border-brand-dark text-brand-dark px-3 py-1 font-mono text-[10px] font-bold uppercase rounded-none transition-all"
+                                className="border border-brand-dark/15 hover:border-brand-dark text-brand-dark px-2.5 py-1 font-mono text-[10px] font-bold uppercase rounded-none transition-all"
                               >
-                                RESTORE EVENT
+                                RESTORE
                               </button>
                             )}
                           </div>
@@ -5630,39 +5653,37 @@ Beverages | Tea or Coffee`);
                   )}
                 </div>
               </div>
-
             </div>
-
           </div>
         );
       })()}
 
       {activeNewOrderNotification && createPortal(
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-fade-in overflow-y-auto">
-          <div className="bg-white border-2 border-brand-accent max-w-lg w-full shadow-2xl p-6 relative my-auto animate-scale-up space-y-4 max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between border-b border-brand-dark/10 pb-3">
-              <span className="font-mono text-sm font-bold uppercase tracking-wider text-brand-accent flex items-center gap-2 animate-pulse">
-                <span className="w-2.5 h-2.5 bg-red-600 rounded-full inline-block animate-ping"></span>
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-xs p-3 sm:p-4 animate-fade-in overflow-y-auto">
+          <div className="bg-white border-2 border-brand-accent max-w-lg w-full shadow-2xl p-4 sm:p-6 relative my-auto animate-scale-up space-y-3 sm:space-y-4 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between border-b border-brand-dark/10 pb-2.5">
+              <span className="font-mono text-xs sm:text-sm font-bold uppercase tracking-wider text-brand-accent flex items-center gap-2 animate-pulse">
+                <span className="w-2 sm:w-2.5 h-2 sm:h-2.5 bg-red-600 rounded-full inline-block animate-ping"></span>
                 🚨 NEW ORDER RECEIVED
               </span>
               <button
                 type="button"
                 onClick={() => setActiveNewOrderNotification(null)}
-                className="text-brand-muted hover:text-brand-dark transition-colors"
+                className="text-brand-muted hover:text-brand-dark transition-colors p-1"
               >
-                <X className="w-5 h-5" />
+                <X className="w-4 sm:w-5 h-4 sm:h-5" />
               </button>
             </div>
 
-            <div className="space-y-3 max-h-[60vh] overflow-y-auto pr-2">
-              <div className="bg-brand-beige/10 border border-brand-dark/5 p-4 space-y-2">
-                <div className="flex justify-between text-xs font-mono text-brand-dark">
+            <div className="space-y-3 max-h-[55vh] overflow-y-auto pr-1">
+              <div className="bg-brand-beige/10 border border-brand-dark/5 p-3 space-y-2">
+                <div className="flex justify-between items-center text-xs font-mono text-brand-dark">
                   <span><strong>ORDER ID:</strong> #{activeNewOrderNotification.id.slice(-6).toUpperCase()}</span>
-                  <span className="uppercase font-bold text-brand-accent px-2 py-0.5 bg-brand-accent/10 border border-brand-accent/20">
+                  <span className="uppercase font-bold text-[10px] text-brand-accent px-1.5 py-0.5 bg-brand-accent/10 border border-brand-accent/20">
                     {activeNewOrderNotification.serviceType}
                   </span>
                 </div>
-                <div className="grid grid-cols-2 gap-2 text-xs font-sans text-brand-muted pt-1">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 text-xs font-sans text-brand-muted pt-1">
                   <div>
                     <strong>Customer:</strong> {activeNewOrderNotification.customerInfo.name}
                   </div>
@@ -5670,11 +5691,11 @@ Beverages | Tea or Coffee`);
                     <strong>Phone:</strong> {activeNewOrderNotification.customerInfo.phone}
                   </div>
                   {activeNewOrderNotification.serviceType === 'delivery' && (
-                    <div className="col-span-2">
+                    <div className="sm:col-span-2">
                       <strong>Address:</strong> {activeNewOrderNotification.customerInfo.address}
                     </div>
                   )}
-                  <div className="col-span-2">
+                  <div className="sm:col-span-2">
                     <strong>Time:</strong> {activeNewOrderNotification.customerInfo.preferredTime}
                   </div>
                 </div>
@@ -5684,10 +5705,10 @@ Beverages | Tea or Coffee`);
                 <span className="block font-mono text-[10px] text-brand-dark font-bold uppercase tracking-wider border-b border-brand-dark/5 pb-1">
                   Order Items
                 </span>
-                <div className="space-y-2">
+                <div className="space-y-1.5">
                   {activeNewOrderNotification.items.map((item, idx) => (
                     <div key={idx} className="flex justify-between items-start text-xs font-sans text-brand-dark">
-                      <div className="flex-1 pr-4">
+                      <div className="flex-1 pr-3">
                         <span className="font-bold font-mono text-[11px] text-brand-accent mr-1">
                           {item.quantity}x
                         </span>
@@ -5711,7 +5732,7 @@ Beverages | Tea or Coffee`);
                 </div>
               </div>
 
-              <div className="border-t border-brand-dark/10 pt-3 flex justify-between font-mono text-xs font-bold text-brand-dark">
+              <div className="border-t border-brand-dark/10 pt-2.5 flex justify-between font-mono text-xs font-bold text-brand-dark">
                 <span>Total Amount:</span>
                 <span className="text-sm text-brand-accent">
                   €{activeNewOrderNotification.total.toFixed(2)}
@@ -5719,11 +5740,11 @@ Beverages | Tea or Coffee`);
               </div>
             </div>
 
-            <div className="pt-4 border-t border-brand-dark/10 flex gap-2 sm:gap-3">
+            <div className="pt-3 border-t border-brand-dark/10 flex flex-col sm:flex-row gap-2">
               <button
                 type="button"
                 onClick={() => setActiveNewOrderNotification(null)}
-                className="flex-1 border border-brand-dark/15 hover:border-brand-dark text-brand-dark py-3 font-mono text-xs font-bold uppercase tracking-wider rounded-none active:scale-95 transition-all text-center"
+                className="flex-1 border border-brand-dark/15 hover:border-brand-dark text-brand-dark py-2 sm:py-2.5 font-mono text-xs font-bold uppercase tracking-wider rounded-none active:scale-95 transition-all text-center"
               >
                 Dismiss
               </button>
@@ -5734,17 +5755,17 @@ Beverages | Tea or Coffee`);
                   setActiveNewOrderNotification(null);
                   handleOpenRejectOrderModal(toReject);
                 }}
-                className="flex-1 border border-rose-300 hover:bg-rose-50 text-rose-700 py-3 font-mono text-xs font-bold uppercase tracking-wider rounded-none active:scale-95 transition-all text-center flex items-center justify-center gap-1.5"
+                className="flex-1 border border-rose-300 hover:bg-rose-50 text-rose-700 py-2 sm:py-2.5 font-mono text-xs font-bold uppercase tracking-wider rounded-none active:scale-95 transition-all text-center flex items-center justify-center gap-1.5"
               >
-                <Ban className="w-4 h-4" />
+                <Ban className="w-3.5 h-3.5" />
                 Reject
               </button>
               <button
                 type="button"
                 onClick={() => handleAcceptOrder(activeNewOrderNotification.id)}
-                className="flex-1 bg-brand-accent hover:bg-brand-dark text-white py-3 font-mono text-xs font-bold uppercase tracking-wider rounded-none active:scale-95 transition-all text-center flex items-center justify-center gap-1.5 shadow-md shadow-brand-accent/15"
+                className="flex-1 bg-brand-accent hover:bg-brand-dark text-white py-2 sm:py-2.5 font-mono text-xs font-bold uppercase tracking-wider rounded-none active:scale-95 transition-all text-center flex items-center justify-center gap-1.5 shadow-sm"
               >
-                <Check className="w-4 h-4" />
+                <Check className="w-3.5 h-3.5" />
                 Accept
               </button>
             </div>
@@ -5755,12 +5776,12 @@ Beverages | Tea or Coffee`);
 
       {/* CANCELLATION / REJECTION MODAL */}
       {(rejectModalOrder || rejectItemTarget) && createPortal(
-        <div className="fixed inset-0 z-[9999] bg-black/75 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto animate-fade-in">
-          <div className="bg-white border-2 border-rose-600 max-w-lg w-full p-6 shadow-2xl space-y-5 relative my-auto animate-scale-in max-h-[90vh] overflow-y-auto">
-            <div className="flex justify-between items-start border-b border-brand-dark/10 pb-3">
+        <div className="fixed inset-0 z-[9999] bg-black/75 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-y-auto animate-fade-in">
+          <div className="bg-white border-2 border-rose-600 max-w-lg w-full p-4 sm:p-6 shadow-2xl space-y-4 relative my-auto animate-scale-in max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-start border-b border-brand-dark/10 pb-2.5">
               <div className="flex items-center gap-2 text-rose-700">
-                <AlertTriangle className="w-5 h-5" />
-                <h3 className="font-serif text-lg font-bold text-brand-dark">
+                <AlertTriangle className="w-4 sm:w-5 h-4 sm:h-5 shrink-0" />
+                <h3 className="font-serif text-base sm:text-lg font-bold text-brand-dark">
                   {rejectModalOrder 
                     ? `Reject Order #${rejectModalOrder.id}`
                     : `Cancel Item from Order #${rejectItemTarget?.order.id}`
@@ -5773,31 +5794,31 @@ Beverages | Tea or Coffee`);
                   setRejectModalOrder(null);
                   setRejectItemTarget(null);
                 }}
-                className="text-brand-muted hover:text-brand-dark"
+                className="text-brand-muted hover:text-brand-dark p-1"
               >
-                <X className="w-5 h-5" />
+                <X className="w-4 sm:w-5 h-4 sm:h-5" />
               </button>
             </div>
 
             {rejectItemTarget && (
-              <div className="p-3 bg-amber-50 border border-amber-200 text-xs font-mono text-amber-900">
+              <div className="p-2.5 bg-amber-50 border border-amber-200 text-xs font-mono text-amber-900">
                 Item to Cancel: <strong>{rejectItemTarget.order.items[rejectItemTarget.itemIndex]?.name}</strong> ({rejectItemTarget.order.items[rejectItemTarget.itemIndex]?.quantity}x &bull; €{(rejectItemTarget.order.items[rejectItemTarget.itemIndex]?.price * rejectItemTarget.order.items[rejectItemTarget.itemIndex]?.quantity).toFixed(2)})
               </div>
             )}
 
             {rejectModalOrder && (
-              <div className="p-3 bg-rose-50 border border-rose-200 text-xs font-mono text-rose-900 flex justify-between items-center">
+              <div className="p-2.5 bg-rose-50 border border-rose-200 text-xs font-mono text-rose-900 flex flex-wrap justify-between items-center gap-1">
                 <span>Customer: <strong>{rejectModalOrder.customerInfo.name}</strong></span>
                 <span>Total: <strong>€{rejectModalOrder.total.toFixed(2)}</strong></span>
               </div>
             )}
 
             {/* Quick-select reason presets */}
-            <div className="space-y-2">
-              <label className="block font-mono text-xs font-bold uppercase text-brand-dark">
+            <div className="space-y-1.5">
+              <label className="block font-mono text-[11px] font-bold uppercase text-brand-dark">
                 Select Reason / Template:
               </label>
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap gap-1.5">
                 {(rejectModalOrder ? [
                   'Kitchen at maximum capacity',
                   'Item(s) out of stock',
@@ -5816,9 +5837,9 @@ Beverages | Tea or Coffee`);
                     key={reasonPreset}
                     type="button"
                     onClick={() => setCancellationReasonOption(reasonPreset)}
-                    className={`px-3 py-1.5 font-mono text-xs font-bold border transition-all text-left ${
+                    className={`px-2.5 py-1 font-mono text-[11px] font-bold border transition-all text-left ${
                       cancellationReasonOption === reasonPreset
-                        ? 'bg-rose-700 text-white border-rose-700 shadow-sm'
+                        ? 'bg-rose-700 text-white border-rose-700 shadow-xs'
                         : 'bg-white text-brand-dark border-brand-dark/15 hover:border-brand-dark/40'
                     }`}
                   >
@@ -5829,8 +5850,8 @@ Beverages | Tea or Coffee`);
             </div>
 
             {/* Short custom description/notes */}
-            <div className="space-y-1.5">
-              <label className="block font-mono text-xs font-bold uppercase text-brand-dark">
+            <div className="space-y-1">
+              <label className="block font-mono text-[11px] font-bold uppercase text-brand-dark">
                 Short Description / Explanation:
               </label>
               <textarea
@@ -5838,27 +5859,27 @@ Beverages | Tea or Coffee`);
                 onChange={(e) => setCancellationCustomNote(e.target.value)}
                 rows={3}
                 placeholder="Write specific details for the customer (e.g. 'Sorry, fresh Lamb Karahi is sold out this evening')..."
-                className="w-full border border-brand-dark/20 p-3 font-sans text-xs text-brand-dark focus:border-rose-600 focus:outline-none bg-[#FDFBF7]/50"
+                className="w-full border border-brand-dark/20 p-2.5 font-sans text-xs text-brand-dark focus:border-rose-600 focus:outline-none bg-[#FDFBF7]/50"
               />
             </div>
 
             {/* Email dispatch toggle */}
             {rejectModalOrder && (
-              <label className="flex items-center gap-2.5 cursor-pointer text-xs font-sans text-brand-dark pt-1">
+              <label className="flex items-start gap-2 cursor-pointer text-xs font-sans text-brand-dark pt-1">
                 <input
                   type="checkbox"
                   checked={sendCancellationEmail}
                   onChange={(e) => setSendCancellationEmail(e.target.checked)}
-                  className="w-4 h-4 text-rose-600 border-brand-dark/20 rounded-none focus:ring-0"
+                  className="mt-0.5 w-4 h-4 text-rose-600 border-brand-dark/20 rounded-none focus:ring-0"
                 />
-                <span className="font-mono text-xs text-brand-dark">
+                <span className="font-mono text-[11px] text-brand-dark leading-tight">
                   Send polite cancellation email to customer ({rejectModalOrder.customerInfo.email})
                 </span>
               </label>
             )}
 
             {/* Action buttons */}
-            <div className="pt-3 border-t border-brand-dark/10 flex gap-3">
+            <div className="pt-3 border-t border-brand-dark/10 flex flex-col sm:flex-row gap-2 sm:gap-3">
               <button
                 type="button"
                 onClick={() => {
@@ -5866,7 +5887,7 @@ Beverages | Tea or Coffee`);
                   setRejectItemTarget(null);
                 }}
                 disabled={cancellationSubmitting}
-                className="flex-1 border border-brand-dark/15 hover:border-brand-dark text-brand-dark py-3 font-mono text-xs font-bold uppercase tracking-wider rounded-none active:scale-95 transition-all text-center"
+                className="flex-1 border border-brand-dark/15 hover:border-brand-dark text-brand-dark py-2 sm:py-2.5 font-mono text-xs font-bold uppercase tracking-wider rounded-none active:scale-95 transition-all text-center"
               >
                 Go Back
               </button>
@@ -5874,12 +5895,12 @@ Beverages | Tea or Coffee`);
                 type="button"
                 disabled={cancellationSubmitting}
                 onClick={rejectModalOrder ? handleConfirmOrderCancellation : handleConfirmItemCancellation}
-                className="flex-1 bg-rose-700 hover:bg-rose-800 text-white py-3 font-mono text-xs font-bold uppercase tracking-wider rounded-none active:scale-95 transition-all text-center flex items-center justify-center gap-1.5 shadow-md"
+                className="flex-1 bg-rose-700 hover:bg-rose-800 text-white py-2 sm:py-2.5 font-mono text-xs font-bold uppercase tracking-wider rounded-none active:scale-95 transition-all text-center flex items-center justify-center gap-1.5 shadow-sm"
               >
                 {cancellationSubmitting ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
                 ) : (
-                  <Ban className="w-4 h-4" />
+                  <Ban className="w-3.5 h-3.5" />
                 )}
                 {rejectModalOrder ? 'Confirm Reject Order' : 'Confirm Cancel Item'}
               </button>
@@ -5891,20 +5912,20 @@ Beverages | Tea or Coffee`);
 
       {/* STANDARD CONFIRMATION DIALOG MODAL */}
       {confirmModal?.isOpen && createPortal(
-        <div className="fixed inset-0 z-[9999] bg-black/75 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto animate-fade-in">
+        <div className="fixed inset-0 z-[9999] bg-black/75 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-y-auto animate-fade-in">
           <div
-            className={`bg-white border-2 max-w-md w-full p-6 shadow-2xl space-y-5 relative my-auto animate-scale-in text-left max-h-[90vh] overflow-y-auto ${
+            className={`bg-white border-2 max-w-md w-full p-4 sm:p-6 shadow-2xl space-y-4 relative my-auto animate-scale-in text-left max-h-[90vh] overflow-y-auto ${
               confirmModal.isDanger ? 'border-rose-600' : 'border-brand-accent'
             }`}
           >
-            <div className="flex items-start justify-between border-b border-brand-dark/10 pb-3">
-              <div className="flex items-center gap-2.5">
+            <div className="flex items-start justify-between border-b border-brand-dark/10 pb-2.5">
+              <div className="flex items-center gap-2">
                 {confirmModal.isDanger ? (
-                  <AlertTriangle className="w-5 h-5 text-rose-600" />
+                  <AlertTriangle className="w-4 sm:w-5 h-4 sm:h-5 text-rose-600 shrink-0" />
                 ) : (
-                  <ShieldCheck className="w-5 h-5 text-brand-accent" />
+                  <ShieldCheck className="w-4 sm:w-5 h-4 sm:h-5 text-brand-accent shrink-0" />
                 )}
-                <h3 className="font-serif text-lg font-bold text-brand-dark">
+                <h3 className="font-serif text-base sm:text-lg font-bold text-brand-dark">
                   {confirmModal.title}
                 </h3>
               </div>
@@ -5912,9 +5933,9 @@ Beverages | Tea or Coffee`);
                 type="button"
                 disabled={confirmModal.loading}
                 onClick={() => setConfirmModal(null)}
-                className="text-brand-muted hover:text-brand-dark transition-colors disabled:opacity-50"
+                className="text-brand-muted hover:text-brand-dark transition-colors disabled:opacity-50 p-1"
               >
-                <X className="w-5 h-5" />
+                <X className="w-4 sm:w-5 h-4 sm:h-5" />
               </button>
             </div>
 
@@ -5923,18 +5944,18 @@ Beverages | Tea or Coffee`);
                 {confirmModal.message}
               </p>
               {confirmModal.detail && (
-                <p className="text-[11px] font-mono text-brand-muted bg-brand-beige/20 p-2.5 border border-brand-dark/5 leading-relaxed">
+                <p className="text-[11px] font-mono text-brand-muted bg-brand-beige/20 p-2 border border-brand-dark/5 leading-relaxed">
                   {confirmModal.detail}
                 </p>
               )}
             </div>
 
-            <div className="pt-3 border-t border-brand-dark/10 flex gap-3 justify-end">
+            <div className="pt-3 border-t border-brand-dark/10 flex flex-col-reverse sm:flex-row gap-2 sm:gap-3 justify-end">
               <button
                 type="button"
                 disabled={confirmModal.loading}
                 onClick={() => setConfirmModal(null)}
-                className="px-5 py-2.5 border border-brand-dark/20 text-brand-dark hover:bg-brand-dark/5 font-mono text-xs font-bold uppercase tracking-wider rounded-none transition-colors disabled:opacity-50"
+                className="px-4 py-2 border border-brand-dark/20 text-brand-dark hover:bg-brand-dark/5 font-mono text-xs font-bold uppercase tracking-wider rounded-none transition-colors disabled:opacity-50 text-center"
               >
                 {confirmModal.cancelText || 'Cancel'}
               </button>
@@ -5949,7 +5970,7 @@ Beverages | Tea or Coffee`);
                     setConfirmModal(null);
                   }
                 }}
-                className={`px-6 py-2.5 text-white font-mono text-xs font-bold uppercase tracking-wider rounded-none transition-all flex items-center justify-center gap-2 shadow-md ${
+                className={`px-5 py-2 text-white font-mono text-xs font-bold uppercase tracking-wider rounded-none transition-all flex items-center justify-center gap-2 shadow-sm ${
                   confirmModal.isDanger
                     ? 'bg-rose-700 hover:bg-rose-800'
                     : 'bg-brand-accent hover:bg-brand-dark shadow-brand-accent/20'
@@ -5966,27 +5987,27 @@ Beverages | Tea or Coffee`);
 
       {/* 1. DISH CREATE / EDIT MODAL */}
       {isDishModalOpen && createPortal(
-        <div className="fixed inset-0 z-[120] bg-black/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-6 overflow-y-auto animate-fade-in text-left">
-          <div className="bg-white border border-brand-dark/20 max-w-2xl w-full p-6 space-y-6 shadow-2xl my-8 max-h-[90vh] overflow-y-auto font-sans">
-            <div className="flex justify-between items-center border-b border-brand-dark/10 pb-3">
+        <div className="fixed inset-0 z-[120] bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-y-auto animate-fade-in text-left">
+          <div className="bg-white border border-brand-dark/20 max-w-2xl w-full p-4 sm:p-6 space-y-4 sm:space-y-5 shadow-2xl my-4 sm:my-8 max-h-[90vh] overflow-y-auto font-sans">
+            <div className="flex justify-between items-center border-b border-brand-dark/10 pb-2.5">
               <div className="flex items-center gap-2">
-                <UtensilsCrossed className="w-5 h-5 text-brand-accent" />
-                <h3 className="font-serif text-lg font-bold text-brand-dark">
+                <UtensilsCrossed className="w-4 sm:w-5 h-4 sm:h-5 text-brand-accent" />
+                <h3 className="font-serif text-base sm:text-lg font-bold text-brand-dark">
                   {editingDish ? `Edit Dish: ${editingDish.name}` : 'Add New Dish to Menu'}
                 </h3>
               </div>
               <button
                 type="button"
                 onClick={() => setIsDishModalOpen(false)}
-                className="text-brand-muted hover:text-brand-dark transition-colors"
+                className="text-brand-muted hover:text-brand-dark transition-colors p-1"
               >
-                <X className="w-5 h-5" />
+                <X className="w-4 sm:w-5 h-4 sm:h-5" />
               </button>
             </div>
 
-            <form onSubmit={handleSaveDish} className="space-y-5">
+            <form onSubmit={handleSaveDish} className="space-y-4">
               {/* Name & Category */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 <div className="space-y-1">
                   <label className="block font-mono text-[10px] text-brand-accent uppercase tracking-widest font-bold">
                     Dish Name *
@@ -6019,7 +6040,7 @@ Beverages | Tea or Coffee`);
               </div>
 
               {/* Price & Veg Toggle */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-center">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 items-center">
                 <div className="space-y-1">
                   <label className="block font-mono text-[10px] text-brand-accent uppercase tracking-widest font-bold">
                     Base Price (&euro;) *
@@ -6035,7 +6056,7 @@ Beverages | Tea or Coffee`);
                   />
                 </div>
 
-                <div className="pt-4">
+                <div className="sm:pt-4">
                   <label className="flex items-center gap-2 cursor-pointer">
                     <input
                       type="checkbox"
@@ -6063,9 +6084,9 @@ Beverages | Tea or Coffee`);
               </div>
 
               {/* Portion / Size Variations Builder */}
-              <div className="space-y-2 border border-brand-dark/10 p-3.5 bg-brand-beige/10">
+              <div className="space-y-2 border border-brand-dark/10 p-3 bg-brand-beige/10">
                 <div className="flex justify-between items-center">
-                  <span className="font-mono text-xs font-bold text-brand-dark uppercase">
+                  <span className="font-mono text-[11px] font-bold text-brand-dark uppercase">
                     Portion / Size Variations (Optional)
                   </span>
                   <button
@@ -6078,9 +6099,9 @@ Beverages | Tea or Coffee`);
                   </button>
                 </div>
                 {dishFormSizes.length > 0 ? (
-                  <div className="space-y-2">
+                  <div className="space-y-1.5">
                     {dishFormSizes.map((sz, sIdx) => (
-                      <div key={sIdx} className="flex items-center gap-2">
+                      <div key={sIdx} className="flex flex-wrap sm:flex-nowrap items-center gap-2">
                         <input
                           type="text"
                           placeholder="e.g. 6 Pieces, 10 inch, Large"
@@ -6090,7 +6111,7 @@ Beverages | Tea or Coffee`);
                             updated[sIdx].name = e.target.value;
                             setDishFormSizes(updated);
                           }}
-                          className="flex-1 border border-brand-dark/15 p-1.5 text-xs font-mono bg-white rounded-none"
+                          className="flex-1 min-w-[120px] border border-brand-dark/15 p-1.5 text-xs font-mono bg-white rounded-none"
                         />
                         <div className="flex items-center gap-1">
                           <span className="text-xs font-mono">&euro;</span>
@@ -6104,7 +6125,7 @@ Beverages | Tea or Coffee`);
                               updated[sIdx].price = parseFloat(e.target.value) || 0;
                               setDishFormSizes(updated);
                             }}
-                            className="w-24 border border-brand-dark/15 p-1.5 text-xs font-mono bg-white rounded-none"
+                            className="w-20 border border-brand-dark/15 p-1.5 text-xs font-mono bg-white rounded-none"
                           />
                         </div>
                         <button
@@ -6125,11 +6146,11 @@ Beverages | Tea or Coffee`);
               </div>
 
               {/* 14 EU Allergens Selector */}
-              <div className="space-y-2 border border-brand-dark/10 p-3.5 bg-brand-beige/10">
-                <span className="font-mono text-xs font-bold text-brand-dark uppercase block">
+              <div className="space-y-2 border border-brand-dark/10 p-3 bg-brand-beige/10">
+                <span className="font-mono text-[11px] font-bold text-brand-dark uppercase block">
                   Allergen Information (14 EU Standard Allergens)
                 </span>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
                   {ALLERGENS.map((allergen) => {
                     const isSelected = dishFormAllergens.includes(allergen.index);
                     return (
@@ -6143,14 +6164,14 @@ Beverages | Tea or Coffee`);
                             setDishFormAllergens([...dishFormAllergens, allergen.index]);
                           }
                         }}
-                        className={`p-1.5 px-2 text-[10px] font-mono font-bold text-left border flex items-center justify-between transition-all rounded-none ${
+                        className={`p-1.5 text-[10px] font-mono font-bold text-left border flex items-center justify-between transition-all rounded-none ${
                           isSelected
                             ? 'bg-amber-100 border-amber-400 text-amber-950 font-bold'
                             : 'bg-white border-brand-dark/10 text-brand-muted hover:border-brand-dark/30'
                         }`}
                       >
-                        <span>{allergen.index}. {allergen.name}</span>
-                        {isSelected && <Check className="w-3 h-3 text-amber-800" />}
+                        <span className="truncate">{allergen.index}. {allergen.name}</span>
+                        {isSelected && <Check className="w-3 h-3 text-amber-800 shrink-0 ml-1" />}
                       </button>
                     );
                   })}
@@ -6158,11 +6179,11 @@ Beverages | Tea or Coffee`);
               </div>
 
               {/* Link Modifier Groups to this Dish */}
-              <div className="space-y-2 border border-brand-dark/10 p-3.5 bg-brand-beige/10">
-                <span className="font-mono text-xs font-bold text-brand-dark uppercase block">
+              <div className="space-y-2 border border-brand-dark/10 p-3 bg-brand-beige/10">
+                <span className="font-mono text-[11px] font-bold text-brand-dark uppercase block">
                   Attach Modifier &amp; Choice Popups (Free Drinks, Dips, Sauces)
                 </span>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
                   {catalogOptionGroups.map((grp) => {
                     const isAttached = dishFormOptionGroupIds.some(id => String(id) === String(grp.id));
                     return (
@@ -6183,7 +6204,7 @@ Beverages | Tea or Coffee`);
                         }`}
                       >
                         <div>
-                          <span className="block">{grp.title}</span>
+                          <span className="block font-bold">{grp.title}</span>
                           <span className="text-[9px] text-brand-muted">
                             {grp.minSelection > 0 ? 'Mandatory' : 'Optional'} · Max: {grp.maxSelection}
                           </span>
@@ -6200,19 +6221,19 @@ Beverages | Tea or Coffee`);
               </div>
 
               {/* Dish Photo */}
-              <div className="space-y-2">
+              <div className="space-y-1.5">
                 <label className="block font-mono text-[10px] text-brand-accent uppercase tracking-widest font-bold">
                   Dish Image URL / Photo
                 </label>
-                <div className="flex gap-2 items-center">
+                <div className="flex flex-wrap sm:flex-nowrap gap-2 items-center">
                   <input
                     type="text"
                     placeholder="https://... or paste image URL"
                     value={dishFormImageUrl}
                     onChange={(e) => setDishFormImageUrl(e.target.value)}
-                    className="flex-1 border border-brand-dark/15 p-2 text-xs font-mono focus:border-brand-dark outline-none bg-white rounded-none"
+                    className="flex-1 min-w-[180px] border border-brand-dark/15 p-2 text-xs font-mono focus:border-brand-dark outline-none bg-white rounded-none"
                   />
-                  <label className="bg-brand-dark hover:bg-brand-accent text-white px-3 py-2 text-xs font-mono font-bold uppercase rounded-none cursor-pointer flex items-center justify-center">
+                  <label className="bg-brand-dark hover:bg-brand-accent text-white px-3 py-2 text-xs font-mono font-bold uppercase rounded-none cursor-pointer flex items-center justify-center shrink-0">
                     <span>Upload</span>
                     <input
                       type="file"
@@ -6233,19 +6254,19 @@ Beverages | Tea or Coffee`);
               </div>
 
               {/* Action Buttons */}
-              <div className="pt-4 border-t border-brand-dark/10 flex justify-end gap-3">
+              <div className="pt-3 border-t border-brand-dark/10 flex flex-col-reverse sm:flex-row justify-end gap-2 sm:gap-3">
                 <button
                   type="button"
                   disabled={dishFormSubmitting}
                   onClick={() => setIsDishModalOpen(false)}
-                  className="px-5 py-2.5 border border-brand-dark/20 text-brand-dark hover:bg-brand-dark/5 font-mono text-xs font-bold uppercase rounded-none transition-colors"
+                  className="px-4 py-2 border border-brand-dark/20 text-brand-dark hover:bg-brand-dark/5 font-mono text-xs font-bold uppercase rounded-none transition-colors text-center"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={dishFormSubmitting}
-                  className="bg-brand-accent hover:bg-brand-dark text-white px-6 py-2.5 font-mono text-xs font-bold uppercase tracking-wider rounded-none transition-all flex items-center gap-2 shadow-md disabled:opacity-50"
+                  className="bg-brand-accent hover:bg-brand-dark text-white px-5 py-2 font-mono text-xs font-bold uppercase tracking-wider rounded-none transition-all flex items-center justify-center gap-2 shadow-sm disabled:opacity-50"
                 >
                   {dishFormSubmitting && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
                   <span>{editingDish ? 'Save Dish Changes' : 'Create Dish'}</span>
@@ -6259,21 +6280,21 @@ Beverages | Tea or Coffee`);
 
       {/* 2. CATEGORY CREATE / EDIT MODAL */}
       {isCategoryModalOpen && createPortal(
-        <div className="fixed inset-0 z-[120] bg-black/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-6 overflow-y-auto animate-fade-in text-left">
-          <div className="bg-white border border-brand-dark/20 max-w-lg w-full p-6 space-y-6 shadow-2xl my-8 font-sans">
-            <div className="flex justify-between items-center border-b border-brand-dark/10 pb-3">
+        <div className="fixed inset-0 z-[120] bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-y-auto animate-fade-in text-left">
+          <div className="bg-white border border-brand-dark/20 max-w-lg w-full p-4 sm:p-6 space-y-4 sm:space-y-5 shadow-2xl my-4 sm:my-8 font-sans max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-center border-b border-brand-dark/10 pb-2.5">
               <div className="flex items-center gap-2">
-                <Layers className="w-5 h-5 text-brand-accent" />
-                <h3 className="font-serif text-lg font-bold text-brand-dark">
+                <Layers className="w-4 sm:w-5 h-4 sm:h-5 text-brand-accent" />
+                <h3 className="font-serif text-base sm:text-lg font-bold text-brand-dark">
                   {editingCategory ? `Edit Category: ${editingCategory.name}` : 'Add New Category'}
                 </h3>
               </div>
               <button
                 type="button"
                 onClick={() => setIsCategoryModalOpen(false)}
-                className="text-brand-muted hover:text-brand-dark transition-colors"
+                className="text-brand-muted hover:text-brand-dark transition-colors p-1"
               >
-                <X className="w-5 h-5" />
+                <X className="w-4 sm:w-5 h-4 sm:h-5" />
               </button>
             </div>
 
@@ -6306,14 +6327,14 @@ Beverages | Tea or Coffee`);
               </div>
 
               {/* Category-Level Default Modifiers */}
-              <div className="space-y-2 border border-brand-dark/10 p-3.5 bg-brand-beige/10">
-                <span className="font-mono text-xs font-bold text-brand-dark uppercase block">
+              <div className="space-y-2 border border-brand-dark/10 p-3 bg-brand-beige/10">
+                <span className="font-mono text-[11px] font-bold text-brand-dark uppercase block">
                   Default Modifier Groups for this Category
                 </span>
                 <p className="font-sans text-[11px] text-brand-muted">
                   All dishes inside this category will automatically display these modifier choices to customers.
                 </p>
-                <div className="space-y-2 pt-1">
+                <div className="space-y-1.5 pt-1">
                   {catalogOptionGroups.map((grp) => {
                     const isAttached = categoryFormOptionGroupIds.some(id => String(id) === String(grp.id));
                     return (
@@ -6334,7 +6355,7 @@ Beverages | Tea or Coffee`);
                         }`}
                       >
                         <div>
-                          <span className="block">{grp.title}</span>
+                          <span className="block font-bold">{grp.title}</span>
                           <span className="text-[9px] text-brand-muted">
                             {grp.minSelection > 0 ? 'Mandatory' : 'Optional'} · Max: {grp.maxSelection}
                           </span>
@@ -6350,19 +6371,19 @@ Beverages | Tea or Coffee`);
                 </div>
               </div>
 
-              <div className="pt-3 border-t border-brand-dark/10 flex justify-end gap-3">
+              <div className="pt-3 border-t border-brand-dark/10 flex flex-col-reverse sm:flex-row justify-end gap-2 sm:gap-3">
                 <button
                   type="button"
                   disabled={categoryFormSubmitting}
                   onClick={() => setIsCategoryModalOpen(false)}
-                  className="px-5 py-2 border border-brand-dark/20 text-brand-dark hover:bg-brand-dark/5 font-mono text-xs font-bold uppercase rounded-none transition-colors"
+                  className="px-4 py-2 border border-brand-dark/20 text-brand-dark hover:bg-brand-dark/5 font-mono text-xs font-bold uppercase rounded-none transition-colors text-center"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={categoryFormSubmitting}
-                  className="bg-brand-accent hover:bg-brand-dark text-white px-6 py-2 font-mono text-xs font-bold uppercase tracking-wider rounded-none transition-all flex items-center gap-2 shadow-md disabled:opacity-50"
+                  className="bg-brand-accent hover:bg-brand-dark text-white px-5 py-2 font-mono text-xs font-bold uppercase tracking-wider rounded-none transition-all flex items-center justify-center gap-2 shadow-sm disabled:opacity-50"
                 >
                   {categoryFormSubmitting && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
                   <span>{editingCategory ? 'Save Category' : 'Create Category'}</span>
@@ -6376,21 +6397,21 @@ Beverages | Tea or Coffee`);
 
       {/* 3. OPTION GROUP CREATE / EDIT MODAL */}
       {isOptionGroupModalOpen && createPortal(
-        <div className="fixed inset-0 z-[120] bg-black/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-6 overflow-y-auto animate-fade-in text-left">
-          <div className="bg-white border border-brand-dark/20 max-w-xl w-full p-6 space-y-6 shadow-2xl my-8 max-h-[90vh] overflow-y-auto font-sans">
-            <div className="flex justify-between items-center border-b border-brand-dark/10 pb-3">
+        <div className="fixed inset-0 z-[120] bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-y-auto animate-fade-in text-left">
+          <div className="bg-white border border-brand-dark/20 max-w-xl w-full p-4 sm:p-6 space-y-4 sm:space-y-5 shadow-2xl my-4 sm:my-8 max-h-[90vh] overflow-y-auto font-sans">
+            <div className="flex justify-between items-center border-b border-brand-dark/10 pb-2.5">
               <div className="flex items-center gap-2">
-                <Sliders className="w-5 h-5 text-brand-accent" />
-                <h3 className="font-serif text-lg font-bold text-brand-dark">
+                <Sliders className="w-4 sm:w-5 h-4 sm:h-5 text-brand-accent" />
+                <h3 className="font-serif text-base sm:text-lg font-bold text-brand-dark">
                   {editingOptionGroup ? `Edit Group: ${editingOptionGroup.title}` : 'Create Modifier / Choice Group'}
                 </h3>
               </div>
               <button
                 type="button"
                 onClick={() => setIsOptionGroupModalOpen(false)}
-                className="text-brand-muted hover:text-brand-dark transition-colors"
+                className="text-brand-muted hover:text-brand-dark transition-colors p-1"
               >
-                <X className="w-5 h-5" />
+                <X className="w-4 sm:w-5 h-4 sm:h-5" />
               </button>
             </div>
 
@@ -6410,7 +6431,7 @@ Beverages | Tea or Coffee`);
               </div>
 
               {/* Min & Max Selections */}
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-3 sm:gap-4">
                 <div className="space-y-1">
                   <label className="block font-mono text-[10px] text-brand-accent uppercase tracking-widest font-bold">
                     Min Selection (0 = Optional)
@@ -6442,9 +6463,9 @@ Beverages | Tea or Coffee`);
               </div>
 
               {/* Choices / Items Rows */}
-              <div className="space-y-2 border border-brand-dark/10 p-3.5 bg-brand-beige/10">
+              <div className="space-y-2 border border-brand-dark/10 p-3 bg-brand-beige/10">
                 <div className="flex justify-between items-center">
-                  <span className="font-mono text-xs font-bold text-brand-dark uppercase">
+                  <span className="font-mono text-[11px] font-bold text-brand-dark uppercase">
                     Choices / Items
                   </span>
                   <button
@@ -6457,9 +6478,9 @@ Beverages | Tea or Coffee`);
                   </button>
                 </div>
 
-                <div className="space-y-2 max-h-[220px] overflow-y-auto pr-1">
+                <div className="space-y-1.5 max-h-[200px] overflow-y-auto pr-1">
                   {optionGroupFormItems.map((opt, oIdx) => (
-                    <div key={oIdx} className="flex items-center gap-2">
+                    <div key={oIdx} className="flex flex-wrap sm:flex-nowrap items-center gap-1.5 sm:gap-2">
                       <input
                         type="text"
                         placeholder="Choice name (e.g. Cola, Garlic Mayo)"
@@ -6469,7 +6490,7 @@ Beverages | Tea or Coffee`);
                           updated[oIdx].name = e.target.value;
                           setOptionGroupFormItems(updated);
                         }}
-                        className="flex-1 border border-brand-dark/15 p-1.5 text-xs font-mono bg-white rounded-none"
+                        className="flex-1 min-w-[120px] border border-brand-dark/15 p-1.5 text-xs font-mono bg-white rounded-none"
                       />
                       <div className="flex items-center gap-1">
                         <span className="text-xs font-mono">+&euro;</span>
@@ -6484,7 +6505,7 @@ Beverages | Tea or Coffee`);
                             updated[oIdx].priceModifier = parseFloat(e.target.value) || 0;
                             setOptionGroupFormItems(updated);
                           }}
-                          className="w-20 border border-brand-dark/15 p-1.5 text-xs font-mono bg-white rounded-none"
+                          className="w-18 border border-brand-dark/15 p-1.5 text-xs font-mono bg-white rounded-none"
                         />
                       </div>
                       <label className="flex items-center gap-1 text-[10px] font-mono shrink-0 cursor-pointer">
@@ -6512,19 +6533,19 @@ Beverages | Tea or Coffee`);
                 </div>
               </div>
 
-              <div className="pt-3 border-t border-brand-dark/10 flex justify-end gap-3">
+              <div className="pt-3 border-t border-brand-dark/10 flex flex-col-reverse sm:flex-row justify-end gap-2 sm:gap-3">
                 <button
                   type="button"
                   disabled={optionGroupFormSubmitting}
                   onClick={() => setIsOptionGroupModalOpen(false)}
-                  className="px-5 py-2 border border-brand-dark/20 text-brand-dark hover:bg-brand-dark/5 font-mono text-xs font-bold uppercase rounded-none transition-colors"
+                  className="px-4 py-2 border border-brand-dark/20 text-brand-dark hover:bg-brand-dark/5 font-mono text-xs font-bold uppercase rounded-none transition-colors text-center"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={optionGroupFormSubmitting}
-                  className="bg-brand-accent hover:bg-brand-dark text-white px-6 py-2 font-mono text-xs font-bold uppercase tracking-wider rounded-none transition-all flex items-center gap-2 shadow-md disabled:opacity-50"
+                  className="bg-brand-accent hover:bg-brand-dark text-white px-5 py-2 font-mono text-xs font-bold uppercase tracking-wider rounded-none transition-all flex items-center justify-center gap-2 shadow-sm disabled:opacity-50"
                 >
                   {optionGroupFormSubmitting && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
                   <span>{editingOptionGroup ? 'Save Group' : 'Create Group'}</span>
@@ -6538,21 +6559,21 @@ Beverages | Tea or Coffee`);
 
       {/* 4. DEAL CREATE / EDIT MODAL */}
       {isDealModalOpen && createPortal(
-        <div className="fixed inset-0 z-[120] bg-black/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-6 overflow-y-auto animate-fade-in text-left">
-          <div className="bg-white border border-brand-dark/20 max-w-xl w-full p-6 space-y-6 shadow-2xl my-8 font-sans">
-            <div className="flex justify-between items-center border-b border-brand-dark/10 pb-3">
+        <div className="fixed inset-0 z-[120] bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-y-auto animate-fade-in text-left">
+          <div className="bg-white border border-brand-dark/20 max-w-xl w-full p-4 sm:p-6 space-y-4 sm:space-y-5 shadow-2xl my-4 sm:my-8 font-sans max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-center border-b border-brand-dark/10 pb-2.5">
               <div className="flex items-center gap-2">
-                <Tag className="w-5 h-5 text-brand-accent" />
-                <h3 className="font-serif text-lg font-bold text-brand-dark">
+                <Tag className="w-4 sm:w-5 h-4 sm:h-5 text-brand-accent" />
+                <h3 className="font-serif text-base sm:text-lg font-bold text-brand-dark">
                   {editingDeal ? `Edit Deal: ${editingDeal.title}` : 'Create Meal Combo Deal'}
                 </h3>
               </div>
               <button
                 type="button"
                 onClick={() => setIsDealModalOpen(false)}
-                className="text-brand-muted hover:text-brand-dark transition-colors"
+                className="text-brand-muted hover:text-brand-dark transition-colors p-1"
               >
-                <X className="w-5 h-5" />
+                <X className="w-4 sm:w-5 h-4 sm:h-5" />
               </button>
             </div>
 
@@ -6571,7 +6592,7 @@ Beverages | Tea or Coffee`);
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 <div className="space-y-1">
                   <label className="block font-mono text-[10px] text-brand-accent uppercase tracking-widest font-bold">
                     Bundle Price (&euro;) *
@@ -6614,9 +6635,9 @@ Beverages | Tea or Coffee`);
               </div>
 
               {/* Deal Steps Builder */}
-              <div className="space-y-2 border border-brand-dark/10 p-3.5 bg-brand-beige/10">
+              <div className="space-y-2 border border-brand-dark/10 p-3 bg-brand-beige/10">
                 <div className="flex justify-between items-center">
-                  <span className="font-mono text-xs font-bold text-brand-dark uppercase">
+                  <span className="font-mono text-[11px] font-bold text-brand-dark uppercase">
                     Step-by-Step Choice Rules
                   </span>
                   <button
@@ -6629,9 +6650,9 @@ Beverages | Tea or Coffee`);
                   </button>
                 </div>
 
-                <div className="space-y-2">
+                <div className="space-y-1.5">
                   {dealFormSteps.map((st, stIdx) => (
-                    <div key={stIdx} className="flex items-center gap-2">
+                    <div key={stIdx} className="flex flex-wrap sm:flex-nowrap items-center gap-1.5 sm:gap-2">
                       <input
                         type="text"
                         placeholder="Step name (e.g. Choose 1 Main, Pick 2 Drinks)"
@@ -6641,7 +6662,7 @@ Beverages | Tea or Coffee`);
                           updated[stIdx].stepName = e.target.value;
                           setDealFormSteps(updated);
                         }}
-                        className="flex-1 border border-brand-dark/15 p-1.5 text-xs font-mono bg-white rounded-none"
+                        className="flex-1 min-w-[120px] border border-brand-dark/15 p-1.5 text-xs font-mono bg-white rounded-none"
                       />
                       <select
                         value={st.categoryId}
@@ -6650,7 +6671,7 @@ Beverages | Tea or Coffee`);
                           updated[stIdx].categoryId = e.target.value;
                           setDealFormSteps(updated);
                         }}
-                        className="w-36 border border-brand-dark/15 p-1.5 text-xs font-mono bg-white rounded-none"
+                        className="w-32 sm:w-36 border border-brand-dark/15 p-1.5 text-xs font-mono bg-white rounded-none"
                       >
                         {catalogCategories.map(c => (
                           <option key={c.id} value={c.id}>{c.name}</option>
@@ -6666,7 +6687,7 @@ Beverages | Tea or Coffee`);
                           updated[stIdx].count = parseInt(e.target.value) || 1;
                           setDealFormSteps(updated);
                         }}
-                        className="w-16 border border-brand-dark/15 p-1.5 text-xs font-mono bg-white rounded-none"
+                        className="w-14 sm:w-16 border border-brand-dark/15 p-1.5 text-xs font-mono bg-white rounded-none"
                         title="Count to choose"
                       />
                       <button
@@ -6681,19 +6702,19 @@ Beverages | Tea or Coffee`);
                 </div>
               </div>
 
-              <div className="pt-3 border-t border-brand-dark/10 flex justify-end gap-3">
+              <div className="pt-3 border-t border-brand-dark/10 flex flex-col-reverse sm:flex-row justify-end gap-2 sm:gap-3">
                 <button
                   type="button"
                   disabled={dealFormSubmitting}
                   onClick={() => setIsDealModalOpen(false)}
-                  className="px-5 py-2 border border-brand-dark/20 text-brand-dark hover:bg-brand-dark/5 font-mono text-xs font-bold uppercase rounded-none transition-colors"
+                  className="px-4 py-2 border border-brand-dark/20 text-brand-dark hover:bg-brand-dark/5 font-mono text-xs font-bold uppercase rounded-none transition-colors text-center"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={dealFormSubmitting}
-                  className="bg-brand-accent hover:bg-brand-dark text-white px-6 py-2 font-mono text-xs font-bold uppercase tracking-wider rounded-none transition-all flex items-center gap-2 shadow-md disabled:opacity-50"
+                  className="bg-brand-accent hover:bg-brand-dark text-white px-5 py-2 font-mono text-xs font-bold uppercase tracking-wider rounded-none transition-all flex items-center justify-center gap-2 shadow-sm disabled:opacity-50"
                 >
                   {dealFormSubmitting && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
                   <span>{editingDeal ? 'Save Deal' : 'Create Deal'}</span>
@@ -6707,9 +6728,9 @@ Beverages | Tea or Coffee`);
 
       {/* STANDARD FLOATING NOTIFICATION BOX */}
       {notificationBox?.isOpen && (
-        <div className="fixed top-6 right-6 z-[130] max-w-md w-full animate-slide-in-right">
+        <div className="fixed top-4 right-4 sm:top-6 sm:right-6 z-[130] w-[calc(100%-2rem)] sm:w-full max-w-md animate-slide-in-right">
           <div
-            className={`p-4 border shadow-2xl flex items-start gap-3 relative ${
+            className={`p-3 sm:p-4 border shadow-2xl flex items-start gap-3 relative ${
               notificationBox.type === 'success'
                 ? 'bg-emerald-50 border-emerald-600/40 text-emerald-950'
                 : notificationBox.type === 'error'
@@ -6717,16 +6738,16 @@ Beverages | Tea or Coffee`);
                 : 'bg-amber-50 border-amber-600/40 text-amber-950'
             }`}
           >
-            <div className="flex-shrink-0 mt-0.5">
+            <div className="shrink-0 mt-0.5">
               {notificationBox.type === 'success' ? (
-                <CheckCircle2 className="w-5 h-5 text-emerald-700" />
+                <CheckCircle2 className="w-4 sm:w-5 h-4 sm:h-5 text-emerald-700" />
               ) : notificationBox.type === 'error' ? (
-                <AlertTriangle className="w-5 h-5 text-rose-700" />
+                <AlertTriangle className="w-4 sm:w-5 h-4 sm:h-5 text-rose-700" />
               ) : (
-                <Info className="w-5 h-5 text-amber-700" />
+                <Info className="w-4 sm:w-5 h-4 sm:h-5 text-amber-700" />
               )}
             </div>
-            <div className="flex-1 pr-6 space-y-1">
+            <div className="flex-1 pr-5 space-y-0.5">
               <h4 className="font-mono text-xs font-bold uppercase tracking-wider">
                 {notificationBox.title}
               </h4>
@@ -6737,9 +6758,9 @@ Beverages | Tea or Coffee`);
             <button
               type="button"
               onClick={() => setNotificationBox(null)}
-              className="absolute top-3 right-3 text-brand-muted hover:text-brand-dark transition-colors"
+              className="absolute top-2.5 right-2.5 text-brand-muted hover:text-brand-dark transition-colors p-1"
             >
-              <X className="w-4 h-4" />
+              <X className="w-3.5 sm:w-4 h-3.5 sm:h-4" />
             </button>
           </div>
         </div>
