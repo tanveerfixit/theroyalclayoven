@@ -112,10 +112,22 @@ export interface OrderItem {
   cancelReason?: string;
 }
 
+export interface DeliveryZone {
+  id: string;
+  name: string;
+  areas: string;
+  fee: number;
+  minOrder?: number;
+  estimatedTime?: string;
+  isActive: boolean;
+}
+
 export interface Order {
   id: string;
   items: OrderItem[];
   packagingFee: number;
+  deliveryFee?: number;
+  deliveryZone?: string;
   subtotal: number;
   total: number;
   serviceType: 'takeaway' | 'delivery';

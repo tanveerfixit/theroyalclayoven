@@ -476,3 +476,57 @@ export function getTodayDeliveryTimeOptions(status: TodayDeliveryStatus, now: Da
 
   return options;
 }
+
+export interface DeliveryZone {
+  id: string;
+  name: string;
+  areas: string;
+  fee: number;
+  minOrder?: number;
+  estimatedTime?: string;
+  isActive: boolean;
+}
+
+export function getDefaultDeliveryZones(): DeliveryZone[] {
+  return [
+    {
+      id: 'zone-shannon-local',
+      name: 'Shannon Town (Local)',
+      areas: 'Ballycasey, Tullyvarraga, Drumgeely, Smithstown, Shannon Free Zone & Airport',
+      fee: 4.00,
+      minOrder: 15.00,
+      estimatedTime: '30-45 mins',
+      isActive: true
+    },
+    {
+      id: 'zone-surrounding-outer',
+      name: 'Surrounding Areas (Outer)',
+      areas: 'Bunratty, Newmarket-on-Fergus, Sixmilebridge, Cratloe, Hurler\'s Cross',
+      fee: 7.00,
+      minOrder: 25.00,
+      estimatedTime: '45-60 mins',
+      isActive: true
+    }
+  ];
+}
+
+export function parseDeliveryZones(raw: any): DeliveryZone[] {
+  if (!raw) return getDefaultDeliveryZones();
+  try {
+    const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw;
+    if (Array.isArray(parsed) && parsed.length > 0) {
+      return parsed.map((z: any, idx: number) => ({
+        id: z.id || `zone-${idx + 1}`,
+        name: z.name || `Zone ${idx + 1}`,
+        areas: z.areas || '',
+        fee: typeof z.fee === 'number' ? z.fee : parseFloat(z.fee) || 4.00,
+        minOrder: typeof z.minOrder === 'number' ? z.minOrder : parseFloat(z.minOrder) || 0,
+        estimatedTime: z.estimatedTime || '30-45 mins',
+        isActive: z.isActive !== false
+      }));
+    }
+  } catch (e) {
+    console.error('Error parsing delivery zones:', e);
+  }
+  return getDefaultDeliveryZones();
+}

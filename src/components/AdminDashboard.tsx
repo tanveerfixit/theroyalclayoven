@@ -5,7 +5,7 @@ import {
   Volume2, ShieldCheck, Clock, Settings, Sparkles, Mail, KeyRound, Loader2, Ban, 
   XCircle, AlertTriangle, Trash2, Filter, CheckCircle2, HelpCircle, Info, Save,
   Plus, Edit3, ArrowUpDown, ChevronUp, ChevronDown, Layers, Tag, Eye, EyeOff,
-  Sliders, CookingPot, UtensilsCrossed, AlertCircle, CheckSquare, Square
+  Sliders, CookingPot, UtensilsCrossed, AlertCircle, CheckSquare, Square, MapPin
 } from 'lucide-react';
 import { Order, Reservation, MenuCategory, MenuItem, OptionGroup, OptionItem, MenuDeal } from '../types';
 import { ALLERGENS, MENU_ITEMS, CATEGORIES } from '../data/menu';
@@ -15,7 +15,10 @@ import {
   getDefaultDeliverySchedule,
   parseDeliverySchedule,
   getTodayDeliveryStatus,
-  DAY_NAMES
+  DAY_NAMES,
+  DeliveryZone,
+  getDefaultDeliveryZones,
+  parseDeliveryZones
 } from '../utils/deliveryScheduler';
 
 // Helper to get stored admin token
@@ -112,6 +115,10 @@ The Royal Clay Oven`);
   const [takeawayNoticeText, setTakeawayNoticeText] = useState('We are temporarily not taking online orders. Please phone us to order directly!');
   const [takeawayCharges, setTakeawayCharges] = useState('0.95');
   const [deliveryCharges, setDeliveryCharges] = useState('3.00');
+  const [deliveryZones, setDeliveryZones] = useState<DeliveryZone[]>(() => {
+    const saved = localStorage.getItem('clay_oven_delivery_zones');
+    return parseDeliveryZones(saved);
+  });
   const [deliverySchedule, setDeliverySchedule] = useState<DeliverySchedule>(getDefaultDeliverySchedule);
 
   // Reservation Enable/Disable controls
@@ -1088,6 +1095,7 @@ Beverages | Tea or Coffee`);
         if (data.clay_oven_takeaway_notice) setTakeawayNoticeText(data.clay_oven_takeaway_notice);
         if (data.clay_oven_takeaway_charges !== undefined) setTakeawayCharges(data.clay_oven_takeaway_charges);
         if (data.clay_oven_delivery_charges !== undefined) setDeliveryCharges(data.clay_oven_delivery_charges);
+        if (data.clay_oven_delivery_zones) setDeliveryZones(parseDeliveryZones(data.clay_oven_delivery_zones));
         if (data.clay_oven_delivery_schedule) setDeliverySchedule(parseDeliverySchedule(data.clay_oven_delivery_schedule));
 
         if (data.clay_oven_reservations_enabled !== undefined) setReservationsEnabled(data.clay_oven_reservations_enabled !== 'false');
@@ -1155,6 +1163,7 @@ Beverages | Tea or Coffee`);
       'clay_oven_takeaway_notice': takeawayNoticeText,
       'clay_oven_takeaway_charges': takeawayCharges,
       'clay_oven_delivery_charges': deliveryCharges,
+      'clay_oven_delivery_zones': JSON.stringify(deliveryZones),
       'clay_oven_delivery_schedule': JSON.stringify(deliverySchedule),
       'clay_oven_reservations_enabled': String(reservationsEnabled),
       'clay_oven_reservations_notice': reservationsNoticeText,
@@ -2164,7 +2173,7 @@ Beverages | Tea or Coffee`);
                           <div>Customer: <span className="font-bold text-brand-dark">{order.customerInfo.name}</span></div>
                           <div>Contact: <span className="underline">{order.customerInfo.phone}</span></div>
                           <div>Time: <span className="font-bold text-brand-dark uppercase">{order.customerInfo.preferredTime}</span></div>
-                          <div>Type: <span className="font-bold uppercase text-brand-accent">{order.serviceType}</span></div>
+                          <div>Type: <span className="font-bold uppercase text-brand-accent">{order.serviceType}</span>{order.deliveryZone && <span className="ml-1.5 font-sans font-bold text-brand-dark bg-brand-accent/10 px-1.5 py-0.5 rounded text-[10px]">Zone: {order.deliveryZone}</span>}</div>
                           {order.customerInfo.address && (
                             <div className="pt-1 font-sans text-brand-dark border-t border-dashed border-brand-dark/5 mt-1 font-medium">
                               Deliver: {order.customerInfo.address}
@@ -2296,7 +2305,7 @@ Beverages | Tea or Coffee`);
                           <div>Customer: <span className="font-bold text-brand-dark">{order.customerInfo.name}</span></div>
                           <div>Contact: <span className="underline">{order.customerInfo.phone}</span></div>
                           <div>Time: <span className="font-bold text-brand-dark uppercase">{order.customerInfo.preferredTime}</span></div>
-                          <div>Type: <span className="font-bold uppercase text-brand-accent">{order.serviceType}</span></div>
+                          <div>Type: <span className="font-bold uppercase text-brand-accent">{order.serviceType}</span>{order.deliveryZone && <span className="ml-1.5 font-sans font-bold text-brand-dark bg-brand-accent/10 px-1.5 py-0.5 rounded text-[10px]">Zone: {order.deliveryZone}</span>}</div>
                           {order.customerInfo.address && (
                             <div className="pt-1 font-sans text-brand-dark border-t border-dashed border-brand-dark/5 mt-1 font-medium">
                               Deliver: {order.customerInfo.address}
@@ -2421,7 +2430,7 @@ Beverages | Tea or Coffee`);
                           <div>Customer: <span className="font-bold text-brand-dark">{order.customerInfo.name}</span></div>
                           <div>Contact: <span className="underline">{order.customerInfo.phone}</span></div>
                           <div>Time: <span className="font-bold text-brand-dark uppercase">{order.customerInfo.preferredTime}</span></div>
-                          <div>Type: <span className="font-bold uppercase text-brand-accent">{order.serviceType}</span></div>
+                          <div>Type: <span className="font-bold uppercase text-brand-accent">{order.serviceType}</span>{order.deliveryZone && <span className="ml-1.5 font-sans font-bold text-brand-dark bg-brand-accent/10 px-1.5 py-0.5 rounded text-[10px]">Zone: {order.deliveryZone}</span>}</div>
                           {order.customerInfo.address && (
                             <div className="pt-1 font-sans text-brand-dark border-t border-dashed border-brand-dark/5 mt-1 font-medium">
                               Deliver: {order.customerInfo.address}
@@ -2960,7 +2969,7 @@ Beverages | Tea or Coffee`);
                         <div className="text-xs font-mono border-t border-b border-brand-dark/5 py-2 space-y-1 text-brand-muted">
                           <div>Customer: <span className="font-bold text-brand-dark">{order.customerInfo.name}</span></div>
                           <div>Contact: <span className="underline">{order.customerInfo.phone}</span></div>
-                          <div>Fulfillment: <span className="font-bold uppercase text-brand-accent">{order.serviceType}</span> &bull; Time: <span className="font-bold text-brand-dark uppercase">{order.customerInfo.preferredTime}</span></div>
+                          <div>Fulfillment: <span className="font-bold uppercase text-brand-accent">{order.serviceType}</span>{order.deliveryZone && <span className="ml-1.5 font-sans font-bold text-brand-dark bg-brand-accent/10 px-1.5 py-0.5 rounded text-[10px]">Zone: {order.deliveryZone}</span>} &bull; Time: <span className="font-bold text-brand-dark uppercase">{order.customerInfo.preferredTime}</span></div>
                           {order.customerInfo.address && (
                             <div className="pt-1 font-sans text-brand-dark font-medium">Deliver to: {order.customerInfo.address}</div>
                           )}
@@ -4081,7 +4090,7 @@ Beverages | Tea or Coffee`);
 
                     <div className="space-y-2">
                       <label htmlFor="settings-delivery-charges" className="block font-mono text-xs text-brand-accent uppercase tracking-widest font-bold">
-                        DELIVERY CHARGE (€)
+                        FALLBACK / BASE DELIVERY CHARGE (€)
                       </label>
                       <input
                         id="settings-delivery-charges"
@@ -4092,8 +4101,196 @@ Beverages | Tea or Coffee`);
                         value={deliveryCharges}
                         onChange={(e) => setDeliveryCharges(e.target.value)}
                         className="w-full border border-brand-dark/10 p-3 text-xs font-mono focus:border-brand-dark outline-none bg-brand-beige/10 rounded-none"
-                        placeholder="e.g. 3.00"
+                        placeholder="e.g. 4.00"
                       />
+                    </div>
+                  </div>
+
+                  {/* Delivery Zones & Tiered Pricing Section */}
+                  <div className="pt-6 border-t border-brand-dark/10 space-y-5">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                      <div className="space-y-1">
+                        <span className="block font-mono text-xs text-brand-dark font-bold uppercase tracking-wider flex items-center gap-2">
+                          <MapPin className="w-4 h-4 text-brand-accent" />
+                          Delivery Areas &amp; Tiered Pricing (€4.00, €7.00, etc.)
+                        </span>
+                        <span className="block text-[11px] text-brand-muted font-sans font-normal">
+                          Customize delivery fees, covered areas (e.g. Shannon Town local vs Surrounding outer areas), and minimum order amounts.
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setDeliveryZones(getDefaultDeliveryZones())}
+                          className="px-3 py-1.5 border border-brand-dark/20 hover:border-brand-dark text-brand-dark font-mono text-[11px] font-bold uppercase tracking-wider transition-all"
+                        >
+                          Reset Defaults
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const newZone: DeliveryZone = {
+                              id: `zone-${Date.now()}`,
+                              name: `Zone ${deliveryZones.length + 1}`,
+                              areas: 'Add covered towns or addresses',
+                              fee: 5.00,
+                              minOrder: 20.00,
+                              estimatedTime: '35-50 mins',
+                              isActive: true
+                            };
+                            setDeliveryZones([...deliveryZones, newZone]);
+                          }}
+                          className="px-3 py-1.5 bg-brand-dark hover:bg-brand-accent text-white font-mono text-[11px] font-bold uppercase tracking-wider transition-all flex items-center gap-1.5 shadow-sm"
+                        >
+                          <Plus className="w-3.5 h-3.5" />
+                          Add Zone
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="space-y-4">
+                      {deliveryZones.map((zone, zIdx) => (
+                        <div
+                          key={zone.id}
+                          className={`border p-4 sm:p-5 transition-all space-y-4 ${
+                            zone.isActive
+                              ? 'border-brand-dark/15 bg-brand-beige/5'
+                              : 'border-brand-dark/10 bg-brand-dark/[0.02] opacity-75'
+                          }`}
+                        >
+                          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-brand-dark/10 pb-3">
+                            <div className="flex items-center gap-2">
+                              <span className="font-mono text-xs font-bold px-2 py-0.5 bg-brand-dark text-white uppercase">
+                                Tier {zIdx + 1}
+                              </span>
+                              <span className="font-sans font-bold text-sm text-brand-dark">
+                                {zone.name}
+                              </span>
+                              <span className="font-mono font-bold text-xs text-brand-accent bg-brand-accent/10 px-2 py-0.5">
+                                €{Number(zone.fee || 0).toFixed(2)}
+                              </span>
+                            </div>
+
+                            <div className="flex items-center gap-2">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setDeliveryZones(deliveryZones.map((z, idx) => idx === zIdx ? { ...z, isActive: !z.isActive } : z));
+                                }}
+                                className={`px-2.5 py-1 text-[11px] font-mono font-bold uppercase tracking-wider border transition-all ${
+                                  zone.isActive
+                                    ? 'bg-emerald-50 text-emerald-800 border-emerald-300 hover:bg-emerald-100'
+                                    : 'bg-gray-100 text-gray-600 border-gray-300 hover:bg-gray-200'
+                                }`}
+                              >
+                                {zone.isActive ? 'Active' : 'Disabled'}
+                              </button>
+                              {deliveryZones.length > 1 && (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    if (window.confirm(`Delete delivery zone "${zone.name}"?`)) {
+                                      setDeliveryZones(deliveryZones.filter((_, idx) => idx !== zIdx));
+                                    }
+                                  }}
+                                  className="p-1 text-red-600 hover:bg-red-50 border border-transparent hover:border-red-200 transition-all"
+                                  title="Delete Zone"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </button>
+                              )}
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                            <div className="space-y-1">
+                              <label className="block font-mono text-[10px] text-brand-accent uppercase tracking-wider font-bold">
+                                Zone Display Name
+                              </label>
+                              <input
+                                type="text"
+                                required
+                                value={zone.name}
+                                onChange={(e) => {
+                                  const val = e.target.value;
+                                  setDeliveryZones(deliveryZones.map((z, idx) => idx === zIdx ? { ...z, name: val } : z));
+                                }}
+                                placeholder="e.g. Shannon Town (Local)"
+                                className="w-full border border-brand-dark/10 p-2 text-xs font-sans focus:border-brand-dark outline-none bg-white"
+                              />
+                            </div>
+
+                            <div className="space-y-1">
+                              <label className="block font-mono text-[10px] text-brand-accent uppercase tracking-wider font-bold">
+                                Delivery Fee (€)
+                              </label>
+                              <input
+                                type="number"
+                                step="0.01"
+                                min="0"
+                                required
+                                value={zone.fee}
+                                onChange={(e) => {
+                                  const val = parseFloat(e.target.value) || 0;
+                                  setDeliveryZones(deliveryZones.map((z, idx) => idx === zIdx ? { ...z, fee: val } : z));
+                                }}
+                                placeholder="e.g. 4.00"
+                                className="w-full border border-brand-dark/10 p-2 text-xs font-mono focus:border-brand-dark outline-none bg-white"
+                              />
+                            </div>
+
+                            <div className="space-y-1">
+                              <label className="block font-mono text-[10px] text-brand-accent uppercase tracking-wider font-bold">
+                                Min Order Value (€)
+                              </label>
+                              <input
+                                type="number"
+                                step="0.50"
+                                min="0"
+                                value={zone.minOrder || 0}
+                                onChange={(e) => {
+                                  const val = parseFloat(e.target.value) || 0;
+                                  setDeliveryZones(deliveryZones.map((z, idx) => idx === zIdx ? { ...z, minOrder: val } : z));
+                                }}
+                                placeholder="e.g. 15.00"
+                                className="w-full border border-brand-dark/10 p-2 text-xs font-mono focus:border-brand-dark outline-none bg-white"
+                              />
+                            </div>
+
+                            <div className="space-y-1">
+                              <label className="block font-mono text-[10px] text-brand-accent uppercase tracking-wider font-bold">
+                                Estimated Delivery Time
+                              </label>
+                              <input
+                                type="text"
+                                value={zone.estimatedTime || ''}
+                                onChange={(e) => {
+                                  const val = e.target.value;
+                                  setDeliveryZones(deliveryZones.map((z, idx) => idx === zIdx ? { ...z, estimatedTime: val } : z));
+                                }}
+                                placeholder="e.g. 30-45 mins"
+                                className="w-full border border-brand-dark/10 p-2 text-xs font-sans focus:border-brand-dark outline-none bg-white"
+                              />
+                            </div>
+                          </div>
+
+                          <div className="space-y-1">
+                            <label className="block font-mono text-[10px] text-brand-accent uppercase tracking-wider font-bold">
+                              Covered Towns, Estates &amp; Areas (Shown to Customers)
+                            </label>
+                            <input
+                              type="text"
+                              value={zone.areas}
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                setDeliveryZones(deliveryZones.map((z, idx) => idx === zIdx ? { ...z, areas: val } : z));
+                              }}
+                              placeholder="e.g. Ballycasey, Tullyvarraga, Drumgeely, Smithstown, Airport"
+                              className="w-full border border-brand-dark/10 p-2 text-xs font-sans focus:border-brand-dark outline-none bg-white"
+                            />
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   </div>
 

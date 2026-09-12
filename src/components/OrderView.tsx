@@ -16,7 +16,10 @@ import {
   getStoreOperatingStatus,
   getTakeawayTimeOptions,
   getTodayDeliveryStatus,
-  getTodayDeliveryTimeOptions
+  getTodayDeliveryTimeOptions,
+  DeliveryZone,
+  getDefaultDeliveryZones,
+  parseDeliveryZones
 } from '../utils/deliveryScheduler';
 
 interface OrderViewProps {
@@ -118,6 +121,16 @@ export const OrderView: React.FC<OrderViewProps> = ({
       setDeliveryChargesSetting(isNaN(charge) ? 3.00 : charge);
       localStorage.setItem('clay_oven_delivery_charges', data.clay_oven_delivery_charges);
     }
+    if (data.clay_oven_delivery_zones) {
+      const zones = parseDeliveryZones(data.clay_oven_delivery_zones);
+      setDeliveryZones(zones);
+      localStorage.setItem(
+        'clay_oven_delivery_zones',
+        typeof data.clay_oven_delivery_zones === 'string'
+          ? data.clay_oven_delivery_zones
+          : JSON.stringify(data.clay_oven_delivery_zones)
+      );
+    }
     if (data.clay_oven_delivery_schedule) {
       const sched = parseDeliverySchedule(data.clay_oven_delivery_schedule);
       setDeliverySchedule(sched);
@@ -130,6 +143,17 @@ export const OrderView: React.FC<OrderViewProps> = ({
     }
   }, [storeSettings]);
   
+  // Delivery Zones state
+  const [deliveryZones, setDeliveryZones] = React.useState<DeliveryZone[]>(() => {
+    const saved = localStorage.getItem('clay_oven_delivery_zones');
+    return parseDeliveryZones(saved);
+  });
+  const [selectedDeliveryZoneId, setSelectedDeliveryZoneId] = React.useState<string>(() => {
+    const zones = parseDeliveryZones(localStorage.getItem('clay_oven_delivery_zones'));
+    const activeZone = zones.find((z) => z.isActive) || zones[0];
+    return activeZone ? activeZone.id : 'zone-shannon-local';
+  });
+
   // Checkout inputs
   const [customerName, setCustomerName] = React.useState('');
   const [customerPhone, setCustomerPhone] = React.useState('');
@@ -564,8 +588,12 @@ export const OrderView: React.FC<OrderViewProps> = ({
     return acc + (basePrice + modExtra) * curr.quantity;
   }, 0);
   
+  const activeDeliveryZone = React.useMemo(() => {
+    return deliveryZones.find((z) => z.id === selectedDeliveryZoneId) || deliveryZones.find((z) => z.isActive) || deliveryZones[0];
+  }, [deliveryZones, selectedDeliveryZoneId]);
+
   const packagingFee = subtotal > 0 ? takeawayCharges : 0.00;
-  const deliveryCharges = serviceType === 'delivery' ? deliveryChargesSetting : 0.00;
+  const deliveryCharges = serviceType === 'delivery' ? (activeDeliveryZone ? activeDeliveryZone.fee : deliveryChargesSetting) : 0.00;
   const total = subtotal + packagingFee + deliveryCharges;
 
   // Today's Delivery status & simple time options
@@ -626,7 +654,7 @@ export const OrderView: React.FC<OrderViewProps> = ({
       return;
     }
     if (serviceType === 'delivery' && !deliveryAddress.trim()) {
-      setValidationError('Please supply your local delivery address inside Limerick.');
+      setValidationError('Please supply your local delivery address inside Shannon.');
       return;
     }
     if (serviceType === 'delivery' && !eirCode.trim()) {
@@ -635,6 +663,10 @@ export const OrderView: React.FC<OrderViewProps> = ({
     }
 
     if (serviceType === 'delivery') {
+      if (activeDeliveryZone && activeDeliveryZone.minOrder && activeDeliveryZone.minOrder > 0 && subtotal < activeDeliveryZone.minOrder) {
+        setValidationError(`Minimum order amount for delivery in "${activeDeliveryZone.name}" is €${activeDeliveryZone.minOrder.toFixed(2)}. Your current item subtotal is €${subtotal.toFixed(2)}.`);
+        return;
+      }
       if (!deliveryStatusToday.isDeliveryDay) {
         setValidationError(`Home delivery is available on ${deliveryStatusToday.activeDaysLabel}. Please choose Collection for your order today.`);
         return;
@@ -678,6 +710,8 @@ export const OrderView: React.FC<OrderViewProps> = ({
         };
       }),
       packagingFee,
+      deliveryFee: serviceType === 'delivery' ? deliveryCharges : 0,
+      deliveryZone: serviceType === 'delivery' && activeDeliveryZone ? activeDeliveryZone.name : undefined,
       subtotal,
       total,
       serviceType,
@@ -685,7 +719,7 @@ export const OrderView: React.FC<OrderViewProps> = ({
         name: customerName,
         email: customerEmail,
         phone: customerPhone,
-        address: serviceType === 'delivery' ? `${deliveryAddress}, Eir Code: ${eirCode}` : undefined,
+        address: serviceType === 'delivery' ? `${deliveryAddress}, Eir Code: ${eirCode}${activeDeliveryZone ? ` [${activeDeliveryZone.name}]` : ''}` : undefined,
         preferredTime: finalPreferredTime,
         notes: checkoutNotes
       },
@@ -841,9 +875,27 @@ export const OrderView: React.FC<OrderViewProps> = ({
                   <span className="text-brand-dark font-bold shrink-0">&euro;{(it.price * it.quantity).toFixed(2)}</span>
                 </div>
               ))}
-              <div className="border-t border-dashed border-brand-dark/10 pt-2 font-bold flex justify-between text-brand-dark text-sm sm:text-base">
-                <span>TOTAL PAID</span>
-                <span>&euro;{placedOrder.total.toFixed(2)}</span>
+              <div className="border-t border-dashed border-brand-dark/10 pt-2 space-y-1 text-xs">
+                <div className="flex justify-between text-brand-muted">
+                  <span>Menu Subtotal:</span>
+                  <span>&euro;{placedOrder.subtotal.toFixed(2)}</span>
+                </div>
+                {placedOrder.packagingFee > 0 && (
+                  <div className="flex justify-between text-brand-muted">
+                    <span>Packaging Fee:</span>
+                    <span>&euro;{placedOrder.packagingFee.toFixed(2)}</span>
+                  </div>
+                )}
+                {placedOrder.serviceType === 'delivery' && (
+                  <div className="flex justify-between text-brand-muted">
+                    <span>Delivery Fee ({placedOrder.deliveryZone || 'Standard'}):</span>
+                    <span>&euro;{(placedOrder.deliveryFee !== undefined ? placedOrder.deliveryFee : Math.max(0, placedOrder.total - placedOrder.subtotal - placedOrder.packagingFee)).toFixed(2)}</span>
+                  </div>
+                )}
+                <div className="border-t border-brand-dark/10 pt-1.5 font-bold flex justify-between text-brand-dark text-sm sm:text-base">
+                  <span>TOTAL PAID</span>
+                  <span>&euro;{placedOrder.total.toFixed(2)}</span>
+                </div>
               </div>
             </div>
           </div>
@@ -997,7 +1049,7 @@ export const OrderView: React.FC<OrderViewProps> = ({
                   </div>
                   {serviceType === 'delivery' && (
                     <div className="flex justify-between">
-                      <span>Delivery Charge</span>
+                      <span>Delivery ({activeDeliveryZone ? activeDeliveryZone.name : 'Standard'})</span>
                       <span className="text-brand-dark font-semibold">&euro;{deliveryCharges.toFixed(2)}</span>
                     </div>
                   )}
@@ -1111,34 +1163,89 @@ export const OrderView: React.FC<OrderViewProps> = ({
             </div>
 
             {serviceType === 'delivery' && (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 animate-fade-in" id="delivery-address-area">
-                <div className="space-y-1.5">
-                  <label htmlFor="chk-custaddress" className="block text-xs font-bold text-brand-accent uppercase tracking-wider">
-                    STREET ADDRESS (LIMERICK CITY ONLY)
-                  </label>
-                  <textarea
-                    id="chk-custaddress"
-                    rows={2}
-                    required
-                    placeholder="Street Address, Apartment or Suite number"
-                    value={deliveryAddress}
-                    onChange={(e) => setDeliveryAddress(e.target.value)}
-                    className="w-full bg-brand-dark/[0.03] focus:bg-white focus:ring-2 focus:ring-brand-accent/20 p-3 sm:p-3.5 text-sm sm:text-base outline-none rounded-xl resize-none transition-all"
-                  ></textarea>
+              <div className="space-y-4 animate-fade-in" id="delivery-address-area">
+                {/* Tiered Delivery Zone Selector */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <label className="block text-xs font-bold text-brand-accent uppercase tracking-wider">
+                      SELECT DELIVERY AREA / ZONE
+                    </label>
+                    <span className="text-[11px] text-brand-muted font-medium">Tiered Pricing</span>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {deliveryZones.filter(z => z.isActive).map((zone) => {
+                      const isSelected = (activeDeliveryZone?.id === zone.id);
+                      return (
+                        <button
+                          key={zone.id}
+                          type="button"
+                          onClick={() => setSelectedDeliveryZoneId(zone.id)}
+                          className={`text-left p-3.5 rounded-2xl border-2 transition-all flex flex-col justify-between ${
+                            isSelected
+                              ? 'border-brand-accent bg-brand-accent/[0.04] ring-2 ring-brand-accent/20 shadow-sm'
+                              : 'border-brand-dark/10 hover:border-brand-dark/25 bg-white'
+                          }`}
+                        >
+                          <div className="flex items-start justify-between gap-2">
+                            <span className="font-bold text-xs sm:text-sm text-brand-dark flex items-center gap-2">
+                              <span className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 ${isSelected ? 'border-brand-accent bg-brand-accent' : 'border-gray-400'}`}>
+                                {isSelected && <span className="w-1.5 h-1.5 rounded-full bg-white"></span>}
+                              </span>
+                              <span>{zone.name}</span>
+                            </span>
+                            <span className="font-mono font-bold text-xs sm:text-sm px-2 py-0.5 rounded-lg bg-brand-accent/10 text-brand-accent shrink-0">
+                              &euro;{zone.fee.toFixed(2)}
+                            </span>
+                          </div>
+                          {zone.areas && (
+                            <p className="text-[11px] text-brand-muted mt-2 leading-relaxed pl-6">
+                              {zone.areas}
+                            </p>
+                          )}
+                          <div className="mt-2.5 text-[10px] text-brand-dark/60 pl-6 flex items-center gap-2 font-medium">
+                            {zone.minOrder && zone.minOrder > 0 ? (
+                              <span>Min order: &euro;{zone.minOrder.toFixed(2)}</span>
+                            ) : null}
+                            {zone.estimatedTime ? (
+                              <span>&bull; Est: {zone.estimatedTime}</span>
+                            ) : null}
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
-                <div className="space-y-1.5">
-                  <label htmlFor="chk-custeircode" className="block text-xs font-bold text-brand-accent uppercase tracking-wider">
-                    EIR CODE
-                  </label>
-                  <input
-                    id="chk-custeircode"
-                    type="text"
-                    required
-                    placeholder="e.g. V14 AW71"
-                    value={eirCode}
-                    onChange={(e) => setEirCode(e.target.value)}
-                    className="w-full bg-brand-dark/[0.03] focus:bg-white focus:ring-2 focus:ring-brand-accent/20 p-3 sm:p-3.5 text-sm sm:text-base outline-none uppercase rounded-xl transition-all"
-                  />
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                  <div className="space-y-1.5">
+                    <label htmlFor="chk-custaddress" className="block text-xs font-bold text-brand-accent uppercase tracking-wider">
+                      Street Address Shannon
+                    </label>
+                    <textarea
+                      id="chk-custaddress"
+                      rows={2}
+                      required
+                      placeholder="Street Address, Apartment or Suite number"
+                      value={deliveryAddress}
+                      onChange={(e) => setDeliveryAddress(e.target.value)}
+                      className="w-full bg-brand-dark/[0.03] focus:bg-white focus:ring-2 focus:ring-brand-accent/20 p-3 sm:p-3.5 text-sm sm:text-base outline-none rounded-xl resize-none transition-all"
+                    ></textarea>
+                  </div>
+                  <div className="space-y-1.5">
+                    <label htmlFor="chk-custeircode" className="block text-xs font-bold text-brand-accent uppercase tracking-wider">
+                      EIR CODE
+                    </label>
+                    <input
+                      id="chk-custeircode"
+                      type="text"
+                      required
+                      placeholder="e.g. V14 AW71"
+                      value={eirCode}
+                      onChange={(e) => setEirCode(e.target.value)}
+                      className="w-full bg-brand-dark/[0.03] focus:bg-white focus:ring-2 focus:ring-brand-accent/20 p-3 sm:p-3.5 text-sm sm:text-base outline-none uppercase rounded-xl transition-all"
+                    />
+                  </div>
                 </div>
               </div>
             )}
@@ -1309,7 +1416,7 @@ export const OrderView: React.FC<OrderViewProps> = ({
               </div>
               {serviceType === 'delivery' && (
                 <div className="flex justify-between">
-                  <span>Local Delivery Charge</span>
+                  <span>Delivery ({activeDeliveryZone ? activeDeliveryZone.name : 'Standard'})</span>
                   <span className="text-brand-dark font-semibold">&euro;{deliveryCharges.toFixed(2)}</span>
                 </div>
               )}
