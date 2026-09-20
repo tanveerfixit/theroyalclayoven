@@ -285,7 +285,7 @@ export const OrderView: React.FC<OrderViewProps> = ({
     if (item.optionGroupIds && item.optionGroupIds.length > 0) {
       item.optionGroupIds.forEach(gid => {
         const grp = catalogOptionGroups.find(g => String(g.id) === String(gid));
-        if (grp && !addedGroupIds.has(String(grp.id))) {
+        if (grp && !addedGroupIds.has(String(grp.id)) && grp.isActive !== false) {
           result.push(grp);
           addedGroupIds.add(String(grp.id));
         }
@@ -297,38 +297,10 @@ export const OrderView: React.FC<OrderViewProps> = ({
     if (cat && cat.optionGroupIds && cat.optionGroupIds.length > 0) {
       cat.optionGroupIds.forEach(gid => {
         const grp = catalogOptionGroups.find(g => String(g.id) === String(gid));
-        if (grp && !addedGroupIds.has(String(grp.id))) {
+        if (grp && !addedGroupIds.has(String(grp.id)) && grp.isActive !== false) {
           result.push(grp);
           addedGroupIds.add(String(grp.id));
         }
-      });
-    }
-
-    // 3. Fallback built-in groups if not already present in DB
-    if ((item.category === 'Burgers' || item.category === 'Wraps & Sandwiches') && !result.some(g => g.title.toLowerCase().includes('drink'))) {
-      result.unshift({
-        id: 'builtin-drink',
-        title: 'Included Free Cold Drink',
-        minSelection: 1,
-        maxSelection: 1,
-        options: [
-          { id: 'drink-cola', groupId: 'builtin-drink', name: 'Cola', priceModifier: 0, isDefault: true },
-          { id: 'drink-lemon', groupId: 'builtin-drink', name: 'Lemon & Lime', priceModifier: 0 },
-          { id: 'drink-orange', groupId: 'builtin-drink', name: 'Orange Soft Drink', priceModifier: 0 }
-        ]
-      });
-    }
-
-    if (item.category === 'Pakistani Cuisine' && !result.some(g => g.title.toLowerCase().includes('side'))) {
-      result.unshift({
-        id: 'builtin-side',
-        title: 'Included Side Choice',
-        minSelection: 1,
-        maxSelection: 1,
-        options: [
-          { id: 'side-naan', groupId: 'builtin-side', name: 'Naan Bread', priceModifier: 0, isDefault: true },
-          { id: 'side-rice', groupId: 'builtin-side', name: 'White Rice', priceModifier: 0 }
-        ]
       });
     }
 
@@ -519,7 +491,7 @@ export const OrderView: React.FC<OrderViewProps> = ({
     if (!customizationItem) return;
 
     // Flatten all selected modifiers from each group
-    const allSelectedModifiers: SelectedModifier[] = Object.values(customizationModifiers).flat();
+    const allSelectedModifiers: SelectedModifier[] = (Object.values(customizationModifiers) as SelectedModifier[][]).flat();
 
     executeAddToCart(
       customizationItem,
@@ -2013,8 +1985,8 @@ export const OrderView: React.FC<OrderViewProps> = ({
         (() => {
           const applicableGroups = getOptionGroupsForItem(customizationItem);
           const baseItemPrice = customizationSize ? customizationSize.price : customizationItem.price;
-          const allSelectedMods = Object.values(customizationModifiers).flat();
-          const modsExtra = allSelectedMods.reduce((acc, m) => acc + (m.price || 0) * (m.quantity || 1), 0);
+          const allSelectedMods: SelectedModifier[] = (Object.values(customizationModifiers) as SelectedModifier[][]).flat();
+          const modsExtra = allSelectedMods.reduce((acc: number, m: SelectedModifier) => acc + (m.price || 0) * (m.quantity || 1), 0);
           const customizationTotal = (baseItemPrice + modsExtra) * customizationQuantity;
 
           const isMandatorySatisfied = applicableGroups.every(grp => {

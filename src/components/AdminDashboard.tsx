@@ -6006,6 +6006,21 @@ Beverages | Tea or Coffee`);
             </div>
 
             <form onSubmit={handleSaveDish} className="space-y-4">
+              {/* Dish ID / SKU (Optional) */}
+              <div className="space-y-1">
+                <label className="block font-mono text-[10px] text-brand-accent uppercase tracking-widest font-bold">
+                  Dish Code / SKU (Optional)
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. BG-SMASH, PK-KARAHI (Leave blank to auto-generate)"
+                  value={dishFormId}
+                  onChange={(e) => setDishFormId(e.target.value)}
+                  disabled={Boolean(editingDish)}
+                  className={`w-full border border-brand-dark/15 p-2 text-xs font-mono focus:border-brand-dark outline-none bg-white rounded-none ${editingDish ? 'opacity-60 cursor-not-allowed bg-stone-50' : ''}`}
+                />
+              </div>
+
               {/* Name & Category */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 <div className="space-y-1">
@@ -6179,46 +6194,71 @@ Beverages | Tea or Coffee`);
               </div>
 
               {/* Link Modifier Groups to this Dish */}
-              <div className="space-y-2 border border-brand-dark/10 p-3 bg-brand-beige/10">
-                <span className="font-mono text-[11px] font-bold text-brand-dark uppercase block">
-                  Attach Modifier &amp; Choice Popups (Free Drinks, Dips, Sauces)
-                </span>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
-                  {catalogOptionGroups.map((grp) => {
-                    const isAttached = dishFormOptionGroupIds.some(id => String(id) === String(grp.id));
-                    return (
-                      <button
-                        key={grp.id}
-                        type="button"
-                        onClick={() => {
-                          if (isAttached) {
-                            setDishFormOptionGroupIds(dishFormOptionGroupIds.filter(id => String(id) !== String(grp.id)));
-                          } else {
-                            setDishFormOptionGroupIds([...dishFormOptionGroupIds, grp.id]);
-                          }
-                        }}
-                        className={`p-2 text-xs font-mono text-left border flex items-center justify-between transition-all rounded-none ${
-                          isAttached
-                            ? 'bg-brand-accent/15 border-brand-accent text-brand-dark font-bold'
-                            : 'bg-white border-brand-dark/10 text-brand-muted hover:border-brand-dark/30'
-                        }`}
-                      >
-                        <div>
-                          <span className="block font-bold">{grp.title}</span>
-                          <span className="text-[9px] text-brand-muted">
-                            {grp.minSelection > 0 ? 'Mandatory' : 'Optional'} · Max: {grp.maxSelection}
-                          </span>
-                        </div>
-                        {isAttached ? (
-                          <CheckSquare className="w-4 h-4 text-brand-accent shrink-0" />
-                        ) : (
-                          <Square className="w-4 h-4 text-brand-muted shrink-0" />
-                        )}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
+              {(() => {
+                const selectedCategoryObj = catalogCategories.find(c => String(c.id) === String(dishFormCategoryId));
+                const catGroupIds = selectedCategoryObj?.optionGroupIds || [];
+                return (
+                  <div className="space-y-2 border border-brand-dark/10 p-3 bg-brand-beige/10">
+                    <div className="flex justify-between items-center">
+                      <span className="font-mono text-[11px] font-bold text-brand-dark uppercase block">
+                        Attach Modifier &amp; Choice Popups (Free Drinks, Dips, Sauces)
+                      </span>
+                    </div>
+
+                    {catGroupIds.length > 0 && (
+                      <div className="p-2 bg-amber-50/90 border border-amber-200 text-[10px] font-mono text-amber-900 leading-relaxed">
+                        💡 <strong>Category Defaults Active:</strong> Dishes in <strong>{selectedCategoryObj?.name}</strong> automatically inherit: <strong>{catGroupIds.map(gId => catalogOptionGroups.find(g => String(g.id) === String(gId))?.title || `#${gId}`).join(', ')}</strong>. You can configure category-wide defaults in the <strong>Categories</strong> tab or add dish-specific options below.
+                      </div>
+                    )}
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+                      {catalogOptionGroups.map((grp) => {
+                        const isDirectlyAttached = dishFormOptionGroupIds.some(id => String(id) === String(grp.id));
+                        const isCategoryDefault = catGroupIds.some(id => String(id) === String(grp.id));
+                        const isEffective = isDirectlyAttached || isCategoryDefault;
+                        return (
+                          <button
+                            key={grp.id}
+                            type="button"
+                            onClick={() => {
+                              if (isDirectlyAttached) {
+                                setDishFormOptionGroupIds(dishFormOptionGroupIds.filter(id => String(id) !== String(grp.id)));
+                              } else {
+                                setDishFormOptionGroupIds([...dishFormOptionGroupIds, grp.id]);
+                              }
+                            }}
+                            className={`p-2 text-xs font-mono text-left border flex items-center justify-between transition-all rounded-none ${
+                              isEffective
+                                ? 'bg-brand-accent/15 border-brand-accent text-brand-dark font-bold'
+                                : 'bg-white border-brand-dark/10 text-brand-muted hover:border-brand-dark/30'
+                            }`}
+                          >
+                            <div className="pr-1 min-w-0">
+                              <div className="flex flex-wrap items-center gap-1">
+                                <span className="font-bold truncate">{grp.title}</span>
+                                {isCategoryDefault && (
+                                  <span className="text-[8px] bg-amber-100 text-amber-900 border border-amber-300 px-1 py-0.2 font-mono font-bold uppercase shrink-0">
+                                    Category Default
+                                  </span>
+                                )}
+                              </div>
+                              <span className="text-[9px] text-brand-muted block">
+                                {grp.minSelection > 0 ? 'Mandatory' : 'Optional'} · Max: {grp.maxSelection}
+                                {isCategoryDefault && !isDirectlyAttached ? ' · (Inherited)' : ''}
+                              </span>
+                            </div>
+                            {isEffective ? (
+                              <CheckSquare className="w-4 h-4 text-brand-accent shrink-0 ml-1" />
+                            ) : (
+                              <Square className="w-4 h-4 text-brand-muted shrink-0 ml-1" />
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })()}
 
               {/* Dish Photo */}
               <div className="space-y-1.5">

@@ -2559,6 +2559,7 @@ app.post('/api/admin/categories/reorder', requireAdmin, async (req, res) => {
 // 6.3. Admin Product Endpoints
 app.post('/api/admin/products', requireAdmin, async (req, res) => {
   const {
+    id: customId,
     category_id,
     name,
     description,
@@ -2577,18 +2578,34 @@ app.post('/api/admin/products', requireAdmin, async (req, res) => {
     return res.status(400).json({ error: 'category_id, name, and base_price are required' });
   }
 
+  let productId = (customId && typeof customId === 'string' && customId.trim())
+    ? customId.trim().toLowerCase().replace(/[^a-z0-9_-]/g, '-').replace(/-+/g, '-')
+    : '';
+
+  if (!productId) {
+    const slug = name.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'dish';
+    const randomSuffix = Math.random().toString(36).substring(2, 7);
+    productId = `${slug}-${randomSuffix}`;
+  }
+
   try {
+    const [existing] = await pool.query('SELECT id FROM menu_products WHERE id = ?', [productId]);
+    if (existing.length > 0) {
+      productId = `${productId}-${Date.now().toString(36)}`;
+    }
+
     let finalOrder = parseInt(display_order);
     if (isNaN(finalOrder) || display_order === undefined || display_order === null) {
       const [maxRows] = await pool.query('SELECT COALESCE(MAX(display_order), 0) + 1 AS next_order FROM menu_products WHERE category_id = ?', [category_id]);
       finalOrder = maxRows[0].next_order;
     }
 
-    const [result] = await pool.query(`
+    await pool.query(`
       INSERT INTO menu_products 
-      (category_id, name, description, base_price, is_veg, is_active, is_sold_out, allergens, size_options, image_url, display_order)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      (id, category_id, name, description, base_price, is_veg, is_active, is_sold_out, allergens, size_options, image_url, display_order)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `, [
+      productId,
       parseInt(category_id),
       name.trim(),
       description || '',
@@ -2601,8 +2618,6 @@ app.post('/api/admin/products', requireAdmin, async (req, res) => {
       image_url || null,
       finalOrder
     ]);
-
-    const productId = result.insertId;
 
     if (Array.isArray(option_group_ids) && option_group_ids.length > 0) {
       for (let i = 0; i < option_group_ids.length; i++) {
@@ -2617,7 +2632,7 @@ app.post('/api/admin/products', requireAdmin, async (req, res) => {
     res.json({ success: true, productId, message: 'Dish created successfully' });
   } catch (error) {
     console.error('Error creating product:', error);
-    res.status(500).json({ error: 'Failed to create product' });
+    res.status(500).json({ error: error.message || 'Failed to create product' });
   }
 });
 
