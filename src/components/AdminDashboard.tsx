@@ -21,6 +21,7 @@ import {
   getDefaultDeliveryZones,
   parseDeliveryZones
 } from '../utils/deliveryScheduler';
+import { compressImage } from '../utils/imageCompressor';
 
 // Helper to get stored admin token
 const getAdminToken = (): string | null => localStorage.getItem('clay_oven_admin_token');
@@ -179,6 +180,7 @@ The Royal Clay Oven`);
   const [dishFormSizes, setDishFormSizes] = useState<{ name: string; price: number }[]>([]);
   const [dishFormOptionGroupIds, setDishFormOptionGroupIds] = useState<(number | string)[]>([]);
   const [dishFormImageUrl, setDishFormImageUrl] = useState('');
+  const [dishImageUploading, setDishImageUploading] = useState(false);
   const [dishFormSubmitting, setDishFormSubmitting] = useState(false);
 
   // Category Modal States
@@ -572,6 +574,18 @@ Beverages | Tea or Coffee`);
 
       if (response.ok) {
         setIsDishModalOpen(false);
+        const finalDishId = cleanId || (data?.product?.id || payload.id);
+        if (finalDishId && dishFormImageUrl.trim()) {
+          const imgVal = dishFormImageUrl.trim();
+          setSettingsData((prev: any) => ({ ...prev, [`clay_oven_dish_image_${finalDishId}`]: imgVal }));
+          try {
+            await fetch('/api/settings', {
+              method: 'POST',
+              headers: { ...adminHeaders(), 'Content-Type': 'application/json' },
+              body: JSON.stringify({ [`clay_oven_dish_image_${finalDishId}`]: imgVal })
+            });
+          } catch {}
+        }
         await fetchMenuCatalog();
         setNotificationBox({
           isOpen: true,
@@ -1359,18 +1373,16 @@ Beverages | Tea or Coffee`);
     if (!file) return;
 
     setImageUploadLoading(imageType);
-    const reader = new FileReader();
-    reader.onloadend = async () => {
-      const base64Data = reader.result as string;
-      try {
-        const response = await fetch('/api/admin/upload-image', {
-          method: 'POST',
-          headers: adminHeaders(),
-          body: JSON.stringify({
-            imageType,
-            imageBytes: base64Data
-          })
-        });
+    try {
+      const base64Data = await compressImage(file, 1600, 1200, 0.85);
+      const response = await fetch('/api/admin/upload-image', {
+        method: 'POST',
+        headers: adminHeaders(),
+        body: JSON.stringify({
+          imageType,
+          imageBytes: base64Data
+        })
+      });
         if (response.status === 401) { handleUnauthorized(); return; }
 
         if (response.ok) {
@@ -1403,8 +1415,6 @@ Beverages | Tea or Coffee`);
         setImageUploadLoading(null);
       }
     };
-    reader.readAsDataURL(file);
-  };
 
   const handleDeleteImage = async (imageType: 'hero_bg' | 'heritage_left' | 'heritage_right' | 'festive_banner') => {
     setImageUploadLoading(imageType);
@@ -3675,14 +3685,14 @@ Beverages | Tea or Coffee`);
 
                           {/* Image preview & quick URL */}
                           <div className="flex items-center gap-2 pt-2 border-t border-dashed border-brand-dark/10">
-                            <div className="w-8 h-8 border border-brand-dark/15 overflow-hidden bg-brand-dark/5 flex-shrink-0 flex items-center justify-center">
+                            <div className="w-9 h-9 border border-brand-dark/15 overflow-hidden bg-brand-dark/5 flex-shrink-0 flex items-center justify-center">
                               {dishImage ? (
                                 <img src={dishImage} alt={product.name} className="w-full h-full object-cover" />
                               ) : (
                                 <span className="text-[7px] text-brand-muted font-mono uppercase text-center">No Pic</span>
                               )}
                             </div>
-                            <div className="flex-1 min-w-0">
+                            <div className="flex-1 min-w-0 flex items-center gap-1.5">
                               <input
                                 type="text"
                                 placeholder="Paste image URL..."
@@ -3690,7 +3700,18 @@ Beverages | Tea or Coffee`);
                                 onChange={async (e) => {
                                   const newVal = e.target.value;
                                   setSettingsData((prev: any) => ({ ...prev, [`clay_oven_dish_image_${product.id}`]: newVal }));
+                                  setCatalogProducts(prev => prev.map(p => p.id === product.id ? { ...p, imageUrl: newVal } : p));
                                   try {
+                                    await fetch(`/api/admin/products/${encodeURIComponent(product.id)}`, {
+                                      method: 'PUT',
+                                      headers: adminHeaders(),
+                                      body: JSON.stringify({
+                                        category_id: product.categoryId,
+                                        name: product.name,
+                                        base_price: product.price,
+                                        image_url: newVal
+                                      })
+                                    });
                                     await fetch('/api/settings', {
                                       method: 'POST',
                                       headers: { ...adminHeaders(), 'Content-Type': 'application/json' },
@@ -3700,8 +3721,43 @@ Beverages | Tea or Coffee`);
                                     console.error(err);
                                   }
                                 }}
-                                className="w-full border border-brand-dark/15 p-1 px-1.5 text-[10px] font-mono focus:border-brand-dark outline-none bg-white rounded-none"
+                                className="flex-1 min-w-0 border border-brand-dark/15 p-1 px-1.5 text-[10px] font-mono focus:border-brand-dark outline-none bg-white rounded-none"
                               />
+                              <label className="bg-brand-dark hover:bg-brand-accent text-white px-2 py-1 text-[9px] font-mono font-bold uppercase rounded-none cursor-pointer shrink-0 flex items-center gap-1 transition-colors" title="Upload dish photo">
+                                <Upload className="w-2.5 h-2.5" />
+                                <span>Upload</span>
+                                <input
+                                  type="file"
+                                  accept="image/*"
+                                  className="hidden"
+                                  onChange={async (e) => {
+                                    const file = e.target.files?.[0];
+                                    if (!file) return;
+                                    try {
+                                      const compressed = await compressImage(file, 1000, 1000, 0.82);
+                                      setSettingsData((prev: any) => ({ ...prev, [`clay_oven_dish_image_${product.id}`]: compressed }));
+                                      setCatalogProducts(prev => prev.map(p => p.id === product.id ? { ...p, imageUrl: compressed } : p));
+                                      await fetch(`/api/admin/products/${encodeURIComponent(product.id)}`, {
+                                        method: 'PUT',
+                                        headers: adminHeaders(),
+                                        body: JSON.stringify({
+                                          category_id: product.categoryId,
+                                          name: product.name,
+                                          base_price: product.price,
+                                          image_url: compressed
+                                        })
+                                      });
+                                      await fetch('/api/settings', {
+                                        method: 'POST',
+                                        headers: { ...adminHeaders(), 'Content-Type': 'application/json' },
+                                        body: JSON.stringify({ [`clay_oven_dish_image_${product.id}`]: compressed })
+                                      });
+                                    } catch (err) {
+                                      console.error('Failed to upload image:', err);
+                                    }
+                                  }}
+                                />
+                              </label>
                             </div>
                           </div>
                         </div>
@@ -6611,31 +6667,62 @@ Beverages | Tea or Coffee`);
                 <label className="block font-mono text-[10px] text-brand-accent uppercase tracking-widest font-bold">
                   Dish Image URL / Photo
                 </label>
-                <div className="flex flex-wrap sm:flex-nowrap gap-2 items-center">
-                  <input
-                    type="text"
-                    placeholder="https://... or paste image URL"
-                    value={dishFormImageUrl}
-                    onChange={(e) => setDishFormImageUrl(e.target.value)}
-                    className="flex-1 min-w-[180px] border border-brand-dark/15 p-2 text-xs font-mono focus:border-brand-dark outline-none bg-white rounded-none"
-                  />
-                  <label className="bg-brand-dark hover:bg-brand-accent text-white px-3 py-2 text-xs font-mono font-bold uppercase rounded-none cursor-pointer flex items-center justify-center shrink-0">
-                    <span>Upload</span>
+                <div className="space-y-2">
+                  <div className="flex flex-wrap sm:flex-nowrap gap-2 items-center">
                     <input
-                      type="file"
-                      accept="image/*"
-                      className="hidden"
-                      onChange={(e) => {
-                        const file = e.target.files?.[0];
-                        if (!file) return;
-                        const reader = new FileReader();
-                        reader.onload = () => {
-                          setDishFormImageUrl(reader.result as string);
-                        };
-                        reader.readAsDataURL(file);
-                      }}
+                      type="text"
+                      placeholder="https://... or click Upload to select photo"
+                      value={dishFormImageUrl}
+                      onChange={(e) => setDishFormImageUrl(e.target.value)}
+                      className="flex-1 min-w-[180px] border border-brand-dark/15 p-2 text-xs font-mono focus:border-brand-dark outline-none bg-white rounded-none"
                     />
-                  </label>
+                    <label className="bg-brand-dark hover:bg-brand-accent text-white px-3 py-2 text-xs font-mono font-bold uppercase rounded-none cursor-pointer flex items-center justify-center gap-1.5 shrink-0 transition-colors">
+                      {dishImageUploading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5" />}
+                      <span>{dishImageUploading ? 'Processing...' : 'Upload'}</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        disabled={dishImageUploading}
+                        className="hidden"
+                        onChange={async (e) => {
+                          const file = e.target.files?.[0];
+                          if (!file) return;
+                          setDishImageUploading(true);
+                          try {
+                            const compressed = await compressImage(file, 1000, 1000, 0.82);
+                            setDishFormImageUrl(compressed);
+                          } catch (err) {
+                            console.error('Failed to compress image:', err);
+                          } finally {
+                            setDishImageUploading(false);
+                          }
+                        }}
+                      />
+                    </label>
+                  </div>
+
+                  {/* Image Preview Thumbnail in Modal */}
+                  {dishFormImageUrl && (
+                    <div className="flex items-center gap-3 p-2 bg-brand-dark/5 border border-brand-dark/10">
+                      <div className="w-16 h-16 bg-brand-dark/10 border border-brand-dark/20 overflow-hidden flex-shrink-0 flex items-center justify-center">
+                        <img src={dishFormImageUrl} alt="Preview" className="w-full h-full object-cover" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <span className="text-[10px] font-mono text-emerald-700 font-bold block">✓ Image ready to save</span>
+                        <span className="text-[9px] font-mono text-brand-muted truncate block">
+                          {dishFormImageUrl.startsWith('data:') ? 'Compressed web image' : dishFormImageUrl}
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setDishFormImageUrl('')}
+                        className="text-red-600 hover:text-red-800 text-[10px] font-mono font-bold uppercase px-2 py-1 border border-red-200 bg-white"
+                        title="Remove photo"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
 

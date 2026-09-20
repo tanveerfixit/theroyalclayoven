@@ -193,15 +193,17 @@ export const MenuView: React.FC<MenuViewProps> = ({ storeSettings }) => {
         </div>
       ) : (
         <div id="filtered-items-grid" className="grid grid-cols-1 md:grid-cols-2 gap-5 sm:gap-6">
-          {filteredItems.map((item) => (
+          {filteredItems.map((item) => {
+            const displayImage = item.imageUrl || dishImages[`clay_oven_dish_image_${item.id}`];
+            return (
             <div 
               key={item.id} 
               className="bg-white p-5 sm:p-7 rounded-2xl shadow-[0_2px_12px_rgba(0,0,0,0.03)] hover:shadow-[0_8px_24px_rgba(0,0,0,0.06)] flex flex-col justify-between transition-all space-y-3"
             >
-              {dishImages[`clay_oven_dish_image_${item.id}`] && (
+              {displayImage && (
                 <div className="w-full h-48 mb-2 rounded-xl bg-brand-beige/5 overflow-hidden">
                   <img
-                    src={dishImages[`clay_oven_dish_image_${item.id}`]}
+                    src={displayImage}
                     alt={item.name}
                     className="w-full h-full object-cover"
                     loading="lazy"
@@ -266,7 +268,8 @@ export const MenuView: React.FC<MenuViewProps> = ({ storeSettings }) => {
               )}
 
             </div>
-          ))}
+          );
+        })}
         </div>
       )}
 
