@@ -550,8 +550,10 @@ Beverages | Tea or Coffee`);
     };
 
     try {
-      const url = editingDish ? `/api/admin/products/${editingDish.id}` : '/api/admin/products';
-      const method = editingDish ? 'PUT' : 'POST';
+      const isEditing = Boolean(editingDish && editingDish.id && String(editingDish.id).trim());
+      const cleanId = isEditing ? String(editingDish!.id).trim() : '';
+      const url = isEditing ? `/api/admin/products/${encodeURIComponent(cleanId)}` : '/api/admin/products';
+      const method = isEditing ? 'PUT' : 'POST';
       const response = await fetch(url, {
         method,
         headers: adminHeaders(),
@@ -560,26 +562,39 @@ Beverages | Tea or Coffee`);
 
       if (response.status === 401) { handleUnauthorized(); return; }
 
+      let data: any = null;
+      const text = await response.text();
+      try {
+        data = text ? JSON.parse(text) : {};
+      } catch {
+        data = { error: `Server error (${response.status}): ${response.statusText || 'Unexpected response format'}` };
+      }
+
       if (response.ok) {
         setIsDishModalOpen(false);
         await fetchMenuCatalog();
         setNotificationBox({
           isOpen: true,
           type: 'success',
-          title: editingDish ? 'Dish Updated' : 'Dish Created',
+          title: isEditing ? 'Dish Updated' : 'Dish Created',
           message: `"${dishFormName}" has been successfully saved.`
         });
       } else {
-        const data = await response.json();
         setNotificationBox({
           isOpen: true,
           type: 'error',
           title: 'Failed to Save Dish',
-          message: data.error || 'Server error saving dish.'
+          message: data?.error || `Server error (${response.status}). Please try again.`
         });
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error saving dish:', err);
+      setNotificationBox({
+        isOpen: true,
+        type: 'error',
+        title: 'Connection Error',
+        message: err?.message || 'Could not communicate with the server. Please check your network.'
+      });
     } finally {
       setDishFormSubmitting(false);
     }
@@ -691,26 +706,46 @@ Beverages | Tea or Coffee`);
     };
 
     try {
-      const url = editingCategory ? `/api/admin/categories/${editingCategory.id}` : '/api/admin/categories';
-      const method = editingCategory ? 'PUT' : 'POST';
+      const isEditing = Boolean(editingCategory && editingCategory.id && String(editingCategory.id).trim());
+      const cleanId = isEditing ? String(editingCategory!.id).trim() : '';
+      const url = isEditing ? `/api/admin/categories/${encodeURIComponent(cleanId)}` : '/api/admin/categories';
+      const method = isEditing ? 'PUT' : 'POST';
       const response = await fetch(url, {
         method,
         headers: adminHeaders(),
         body: JSON.stringify(payload)
       });
       if (response.status === 401) { handleUnauthorized(); return; }
+
+      let data: any = null;
+      const text = await response.text();
+      try { data = text ? JSON.parse(text) : {}; } catch { data = { error: `Server error (${response.status})` }; }
+
       if (response.ok) {
         setIsCategoryModalOpen(false);
         await fetchMenuCatalog();
         setNotificationBox({
           isOpen: true,
           type: 'success',
-          title: editingCategory ? 'Category Updated' : 'Category Created',
+          title: isEditing ? 'Category Updated' : 'Category Created',
           message: `Category "${categoryFormName}" saved successfully.`
         });
+      } else {
+        setNotificationBox({
+          isOpen: true,
+          type: 'error',
+          title: 'Failed to Save Category',
+          message: data?.error || `Server error (${response.status}).`
+        });
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to save category:', err);
+      setNotificationBox({
+        isOpen: true,
+        type: 'error',
+        title: 'Connection Error',
+        message: err?.message || 'Could not communicate with the server.'
+      });
     } finally {
       setCategoryFormSubmitting(false);
     }
@@ -813,26 +848,46 @@ Beverages | Tea or Coffee`);
     };
 
     try {
-      const url = editingOptionGroup ? `/api/admin/option-groups/${editingOptionGroup.id}` : '/api/admin/option-groups';
-      const method = editingOptionGroup ? 'PUT' : 'POST';
+      const isEditing = Boolean(editingOptionGroup && editingOptionGroup.id && String(editingOptionGroup.id).trim());
+      const cleanId = isEditing ? String(editingOptionGroup!.id).trim() : '';
+      const url = isEditing ? `/api/admin/option-groups/${encodeURIComponent(cleanId)}` : '/api/admin/option-groups';
+      const method = isEditing ? 'PUT' : 'POST';
       const response = await fetch(url, {
         method,
         headers: adminHeaders(),
         body: JSON.stringify(payload)
       });
       if (response.status === 401) { handleUnauthorized(); return; }
+
+      let data: any = null;
+      const text = await response.text();
+      try { data = text ? JSON.parse(text) : {}; } catch { data = { error: `Server error (${response.status})` }; }
+
       if (response.ok) {
         setIsOptionGroupModalOpen(false);
         await fetchMenuCatalog();
         setNotificationBox({
           isOpen: true,
           type: 'success',
-          title: editingOptionGroup ? 'Modifier Group Updated' : 'Modifier Group Created',
+          title: isEditing ? 'Modifier Group Updated' : 'Modifier Group Created',
           message: `Modifier group "${optionGroupFormTitle}" saved successfully.`
         });
+      } else {
+        setNotificationBox({
+          isOpen: true,
+          type: 'error',
+          title: 'Failed to Save Modifier Group',
+          message: data?.error || `Server error (${response.status}).`
+        });
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to save modifier group:', err);
+      setNotificationBox({
+        isOpen: true,
+        type: 'error',
+        title: 'Connection Error',
+        message: err?.message || 'Could not communicate with the server.'
+      });
     } finally {
       setOptionGroupFormSubmitting(false);
     }
@@ -907,26 +962,46 @@ Beverages | Tea or Coffee`);
     };
 
     try {
-      const url = editingDeal ? `/api/admin/deals/${editingDeal.id}` : '/api/admin/deals';
-      const method = editingDeal ? 'PUT' : 'POST';
+      const isEditing = Boolean(editingDeal && editingDeal.id && String(editingDeal.id).trim());
+      const cleanId = isEditing ? String(editingDeal!.id).trim() : '';
+      const url = isEditing ? `/api/admin/deals/${encodeURIComponent(cleanId)}` : '/api/admin/deals';
+      const method = isEditing ? 'PUT' : 'POST';
       const response = await fetch(url, {
         method,
         headers: adminHeaders(),
         body: JSON.stringify(payload)
       });
       if (response.status === 401) { handleUnauthorized(); return; }
+
+      let data: any = null;
+      const text = await response.text();
+      try { data = text ? JSON.parse(text) : {}; } catch { data = { error: `Server error (${response.status})` }; }
+
       if (response.ok) {
         setIsDealModalOpen(false);
         await fetchMenuCatalog();
         setNotificationBox({
           isOpen: true,
           type: 'success',
-          title: editingDeal ? 'Deal Updated' : 'Deal Created',
+          title: isEditing ? 'Deal Updated' : 'Deal Created',
           message: `Deal "${dealFormTitle}" saved successfully.`
         });
+      } else {
+        setNotificationBox({
+          isOpen: true,
+          type: 'error',
+          title: 'Failed to Save Deal',
+          message: data?.error || `Server error (${response.status}).`
+        });
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to save deal:', err);
+      setNotificationBox({
+        isOpen: true,
+        type: 'error',
+        title: 'Connection Error',
+        message: err?.message || 'Could not communicate with the server.'
+      });
     } finally {
       setDealFormSubmitting(false);
     }

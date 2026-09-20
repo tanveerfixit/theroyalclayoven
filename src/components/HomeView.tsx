@@ -64,9 +64,16 @@ export const HomeView: React.FC<HomeViewProps> = ({ setCurrentTab, businessInfo:
   const [showWarningModal, setShowWarningModal] = React.useState(false);
 
   // Dynamic Festive / Special Offer State
+  const getValidImageUrl = (raw: string | null, fallback: string = ''): string => {
+    if (!raw) return fallback;
+    if (raw.startsWith('http://') || raw.startsWith('https://') || raw.startsWith('/')) return raw;
+    if (raw.startsWith('data:image/') && raw.includes(';base64,') && raw.length > 100) return raw;
+    return fallback;
+  };
+
   const [festiveEnabled, setFestiveEnabled] = React.useState(localStorage.getItem('clay_oven_festive_enabled') !== 'false');
   const [festiveDisplayMode, setFestiveDisplayMode] = React.useState<'banner' | 'text'>(() => (localStorage.getItem('clay_oven_festive_display_mode') as any) || 'banner');
-  const [imageFestiveBanner, setImageFestiveBanner] = React.useState(localStorage.getItem('clay_oven_image_festive_banner') || '');
+  const [imageFestiveBanner, setImageFestiveBanner] = React.useState(() => getValidImageUrl(localStorage.getItem('clay_oven_image_festive_banner'), ''));
   const [festiveTargetDishId, setFestiveTargetDishId] = React.useState(localStorage.getItem('clay_oven_festive_target_dish_id') || '');
   const [festiveBannerCtaEnabled, setFestiveBannerCtaEnabled] = React.useState(localStorage.getItem('clay_oven_festive_banner_cta_enabled') !== 'false');
   const [festiveBannerCtaText, setFestiveBannerCtaText] = React.useState(localStorage.getItem('clay_oven_festive_banner_cta_text') || 'Order Special Offer Online');
@@ -92,9 +99,9 @@ Dessert | Milk Cake
 Beverages | Tea or Coffee`);
 
   // Self-hosted Gallery Image States
-  const [imageHeroBg, setImageHeroBg] = React.useState(localStorage.getItem('clay_oven_image_hero_bg') || '/hero-bg.webp');
-  const [imageHeritageLeft, setImageHeritageLeft] = React.useState(localStorage.getItem('clay_oven_image_heritage_left') || 'https://images.unsplash.com/photo-1627308595229-7830a5c91f9f?auto=format&fit=crop&w=500&q=70&fm=webp');
-  const [imageHeritageRight, setImageHeritageRight] = React.useState(localStorage.getItem('clay_oven_image_heritage_right') || 'https://images.unsplash.com/photo-1603360946369-dc9bb6258143?auto=format&fit=crop&w=500&q=70&fm=webp');
+  const [imageHeroBg, setImageHeroBg] = React.useState(() => getValidImageUrl(localStorage.getItem('clay_oven_image_hero_bg'), '/hero-bg.webp'));
+  const [imageHeritageLeft, setImageHeritageLeft] = React.useState(() => getValidImageUrl(localStorage.getItem('clay_oven_image_heritage_left'), 'https://images.unsplash.com/photo-1627308595229-7830a5c91f9f?auto=format&fit=crop&w=500&q=70&fm=webp'));
+  const [imageHeritageRight, setImageHeritageRight] = React.useState(() => getValidImageUrl(localStorage.getItem('clay_oven_image_heritage_right'), 'https://images.unsplash.com/photo-1603360946369-dc9bb6258143?auto=format&fit=crop&w=500&q=70&fm=webp'));
 
   // Load settings from props
   React.useEffect(() => {
@@ -165,11 +172,18 @@ Beverages | Tea or Coffee`);
         const res = await fetch(`/api/settings/images/${key}`);
         if (res.ok) {
           const data = await res.json();
-          setter(data.value);
-          localStorage.setItem(key, data.value);
+          const valid = getValidImageUrl(data?.value);
+          if (valid) {
+            setter(valid);
+            try {
+              localStorage.setItem(key, valid);
+            } catch {
+              // Ignore quota errors when storing large base64 images
+            }
+          }
         }
       } catch (err) {
-        // Silently use localStorage/fallback
+        // Silently use fallback
       }
     };
 
