@@ -629,10 +629,15 @@ Complimentary green tea | Beverage`]);
     await connection.query(`
       CREATE TABLE IF NOT EXISTS admin_otps (
         email VARCHAR(255) PRIMARY KEY,
-        otp VARCHAR(10) NOT NULL,
+        otp VARCHAR(255) NOT NULL,
         expires_at DATETIME NOT NULL
       )
     `);
+
+    // Safely ensure otp column in admin_otps is large enough for cryptographic hashes
+    try {
+      await connection.query('ALTER TABLE admin_otps MODIFY COLUMN otp VARCHAR(255) NOT NULL');
+    } catch (e) {}
 
     // Seed authorized admin emails
     const adminEmails = ['tanveerfixit@gmail.com', 'accounts@clayoven.ie'];
@@ -1689,14 +1694,15 @@ app.post('/api/admin/request-otp', otpLimiter, async (req, res) => {
 
     // Generate 6-digit OTP
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const hashedOtp = crypto.createHash('sha256').update(otp).digest('hex');
     const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
 
-    // Store OTP in database (upsert)
+    // Store encrypted/hashed OTP in database (upsert)
     await pool.query(
       `INSERT INTO admin_otps (email, otp, expires_at)
        VALUES (?, ?, ?)
        ON DUPLICATE KEY UPDATE otp = VALUES(otp), expires_at = VALUES(expires_at)`,
-      [email.toLowerCase().trim(), otp, expiresAt]
+      [email.toLowerCase().trim(), hashedOtp, expiresAt]
     );
 
     // Send OTP via email
@@ -1755,8 +1761,9 @@ app.post('/api/admin/verify-otp', async (req, res) => {
 
     const record = rows[0];
     const expiresAt = new Date(record.expires_at);
+    const hashedInput = crypto.createHash('sha256').update(otp.trim()).digest('hex');
 
-    if (record.otp !== otp.trim()) {
+    if (record.otp !== otp.trim() && record.otp !== hashedInput) {
       return res.status(400).json({ error: 'Incorrect access code. Please check your email and try again.' });
     }
 
