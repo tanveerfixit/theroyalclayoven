@@ -104,7 +104,9 @@ async function getOrderNotificationEmails() {
     return emails;
   } catch (err) {
     console.error('Failed to retrieve notification emails from database', err);
-    return ['sales@clayoven.ie', 'tanveerfixit@gmail.com'];
+    // Fallback to env-configured addresses — never hardcode emails in source
+    const fallback = process.env.NOTIFICATION_FALLBACK_EMAILS || '';
+    return fallback.split(',').map(e => e.trim()).filter(Boolean);
   }
 }
 
@@ -119,9 +121,6 @@ async function getTransporter() {
       auth: {
         user: config.user,
         pass: config.password,
-      },
-      tls: {
-        rejectUnauthorized: false
       }
     });
   }
@@ -133,9 +132,6 @@ async function getTransporter() {
     auth: {
       user: process.env.SMTP_USER,
       pass: process.env.SMTP_PASS,
-    },
-    tls: {
-      rejectUnauthorized: false
     }
   });
 }
@@ -574,49 +570,6 @@ Complimentary green tea | Beverage`,
         ON DUPLICATE KEY UPDATE setting_value = setting_value
       `, [key, value]);
     }
-    
-    // Explicitly update the festive offer settings for Pakistan Day
-    await connection.query(`
-      UPDATE store_settings
-      SET setting_value = ?
-      WHERE setting_key = 'clay_oven_festive_header'
-    `, ['Pakistan Day']);
-
-    await connection.query(`
-      UPDATE store_settings
-      SET setting_value = ?
-      WHERE setting_key = 'clay_oven_festive_subheader'
-    `, ['Pakistan day platter']);
-
-    await connection.query(`
-      UPDATE store_settings
-      SET setting_value = ?
-      WHERE setting_key = 'clay_oven_festive_description'
-    `, ['The actual platter']);
-
-    await connection.query(`
-      UPDATE store_settings
-      SET setting_value = ?
-      WHERE setting_key = 'clay_oven_festive_price'
-    `, ['60.00']);
-
-    await connection.query(`
-      UPDATE store_settings
-      SET setting_value = ?
-      WHERE setting_key = 'clay_oven_festive_items'
-    `, [`green chicken Karhai | Pakistani Specialty
-green tikka boti | Grilled Boneless Chicken
-Coriander naan | Tandoor Baked Flatbread
-lamb Biryani | Fragrant Basmati Rice Dish
-Pista falooda | Traditional Dessert
-Complimentary green tea | Beverage`]);
-
-    await connection.query(`
-      UPDATE store_settings
-      SET setting_value = ?
-      WHERE setting_key = 'clay_oven_festive_price_label'
-    `, ['FOR 2 PEOPLE:']);
-    
     console.log('Global storefront settings verified and seeded in database successfully.');
 
     // Auto-create admin authentication tables
@@ -639,9 +592,10 @@ Complimentary green tea | Beverage`]);
       await connection.query('ALTER TABLE admin_otps MODIFY COLUMN otp VARCHAR(255) NOT NULL');
     } catch (e) {}
 
-    // Seed authorized admin emails
-    const adminEmails = ['tanveerfixit@gmail.com', 'accounts@clayoven.ie'];
-    for (const adminEmail of adminEmails) {
+    // Seed authorized admin emails — sourced from .env, never hardcoded in source
+    const adminSeedEmails = (process.env.ADMIN_SEED_EMAILS || '')
+      .split(',').map(e => e.trim()).filter(Boolean);
+    for (const adminEmail of adminSeedEmails) {
       await connection.query(
         'INSERT IGNORE INTO admin_emails (email) VALUES (?)',
         [adminEmail]
@@ -655,23 +609,22 @@ Complimentary green tea | Beverage`]);
       )
     `);
 
-    // Seed default notification email if none exist yet
+    // Seed default notification emails from env — never hardcoded in source
     const [existingNotifs] = await connection.query('SELECT COUNT(*) as count FROM order_notification_emails');
     if (existingNotifs[0].count === 0) {
-      await connection.query(
-        'INSERT INTO order_notification_emails (email) VALUES (?)',
-        ['sales@clayoven.ie']
-      );
-      await connection.query(
-        'INSERT INTO order_notification_emails (email) VALUES (?)',
-        ['tanveerfixit@gmail.com']
-      );
-      console.log('Seeded default order notification email addresses.');
+      const notifSeedEmails = (process.env.NOTIFICATION_FALLBACK_EMAILS || '')
+        .split(',').map(e => e.trim()).filter(Boolean);
+      for (const notifEmail of notifSeedEmails) {
+        await connection.query(
+          'INSERT IGNORE INTO order_notification_emails (email) VALUES (?)',
+          [notifEmail]
+        );
+      }
+      if (notifSeedEmails.length > 0) {
+        console.log(`Seeded ${notifSeedEmails.length} default order notification email addresses from .env.`);
+      }
     }
-    await connection.query(
-      'DELETE FROM order_notification_emails WHERE email = ?',
-      ['customers@clayoven.ie']
-    );
+
 
     // --- 7. DYNAMIC MENU CATALOG, MODIFIERS & DEALS SCHEMA (Phase 1) ---
     await connection.query(`
@@ -1658,6 +1611,11 @@ app.delete('/api/orders/:id', async (req, res) => {
 });
 
 // --- Admin Authentication Middleware ---
+// IMPORTANT: ADMIN_JWT_SECRET must be set in .env — a random fallback invalidates all admin
+// sessions on every server restart. Generate with: node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+if (!process.env.ADMIN_JWT_SECRET) {
+  console.warn('⚠️  WARNING: ADMIN_JWT_SECRET not set in .env — using insecure random fallback. Admin sessions will not survive server restarts!');
+}
 const ADMIN_JWT_SECRET = process.env.ADMIN_JWT_SECRET || crypto.randomBytes(32).toString('hex');
 
 const requireAdmin = (req, res, next) => {
