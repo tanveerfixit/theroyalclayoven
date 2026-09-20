@@ -25,7 +25,7 @@ async function createIndexIfNotExists(connection, tableName, indexName, columnsS
   }
 }
 
-const TARGET_SCHEMA_VERSION = 3;
+const TARGET_SCHEMA_VERSION = 4;
 
 export async function runMigrations(pool) {
   try {
@@ -349,7 +349,7 @@ Complimentary green tea | Beverage`,
         description TEXT,
         display_order INT DEFAULT 0,
         is_active BOOLEAN DEFAULT TRUE,
-        image_url VARCHAR(500)
+        image_url MEDIUMTEXT
       )
     `);
 
@@ -365,7 +365,7 @@ Complimentary green tea | Beverage`,
         is_sold_out BOOLEAN DEFAULT FALSE,
         allergens JSON,
         size_options JSON,
-        image_url VARCHAR(500),
+        image_url MEDIUMTEXT,
         display_order INT DEFAULT 0,
         FOREIGN KEY (category_id) REFERENCES menu_categories(id) ON DELETE CASCADE
       )
@@ -423,10 +423,16 @@ Complimentary green tea | Beverage`,
         bundle_price DECIMAL(10,2) NOT NULL,
         badge_text VARCHAR(50),
         is_active BOOLEAN DEFAULT TRUE,
-        image_url VARCHAR(500),
+        image_url MEDIUMTEXT,
         steps JSON
       )
     `);
+
+    try {
+      await connection.query('ALTER TABLE menu_products MODIFY COLUMN image_url MEDIUMTEXT');
+      await connection.query('ALTER TABLE menu_categories MODIFY COLUMN image_url MEDIUMTEXT');
+      await connection.query('ALTER TABLE menu_deals MODIFY COLUMN image_url MEDIUMTEXT');
+    } catch (e) {}
 
     await createIndexIfNotExists(connection, 'menu_products', 'idx_menu_products_cat_active', 'category_id, is_active');
     await createIndexIfNotExists(connection, 'option_items', 'idx_option_items_group_order', 'group_id, display_order');
