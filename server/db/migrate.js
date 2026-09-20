@@ -1,7 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { CATEGORIES as SEED_CATEGORIES, MENU_ITEMS as SEED_MENU_ITEMS } from '../src/data/menuData.js';
+import { CATEGORIES as SEED_CATEGORIES, MENU_ITEMS as SEED_MENU_ITEMS } from '../../src/data/menuData.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);

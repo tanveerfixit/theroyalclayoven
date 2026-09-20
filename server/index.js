@@ -1,7 +1,8 @@
+import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
-import dotenv from 'dotenv';
 import path from 'path';
+import fs from 'fs';
 import { fileURLToPath } from 'url';
 import helmet from 'helmet';
 import compression from 'compression';
@@ -18,8 +19,6 @@ import ordersRoutes from './routes/orders.js';
 import settingsRoutes from './routes/settings.js';
 import menuRoutes from './routes/menu.js';
 import adminRoutes from './routes/admin.js';
-
-dotenv.config();
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -111,7 +110,6 @@ app.use(menuRoutes);
 app.use(adminRoutes);
 
 const distPath = path.join(__dirname, '..', 'dist');
-import fs from 'fs';
 if (fs.existsSync(distPath)) {
   console.log('Serving Vite build assets from dist/ folder...');
   app.use('/assets', express.static(path.join(distPath, 'assets'), {

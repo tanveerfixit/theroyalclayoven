@@ -4,12 +4,12 @@ import crypto from 'crypto';
 import jwt from 'jsonwebtoken';
 import { requireAdmin, ADMIN_JWT_SECRET } from '../middleware/requireAdmin.js';
 import { otpLimiter } from '../middleware/rateLimiters.js';
-import { getMailSender, getTransporter, getSmtpConfig } from '../utils/email.js';
+import { getMailSender, getTransporter, getSmtpConfig, getOrderNotificationEmails } from '../utils/email.js';
 import { 
   ordersLastUpdated, updateOrdersLastUpdated,
   bookingsLastUpdated,
   setSmtpConfigCache,
-  getOrderNotificationEmails, setNotifEmailsCache, notifEmailsCache, notifEmailsCacheTime, NOTIF_EMAILS_CACHE_TTL,
+  setNotifEmailsCache, notifEmailsCache, notifEmailsCacheTime, NOTIF_EMAILS_CACHE_TTL,
   invalidateMenuCache, clearSettingsCache, imageSettingsCache
 } from '../cache/index.js';
 
