@@ -63,8 +63,14 @@ export const HomeView: React.FC<HomeViewProps> = ({ setCurrentTab, businessInfo:
 
   const [showWarningModal, setShowWarningModal] = React.useState(false);
 
-  // Dynamic Festive Offer State
+  // Dynamic Festive / Special Offer State
   const [festiveEnabled, setFestiveEnabled] = React.useState(localStorage.getItem('clay_oven_festive_enabled') !== 'false');
+  const [festiveDisplayMode, setFestiveDisplayMode] = React.useState<'banner' | 'text'>(() => (localStorage.getItem('clay_oven_festive_display_mode') as any) || 'banner');
+  const [imageFestiveBanner, setImageFestiveBanner] = React.useState(localStorage.getItem('clay_oven_image_festive_banner') || '');
+  const [festiveTargetDishId, setFestiveTargetDishId] = React.useState(localStorage.getItem('clay_oven_festive_target_dish_id') || '');
+  const [festiveBannerCtaEnabled, setFestiveBannerCtaEnabled] = React.useState(localStorage.getItem('clay_oven_festive_banner_cta_enabled') !== 'false');
+  const [festiveBannerCtaText, setFestiveBannerCtaText] = React.useState(localStorage.getItem('clay_oven_festive_banner_cta_text') || 'Order Special Offer Online');
+  const [festiveBannerAlt, setFestiveBannerAlt] = React.useState(localStorage.getItem('clay_oven_festive_banner_alt') || 'Special Offer Announcement');
   const [festiveHeader, setFestiveHeader] = React.useState(localStorage.getItem('clay_oven_festive_header') || "FATHER'S DAY DINNER");
   const [festiveSubheader, setFestiveSubheader] = React.useState(localStorage.getItem('clay_oven_festive_subheader') || 'Sunday, 21st June');
   const [festiveDescription, setFestiveDescription] = React.useState(localStorage.getItem('clay_oven_festive_description') || `Hello to all our Royal customers!
@@ -123,6 +129,27 @@ Beverages | Tea or Coffee`);
     }
 
     if (data.clay_oven_festive_enabled !== undefined) setFestiveEnabled(data.clay_oven_festive_enabled !== 'false');
+    if (data.clay_oven_festive_display_mode) {
+      setFestiveDisplayMode(data.clay_oven_festive_display_mode as 'banner' | 'text');
+      localStorage.setItem('clay_oven_festive_display_mode', data.clay_oven_festive_display_mode);
+    }
+    if (data.clay_oven_festive_target_dish_id !== undefined) {
+      setFestiveTargetDishId(data.clay_oven_festive_target_dish_id);
+      localStorage.setItem('clay_oven_festive_target_dish_id', data.clay_oven_festive_target_dish_id);
+    }
+    if (data.clay_oven_festive_banner_cta_enabled !== undefined) {
+      const ctaEn = data.clay_oven_festive_banner_cta_enabled !== 'false';
+      setFestiveBannerCtaEnabled(ctaEn);
+      localStorage.setItem('clay_oven_festive_banner_cta_enabled', String(ctaEn));
+    }
+    if (data.clay_oven_festive_banner_cta_text) {
+      setFestiveBannerCtaText(data.clay_oven_festive_banner_cta_text);
+      localStorage.setItem('clay_oven_festive_banner_cta_text', data.clay_oven_festive_banner_cta_text);
+    }
+    if (data.clay_oven_festive_banner_alt) {
+      setFestiveBannerAlt(data.clay_oven_festive_banner_alt);
+      localStorage.setItem('clay_oven_festive_banner_alt', data.clay_oven_festive_banner_alt);
+    }
     if (data.clay_oven_festive_header) setFestiveHeader(data.clay_oven_festive_header);
     if (data.clay_oven_festive_subheader) setFestiveSubheader(data.clay_oven_festive_subheader);
     if (data.clay_oven_festive_description) setFestiveDescription(data.clay_oven_festive_description);
@@ -145,9 +172,11 @@ Beverages | Tea or Coffee`);
         // Silently use localStorage/fallback
       }
     };
+
     fetchImage('clay_oven_image_hero_bg', setImageHeroBg);
     fetchImage('clay_oven_image_heritage_left', setImageHeritageLeft);
     fetchImage('clay_oven_image_heritage_right', setImageHeritageRight);
+    fetchImage('clay_oven_image_festive_banner', setImageFestiveBanner);
   }, []);
 
   // Listen to business info updates
@@ -189,6 +218,13 @@ Beverages | Tea or Coffee`);
   const parsedPrice = parseFloat(festivePrice);
   const hasPrice = festivePrice && !isNaN(parsedPrice) && parsedPrice > 0;
 
+  const handleFestiveOfferClick = () => {
+    if (festiveTargetDishId) {
+      localStorage.setItem('clay_oven_pending_order_dish_id', festiveTargetDishId);
+    }
+    setCurrentTab('takeaway');
+  };
+
   // Highlight some premium items
   const featuredIds = ['pk-butter-chicken', 'pk-bbq-platter', 'co-lamb-chops', 'bg-smash'];
   const featuredItems = MENU_ITEMS.filter((item) => featuredIds.includes(item.id));
@@ -197,26 +233,33 @@ Beverages | Tea or Coffee`);
     <div className="pb-20 animate-fade-in" id="home-view">
       
       {/* Editorial Hero Section */}
-      <section className="relative bg-brand-dark text-brand-beige border-b border-brand-dark px-4 py-16 sm:px-6 lg:px-8 lg:py-28 rounded-none">
-        <div className="absolute inset-0 opacity-20 pointer-events-none mix-blend-overlay">
+      <section className="relative bg-brand-dark text-brand-beige border-b border-brand-dark px-4 py-16 sm:px-6 lg:px-8 lg:py-24 rounded-none overflow-hidden">
+        <div className="absolute inset-0 opacity-25 pointer-events-none mix-blend-overlay">
           <img 
-            src={optimizeUnsplashUrl(imageHeroBg, 800)} 
-            alt="Smoky background" 
+            src={optimizeUnsplashUrl(imageHeroBg, 1200)} 
+            alt="The Royal Clay Oven Charcoal Tandoor" 
             className="w-full h-full object-cover"
             referrerPolicy="no-referrer"
             fetchPriority="high"
           />
         </div>
+        <div className="absolute inset-0 bg-gradient-to-t from-brand-dark/95 via-brand-dark/70 to-brand-dark/50" />
         
-        <div className="max-w-4xl mx-auto text-center relative z-10 space-y-8">
+        {/* Hero Narrative */}
+        <div className="relative z-10 max-w-4xl mx-auto text-center space-y-5 sm:space-y-6">
+          <div className="inline-flex items-center space-x-2 bg-brand-dark/80 backdrop-blur-sm border border-brand-accent/30 px-3.5 py-1.5 shadow-md">
+            <span className="w-2 h-2 rounded-full bg-brand-accent animate-ping" />
+            <span className="font-mono text-[10px] sm:text-xs tracking-widest text-brand-beige uppercase font-bold">
+              Shannon, Co. Clare &bull; Charcoal Tandoor &amp; Takeaway
+            </span>
+          </div>
 
-          <h1 className="font-serif text-4xl sm:text-6xl lg:text-7xl font-bold tracking-tight leading-none text-brand-beige">
-            FLAME, CLAY AND <br />
-            <span className="text-brand-accent italic font-normal">Authentic Heritage</span>
+          <h1 className="font-serif text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-white tracking-tight leading-none uppercase drop-shadow-md">
+            Flame, Smoke &amp; Tradition
           </h1>
-          
-          <p className="max-w-xl mx-auto font-sans text-sm sm:text-base text-brand-beige/80 leading-relaxed font-normal">
-            Welcome to <strong className="text-brand-beige font-semibold">The Royal Clay Oven</strong>. We fire up our traditional brick-lined tandoor daily, delivering premium Pakistani curries, dry-aged flame-grilled chops, spiced kebabs, and handcrafted pizzas.
+
+          <p className="font-sans text-sm sm:text-base md:text-lg text-brand-beige/90 max-w-2xl mx-auto font-light leading-relaxed">
+            Experience Ireland&#39;s premier authentic charcoal clay oven cuisine. Freshly marinated meats, handmade artisan naan breads, and signature recipes cooked over live coal.
           </p>
 
           <div className="flex items-center justify-center pt-3">
@@ -224,7 +267,7 @@ Beverages | Tea or Coffee`);
               type="button"
               id="hero-order-btn"
               onClick={() => setCurrentTab('takeaway')}
-              className="w-max max-w-full bg-brand-accent text-white px-9 py-4 text-sm font-bold tracking-wider uppercase hover:bg-brand-dark transition-all duration-200 rounded-full shadow-lg hover:shadow-xl active:scale-[0.98] flex items-center justify-center group"
+              className="w-max max-w-full bg-brand-accent text-white px-9 py-4 text-sm font-bold tracking-wider uppercase hover:bg-brand-dark transition-all duration-200 rounded-full shadow-lg hover:shadow-xl active:scale-[0.98] flex items-center justify-center group cursor-pointer"
             >
               <span>Order Now</span>
               <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
@@ -233,82 +276,134 @@ Beverages | Tea or Coffee`);
         </div>
       </section>
 
-      {/* Dynamic Festive Offer Section */}
+      {/* Dynamic Festive / Special Offer Section */}
       {festiveEnabled && (
-        <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-12 sm:mt-16">
-          <div className="border-2 border-emerald-600 bg-emerald-950 p-8 sm:p-12 relative overflow-hidden rounded-none">
-            {/* Decorative limited-time tag */}
-            <div className="absolute top-0 right-0 animate-shimmer text-white font-mono text-[10px] sm:text-xs uppercase tracking-widest px-4 py-2 font-bold flex items-center gap-1.5 shadow-[0_4px_12px_rgba(200,90,50,0.2)]">
-              <Sparkles className="w-3.5 h-3.5 animate-pulse" />
-              <span>Special Offer</span>
-            </div>
-            
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
-              
-              {/* Column 1: Promo Detail Banner */}
-              <div className="lg:col-span-5 space-y-4">
-                <span className="font-mono text-sm tracking-widest text-emerald-400 uppercase font-bold block">
-                  SPECIAL EVENT
-                </span>
-                <h2 className="font-serif text-3xl sm:text-4xl lg:text-5xl font-extrabold text-white tracking-tight leading-none uppercase whitespace-pre-line">
-                  {festiveHeader}
-                </h2>
-                <div className="inline-block bg-emerald-900/50 border border-emerald-700 px-3 py-1">
-                  <p className="font-mono text-[11px] text-emerald-300 tracking-widest uppercase font-bold">
-                    {festiveSubheader}
-                  </p>
+        <>
+          {/* 1. GRAPHIC BANNER IMAGE MODE */}
+          {festiveDisplayMode === 'banner' && imageFestiveBanner ? (
+            <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-10 sm:mt-14 animate-fade-in">
+              <div className="relative group overflow-hidden border-2 border-brand-accent/40 shadow-2xl bg-stone-950">
+                {/* Decorative Special Offer Tag */}
+                <div className="absolute top-0 right-0 z-10 bg-brand-accent text-white font-mono text-[10px] sm:text-xs uppercase tracking-widest px-4 py-1.5 font-bold flex items-center gap-1.5 shadow-md">
+                  <Sparkles className="w-3.5 h-3.5 animate-pulse" />
+                  <span>Special Offer</span>
                 </div>
-                <p className="text-sm text-emerald-100 leading-relaxed font-normal whitespace-pre-line">
-                  {festiveDescription}
-                </p>
-                
-                {hasPrice && (
-                  <>
-                    <div className="pt-4 flex items-baseline space-x-2">
-                      <span className="text-xs font-mono text-emerald-300 uppercase">{festivePriceLabel}</span>
-                      <span className="text-4xl font-serif font-black text-white">&euro;{parsedPrice.toFixed(2)}</span>
+
+                {/* Clickable Banner Image */}
+                <div 
+                  onClick={handleFestiveOfferClick}
+                  className="cursor-pointer overflow-hidden block w-full relative group/img bg-stone-950"
+                  title="Click to view and order this special offer"
+                >
+                  <img
+                    src={imageFestiveBanner}
+                    alt={festiveBannerAlt || 'Special Offer Banner'}
+                    className="w-full h-auto max-h-[550px] object-cover sm:object-contain mx-auto transition-transform duration-500 group-hover/img:scale-[1.01]"
+                  />
+                  <div className="absolute inset-0 bg-black/0 group-hover/img:bg-black/10 transition-colors pointer-events-none" />
+                </div>
+
+                {/* Optional Call to Action Bar */}
+                {festiveBannerCtaEnabled && (
+                  <div className="bg-gradient-to-r from-stone-900 via-brand-dark to-stone-900 p-4 sm:p-5 flex flex-col sm:flex-row items-center justify-between gap-3 border-t border-white/10">
+                    <div className="text-center sm:text-left">
+                      <span className="font-mono text-[10px] sm:text-[11px] text-brand-accent uppercase font-bold tracking-widest block">
+                        LIMITED TIME SPECIAL
+                      </span>
+                      <h4 className="font-serif text-base sm:text-xl font-bold text-white tracking-wide">
+                        {festiveBannerAlt || 'Order Our Special Offer'}
+                      </h4>
                     </div>
-                    <p className="text-[10px] font-mono text-emerald-300 uppercase tracking-wider">
-                      * Service charge will apply
-                    </p>
-                  </>
+                    <button
+                      type="button"
+                      onClick={handleFestiveOfferClick}
+                      className="w-full sm:w-auto bg-brand-accent hover:bg-brand-dark text-white font-mono text-xs sm:text-sm font-bold uppercase tracking-widest px-7 sm:px-9 py-3 sm:py-3.5 transition-all duration-200 shadow-md hover:shadow-lg active:scale-95 flex items-center justify-center gap-2 rounded-full cursor-pointer"
+                    >
+                      <span>{festiveBannerCtaText || 'Order Special Offer Online'}</span>
+                      <ArrowRight className="w-4 h-4 ml-1" />
+                    </button>
+                  </div>
                 )}
               </div>
+            </section>
+          ) : (
+            /* 2. STRUCTURED TEXT & PLATTER CARD MODE */
+            <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-12 sm:mt-16">
+              <div className="border-2 border-emerald-600 bg-emerald-950 p-8 sm:p-12 relative overflow-hidden rounded-none shadow-xl">
+                {/* Decorative limited-time tag */}
+                <div className="absolute top-0 right-0 animate-shimmer text-white font-mono text-[10px] sm:text-xs uppercase tracking-widest px-4 py-2 font-bold flex items-center gap-1.5 shadow-[0_4px_12px_rgba(200,90,50,0.2)]">
+                  <Sparkles className="w-3.5 h-3.5 animate-pulse" />
+                  <span>Special Offer</span>
+                </div>
+                
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+                  
+                  {/* Column 1: Promo Detail Banner */}
+                  <div className="lg:col-span-5 space-y-4">
+                    <span className="font-mono text-sm tracking-widest text-emerald-400 uppercase font-bold block">
+                      SPECIAL EVENT
+                    </span>
+                    <h2 className="font-serif text-3xl sm:text-4xl lg:text-5xl font-extrabold text-white tracking-tight leading-none uppercase whitespace-pre-line">
+                      {festiveHeader}
+                    </h2>
+                    <div className="inline-block bg-emerald-900/50 border border-emerald-700 px-3 py-1">
+                      <p className="font-mono text-[11px] text-emerald-300 tracking-widest uppercase font-bold">
+                        {festiveSubheader}
+                      </p>
+                    </div>
+                    <p className="text-sm text-emerald-100 leading-relaxed font-normal whitespace-pre-line">
+                      {festiveDescription}
+                    </p>
+                    
+                    {hasPrice && (
+                      <>
+                        <div className="pt-4 flex items-baseline space-x-2">
+                          <span className="text-xs font-mono text-emerald-300 uppercase">{festivePriceLabel}</span>
+                          <span className="text-4xl font-serif font-black text-white">&euro;{parsedPrice.toFixed(2)}</span>
+                        </div>
+                        <p className="text-[10px] font-mono text-emerald-300 uppercase tracking-wider">
+                          * Service charge will apply
+                        </p>
+                      </>
+                    )}
+                  </div>
 
-              {/* Column 2: Platter Menu Card */}
-              <div className="lg:col-span-7 bg-emerald-900/30 border border-emerald-800 p-6 sm:p-8 space-y-6 shadow-sm">
-                <h3 className="font-serif text-xl font-bold tracking-tight text-white uppercase border-b border-emerald-800 pb-3 flex items-center justify-between">
-                  <span>SPECIAL MENU PLATTER</span>
-                  <Sparkles className="w-5 h-5 text-emerald-400" />
-                </h3>
+                  {/* Column 2: Platter Menu Card */}
+                  <div className="lg:col-span-7 bg-emerald-900/30 border border-emerald-800 p-6 sm:p-8 space-y-6 shadow-sm">
+                    <h3 className="font-serif text-xl font-bold tracking-tight text-white uppercase border-b border-emerald-800 pb-3 flex items-center justify-between">
+                      <span>SPECIAL MENU PLATTER</span>
+                      <Sparkles className="w-5 h-5 text-emerald-400" />
+                    </h3>
 
-                <ul className="space-y-4 text-sm font-sans text-emerald-100">
-                  {parsedFestiveItems.map((item, idx) => (
-                    <li key={idx} className="flex items-start">
-                      <span className="w-2 h-2 bg-emerald-400 mt-2 mr-3 shrink-0"></span>
-                      <div>
-                        <strong className="font-bold block text-sm text-white">{item.name}</strong>
-                        {item.description && <p className="text-xs text-emerald-300">{item.description}</p>}
-                      </div>
-                    </li>
-                  ))}
-                </ul>
+                    <ul className="space-y-4 text-sm font-sans text-emerald-100">
+                      {parsedFestiveItems.map((item, idx) => (
+                        <li key={idx} className="flex items-start">
+                          <span className="w-2 h-2 bg-emerald-400 mt-2 mr-3 shrink-0"></span>
+                          <div>
+                            <strong className="font-bold block text-sm text-white">{item.name}</strong>
+                            {item.description && <p className="text-xs text-emerald-300">{item.description}</p>}
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
 
-                {/* Dynamic CTA button */}
-                <div className="pt-4 border-t border-emerald-800">
-                  <button
-                    type="button"
-                    onClick={() => setCurrentTab('takeaway')}
-                    className="w-full bg-emerald-600 hover:bg-emerald-500 text-white py-3.5 px-6 text-xs sm:text-sm tracking-wider font-bold uppercase transition-all duration-200 text-center rounded-full shadow-md cursor-pointer active:scale-[0.98]"
-                  >
-                    Order Platter Online
-                  </button>
+                    {/* Dynamic CTA button */}
+                    <div className="pt-4 border-t border-emerald-800">
+                      <button
+                        type="button"
+                        onClick={handleFestiveOfferClick}
+                        className="w-full bg-emerald-600 hover:bg-emerald-500 text-white py-3.5 px-6 text-xs sm:text-sm tracking-wider font-bold uppercase transition-all duration-200 text-center rounded-full shadow-md cursor-pointer active:scale-[0.98]"
+                      >
+                        Order Platter Online
+                      </button>
+                    </div>
+                  </div>
+
                 </div>
               </div>
-
-            </div>
-          </div>
-        </section>
+            </section>
+          )}
+        </>
       )}
 
       {/* Triple Advantage Row */}

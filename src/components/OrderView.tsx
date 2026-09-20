@@ -551,6 +551,43 @@ export const OrderView: React.FC<OrderViewProps> = ({
     setDealNotes('');
   };
 
+  // Auto-open customization modal if user clicked a specific dish/deal from the Festive / Special Offer banner
+  React.useEffect(() => {
+    const pendingDishId = localStorage.getItem('clay_oven_pending_order_dish_id');
+    if (!pendingDishId || catalogProducts.length === 0) return;
+
+    // 1. Check if target is a Deal
+    if (pendingDishId.startsWith('deal-')) {
+      const rawDealId = pendingDishId.replace('deal-', '');
+      const matchedDeal = catalogDeals.find(d => String(d.id) === String(rawDealId));
+      if (matchedDeal) {
+        localStorage.removeItem('clay_oven_pending_order_dish_id');
+        setSelectedCategory('🎁 Deals & Offers');
+        handleOpenDealModal(matchedDeal);
+        setTimeout(() => {
+          const el = document.getElementById(`deal-card-${matchedDeal.id}`);
+          if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }, 300);
+        return;
+      }
+    }
+
+    // 2. Check if target is a Product / Dish
+    const cleanDishId = pendingDishId.startsWith('dish-') ? pendingDishId.replace('dish-', '') : pendingDishId;
+    const matchedProduct = catalogProducts.find(p => String(p.id) === String(cleanDishId) || String(p.id) === String(pendingDishId));
+    if (matchedProduct) {
+      localStorage.removeItem('clay_oven_pending_order_dish_id');
+      if (matchedProduct.category) {
+        setSelectedCategory(matchedProduct.category);
+      }
+      handleOpenCustomization(matchedProduct);
+      setTimeout(() => {
+        const el = document.getElementById(`dish-card-${matchedProduct.id}`);
+        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 300);
+    }
+  }, [catalogProducts, catalogDeals]);
+
   // Calculations
   const subtotal = cart.reduce((acc, curr) => {
     const basePrice = curr.selectedSize ? curr.selectedSize.price : curr.menuItem.price;
@@ -1531,6 +1568,7 @@ export const OrderView: React.FC<OrderViewProps> = ({
                 {catalogDeals.map((deal) => (
                   <div 
                     key={deal.id}
+                    id={`deal-card-${deal.id}`}
                     className="p-4 sm:p-6 bg-gradient-to-br from-amber-500/5 to-transparent border border-amber-500/20 rounded-3xl shadow-[0_2px_12px_rgba(0,0,0,0.03)] hover:shadow-[0_8px_24px_rgba(0,0,0,0.06)] transition-all space-y-4"
                   >
                     <div className="flex justify-between items-start gap-3">
@@ -1603,6 +1641,7 @@ export const OrderView: React.FC<OrderViewProps> = ({
                     return (
                       <div 
                         key={item.id} 
+                        id={`dish-card-${item.id}`}
                         className={`p-4 sm:p-6 bg-white rounded-2xl shadow-[0_2px_12px_rgba(0,0,0,0.03)] hover:shadow-[0_8px_24px_rgba(0,0,0,0.06)] transition-all duration-200 flex flex-col justify-between space-y-3.5 sm:space-y-4 ${
                           item.isSoldOut ? 'opacity-60 bg-gray-50' : ''
                         }`}

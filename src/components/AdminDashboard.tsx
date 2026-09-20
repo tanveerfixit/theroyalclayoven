@@ -5,7 +5,8 @@ import {
   Volume2, ShieldCheck, Clock, Settings, Sparkles, Mail, KeyRound, Loader2, Ban, 
   XCircle, AlertTriangle, Trash2, Filter, CheckCircle2, HelpCircle, Info, Save,
   Plus, Edit3, ArrowUpDown, ChevronUp, ChevronDown, Layers, Tag, Eye, EyeOff,
-  Sliders, CookingPot, UtensilsCrossed, AlertCircle, CheckSquare, Square, MapPin
+  Sliders, CookingPot, UtensilsCrossed, AlertCircle, CheckSquare, Square, MapPin,
+  Image as ImageIcon, Upload, MousePointerClick
 } from 'lucide-react';
 import { Order, Reservation, MenuCategory, MenuItem, OptionGroup, OptionItem, MenuDeal } from '../types';
 import { ALLERGENS, MENU_ITEMS, CATEGORIES } from '../data/menu';
@@ -409,8 +410,14 @@ The Royal Clay Oven`);
   // Database settings raw data state
   const [settingsData, setSettingsData] = useState<any>({});
 
-  // Festive Offer states
+  // Festive / Special Offer states
   const [festiveEnabled, setFestiveEnabled] = useState(true);
+  const [festiveDisplayMode, setFestiveDisplayMode] = useState<'banner' | 'text'>('banner');
+  const [imageFestiveBanner, setImageFestiveBanner] = useState<string>('');
+  const [festiveTargetDishId, setFestiveTargetDishId] = useState<string>('');
+  const [festiveBannerCtaEnabled, setFestiveBannerCtaEnabled] = useState<boolean>(true);
+  const [festiveBannerCtaText, setFestiveBannerCtaText] = useState<string>('Order Special Offer Online');
+  const [festiveBannerAlt, setFestiveBannerAlt] = useState<string>('Special Offer Announcement');
   const [festiveHeader, setFestiveHeader] = useState("FATHER'S DAY DINNER");
   const [festiveSubheader, setFestiveSubheader] = useState('Sunday, 21st June');
   const [festiveDescription, setFestiveDescription] = useState(`Hello to all our Royal customers!
@@ -1102,6 +1109,11 @@ Beverages | Tea or Coffee`);
         if (data.clay_oven_reservations_notice) setReservationsNoticeText(data.clay_oven_reservations_notice);
 
         if (data.clay_oven_festive_enabled !== undefined) setFestiveEnabled(data.clay_oven_festive_enabled !== 'false');
+        if (data.clay_oven_festive_display_mode) setFestiveDisplayMode(data.clay_oven_festive_display_mode as 'banner' | 'text');
+        if (data.clay_oven_festive_target_dish_id !== undefined) setFestiveTargetDishId(data.clay_oven_festive_target_dish_id);
+        if (data.clay_oven_festive_banner_cta_enabled !== undefined) setFestiveBannerCtaEnabled(data.clay_oven_festive_banner_cta_enabled !== 'false');
+        if (data.clay_oven_festive_banner_cta_text) setFestiveBannerCtaText(data.clay_oven_festive_banner_cta_text);
+        if (data.clay_oven_festive_banner_alt) setFestiveBannerAlt(data.clay_oven_festive_banner_alt);
         if (data.clay_oven_festive_header) setFestiveHeader(data.clay_oven_festive_header);
         if (data.clay_oven_festive_subheader) setFestiveSubheader(data.clay_oven_festive_subheader);
         if (data.clay_oven_festive_description) setFestiveDescription(data.clay_oven_festive_description);
@@ -1124,6 +1136,7 @@ Beverages | Tea or Coffee`);
         fetchImageHelper('clay_oven_image_hero_bg', setImageHeroBg);
         fetchImageHelper('clay_oven_image_heritage_left', setImageHeritageLeft);
         fetchImageHelper('clay_oven_image_heritage_right', setImageHeritageRight);
+        fetchImageHelper('clay_oven_image_festive_banner', setImageFestiveBanner);
         
         setSettingsData(data);
       }
@@ -1168,6 +1181,11 @@ Beverages | Tea or Coffee`);
       'clay_oven_reservations_enabled': String(reservationsEnabled),
       'clay_oven_reservations_notice': reservationsNoticeText,
       'clay_oven_festive_enabled': String(festiveEnabled),
+      'clay_oven_festive_display_mode': festiveDisplayMode,
+      'clay_oven_festive_target_dish_id': festiveTargetDishId,
+      'clay_oven_festive_banner_cta_enabled': String(festiveBannerCtaEnabled),
+      'clay_oven_festive_banner_cta_text': festiveBannerCtaText,
+      'clay_oven_festive_banner_alt': festiveBannerAlt,
       'clay_oven_festive_header': festiveHeader,
       'clay_oven_festive_subheader': festiveSubheader,
       'clay_oven_festive_description': festiveDescription,
@@ -1261,7 +1279,7 @@ Beverages | Tea or Coffee`);
 
   const [imageUploadLoading, setImageUploadLoading] = useState<string | null>(null);
 
-  const handleImageFileChange = async (e: React.ChangeEvent<HTMLInputElement>, imageType: 'hero_bg' | 'heritage_left' | 'heritage_right') => {
+  const handleImageFileChange = async (e: React.ChangeEvent<HTMLInputElement>, imageType: 'hero_bg' | 'heritage_left' | 'heritage_right' | 'festive_banner') => {
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -1285,6 +1303,7 @@ Beverages | Tea or Coffee`);
           if (imageType === 'hero_bg') setImageHeroBg(data.imageUrl);
           else if (imageType === 'heritage_left') setImageHeritageLeft(data.imageUrl);
           else if (imageType === 'heritage_right') setImageHeritageRight(data.imageUrl);
+          else if (imageType === 'festive_banner') setImageFestiveBanner(data.imageUrl);
           
           setSaveSuccess(true);
           setNotificationBox({
@@ -1310,6 +1329,44 @@ Beverages | Tea or Coffee`);
       }
     };
     reader.readAsDataURL(file);
+  };
+
+  const handleDeleteImage = async (imageType: 'hero_bg' | 'heritage_left' | 'heritage_right' | 'festive_banner') => {
+    setImageUploadLoading(imageType);
+    try {
+      const response = await fetch('/api/admin/delete-image', {
+        method: 'POST',
+        headers: adminHeaders(),
+        body: JSON.stringify({ imageType })
+      });
+      if (response.status === 401) { handleUnauthorized(); return; }
+
+      if (response.ok) {
+        if (imageType === 'hero_bg') setImageHeroBg('');
+        else if (imageType === 'heritage_left') setImageHeritageLeft('');
+        else if (imageType === 'heritage_right') setImageHeritageRight('');
+        else if (imageType === 'festive_banner') setImageFestiveBanner('');
+
+        setNotificationBox({
+          isOpen: true,
+          type: 'info',
+          title: 'Image Removed',
+          message: 'Image was successfully removed from the storefront.'
+        });
+      } else {
+        throw new Error('Delete failed');
+      }
+    } catch (err) {
+      console.error(err);
+      setNotificationBox({
+        isOpen: true,
+        type: 'error',
+        title: 'Error Removing Image',
+        message: 'Failed to remove image. Please try again.'
+      });
+    } finally {
+      setImageUploadLoading(null);
+    }
   };
 
   const handleCreateFunction = async (e: React.FormEvent) => {
@@ -4784,148 +4841,362 @@ Beverages | Tea or Coffee`);
                 <div className="space-y-1 border-b border-brand-dark/5 pb-3">
                   <h3 className="font-serif text-base sm:text-lg font-bold text-brand-dark flex items-center gap-2">
                     <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 text-brand-accent shrink-0" />
-                    Special Offer
+                    Special Offer &amp; Promotional Announcements
                   </h3>
                   <p className="text-[11px] text-brand-muted leading-relaxed font-sans font-normal">
-                    Manage the Special Offer / Event Platter section displayed prominently at the top of the landing page.
+                    Manage the Special Offer section displayed prominently on the landing page. Choose between uploading a graphic promotional banner (designed in Canva/Photoshop) or a structured text platter menu card.
                   </p>
                 </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-6">
-                  {/* Left Column: Basic Details */}
-                  <div className="lg:col-span-6 space-y-3">
-                    {/* Toggle Switch */}
-                    <div className="flex items-center justify-between border border-brand-dark/10 p-3 sm:p-4 bg-[#FDFBF7]">
-                      <div className="space-y-0.5">
-                        <span className="block font-mono text-xs text-brand-dark font-bold uppercase tracking-wider">
-                          DISPLAY ON LANDING PAGE
-                        </span>
-                        <span className="block text-[10px] text-brand-muted font-sans font-normal">
-                          Toggle to show or hide the special offer block on the main page.
-                        </span>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => setFestiveEnabled(!festiveEnabled)}
-                        className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-none border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
-                          festiveEnabled ? 'bg-emerald-700' : 'bg-brand-dark/15'
-                        }`}
-                      >
-                        <span
-                          className={`pointer-events-none inline-block h-5 w-5 transform bg-white shadow ring-0 transition duration-200 ease-in-out ${
-                            festiveEnabled ? 'translate-x-5' : 'translate-x-0'
-                          }`}
-                        />
-                      </button>
-                    </div>
-
-                    {/* Festive Header / Title */}
-                    <div className="space-y-1">
-                      <label htmlFor="settings-festive-header" className="block font-mono text-xs text-brand-accent uppercase tracking-widest font-bold">
-                        Special Offer Header / Festival Name
-                      </label>
-                      <input
-                        id="settings-festive-header"
-                        type="text"
-                        required
-                        value={festiveHeader}
-                        onChange={(e) => setFestiveHeader(e.target.value)}
-                        className="w-full border border-brand-dark/10 p-2 text-xs font-mono focus:border-brand-dark outline-none bg-brand-beige/10 rounded-none"
-                        placeholder="e.g. FATHER'S DAY DINNER"
-                      />
-                    </div>
-
-                    {/* Subheader / Run Times */}
-                    <div className="space-y-1">
-                      <label htmlFor="settings-festive-subheader" className="block font-mono text-xs text-brand-accent uppercase tracking-widest font-bold">
-                        Subheader / Run Days
-                      </label>
-                      <input
-                        id="settings-festive-subheader"
-                        type="text"
-                        required
-                        value={festiveSubheader}
-                        onChange={(e) => setFestiveSubheader(e.target.value)}
-                        className="w-full border border-brand-dark/10 p-2 text-xs font-mono focus:border-brand-dark outline-none bg-brand-beige/10 rounded-none"
-                        placeholder="e.g. Running: Thursday — Friday — Monday"
-                      />
-                    </div>
-
-                    {/* Price & Label Row */}
-                    <div className="grid grid-cols-2 gap-2">
-                      <div className="space-y-1">
-                        <label htmlFor="settings-festive-price" className="block font-mono text-[10px] text-brand-accent uppercase tracking-widest font-bold">
-                          Offer Price (&euro;)
-                        </label>
-                        <input
-                          id="settings-festive-price"
-                          type="text"
-                          required
-                          value={festivePrice}
-                          onChange={(e) => setFestivePrice(e.target.value)}
-                          className="w-full border border-brand-dark/10 p-2 text-xs font-mono focus:border-brand-dark outline-none bg-brand-beige/10 rounded-none"
-                          placeholder="e.g. 35.00"
-                        />
-                      </div>
-
-                      <div className="space-y-1">
-                        <label htmlFor="settings-festive-price-label" className="block font-mono text-[10px] text-brand-accent uppercase tracking-widest font-bold">
-                          Price Label
-                        </label>
-                        <input
-                          id="settings-festive-price-label"
-                          type="text"
-                          required
-                          value={festivePriceLabel}
-                          onChange={(e) => setFestivePriceLabel(e.target.value)}
-                          className="w-full border border-brand-dark/10 p-2 text-xs font-mono focus:border-brand-dark outline-none bg-brand-beige/10 rounded-none"
-                          placeholder="e.g. FOR 2 PEOPLE:"
-                        />
-                      </div>
-                    </div>
+                {/* Main Toggle Switch */}
+                <div className="flex items-center justify-between border border-brand-dark/10 p-3 sm:p-4 bg-[#FDFBF7]">
+                  <div className="space-y-0.5">
+                    <span className="block font-mono text-xs text-brand-dark font-bold uppercase tracking-wider">
+                      DISPLAY SPECIAL OFFER ON LANDING PAGE
+                    </span>
+                    <span className="block text-[10px] text-brand-muted font-sans font-normal">
+                      Toggle to show or hide the announcement section on the main page.
+                    </span>
                   </div>
+                  <button
+                    type="button"
+                    onClick={() => setFestiveEnabled(!festiveEnabled)}
+                    className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-none border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                      festiveEnabled ? 'bg-emerald-700' : 'bg-brand-dark/15'
+                    }`}
+                  >
+                    <span
+                      className={`pointer-events-none inline-block h-5 w-5 transform bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                        festiveEnabled ? 'translate-x-5' : 'translate-x-0'
+                      }`}
+                    />
+                  </button>
+                </div>
 
-                  {/* Right Column: Description & Items */}
-                  <div className="lg:col-span-6 space-y-3">
-                    {/* Offer Description */}
-                    <div className="space-y-1">
-                      <label htmlFor="settings-festive-desc" className="block font-mono text-xs text-brand-accent uppercase tracking-widest font-bold">
-                        Main Offer Description
-                      </label>
-                      <textarea
-                        id="settings-festive-desc"
-                        rows={2}
-                        required
-                        value={festiveDescription}
-                        onChange={(e) => setFestiveDescription(e.target.value)}
-                        className="w-full border border-brand-dark/10 p-2 text-xs font-mono focus:border-brand-dark outline-none bg-brand-beige/10 rounded-none resize-none"
-                        placeholder="Celebrate the festive weekend with..."
-                      />
-                    </div>
-
-                    {/* Platter Items Editor */}
-                    <div className="space-y-1">
-                      <div className="flex justify-between items-baseline">
-                        <label htmlFor="settings-festive-items" className="block font-mono text-xs text-brand-accent uppercase tracking-widest font-bold">
-                          Platter Items List
-                        </label>
-                        <span className="text-[9px] font-mono text-brand-muted uppercase">Format: Name | Description</span>
+                {/* Mode Selector */}
+                <div className="space-y-1.5 border border-brand-dark/10 p-3 sm:p-4 bg-white">
+                  <label className="block font-mono text-xs text-brand-accent uppercase tracking-widest font-bold">
+                    Choose Display Format
+                  </label>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                    <button
+                      type="button"
+                      onClick={() => setFestiveDisplayMode('banner')}
+                      className={`p-3 text-left border transition-all flex items-start gap-3 rounded-none ${
+                        festiveDisplayMode === 'banner'
+                          ? 'border-brand-accent bg-brand-accent/10 shadow-sm'
+                          : 'border-brand-dark/15 bg-white hover:border-brand-dark/30'
+                      }`}
+                    >
+                      <ImageIcon className={`w-5 h-5 shrink-0 mt-0.5 ${festiveDisplayMode === 'banner' ? 'text-brand-accent' : 'text-brand-muted'}`} />
+                      <div>
+                        <span className="block font-mono text-xs font-bold text-brand-dark uppercase">
+                          1. Graphic Banner Image (Recommended)
+                        </span>
+                        <span className="text-[11px] text-brand-muted font-sans leading-tight block pt-0.5">
+                          Upload custom artwork designed in Photoshop, Canva, or Illustrator. Click connects directly to an orderable dish.
+                        </span>
                       </div>
-                      <textarea
-                        id="settings-festive-items"
-                        rows={6}
-                        required
-                        value={festiveItems}
-                        onChange={(e) => setFestiveItems(e.target.value)}
-                        className="w-full border border-brand-dark/10 p-2 text-xs font-mono focus:border-brand-dark outline-none bg-brand-beige/10 rounded-none resize-y"
-                        placeholder="Beef Nihari | Slow-cooked beef shank..."
-                      />
-                      <span className="block text-[9px] text-brand-muted leading-relaxed font-sans font-normal">
-                        * Input each platter item on a new line. Separate item name and description with a pipe (<code>|</code>).
-                      </span>
-                    </div>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setFestiveDisplayMode('text')}
+                      className={`p-3 text-left border transition-all flex items-start gap-3 rounded-none ${
+                        festiveDisplayMode === 'text'
+                          ? 'border-brand-accent bg-brand-accent/10 shadow-sm'
+                          : 'border-brand-dark/15 bg-white hover:border-brand-dark/30'
+                      }`}
+                    >
+                      <CookingPot className={`w-5 h-5 shrink-0 mt-0.5 ${festiveDisplayMode === 'text' ? 'text-brand-accent' : 'text-brand-muted'}`} />
+                      <div>
+                        <span className="block font-mono text-xs font-bold text-brand-dark uppercase">
+                          2. Structured Text &amp; Platter Card
+                        </span>
+                        <span className="text-[11px] text-brand-muted font-sans leading-tight block pt-0.5">
+                          Enter custom title, subheader, price, description, and list of platter course items in a green themed card.
+                        </span>
+                      </div>
+                    </button>
                   </div>
                 </div>
+
+                {/* MODE 1: GRAPHIC BANNER IMAGE */}
+                {festiveDisplayMode === 'banner' && (
+                  <div className="space-y-4 border border-brand-dark/10 p-4 sm:p-5 bg-white animate-fade-in">
+                    <div className="flex items-center justify-between border-b border-brand-dark/10 pb-2">
+                      <span className="font-mono text-xs text-brand-accent font-bold uppercase tracking-widest flex items-center gap-1.5">
+                        <ImageIcon className="w-4 h-4" />
+                        Promotional Artwork &amp; Direct-Order Linking
+                      </span>
+                      {imageFestiveBanner && (
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteImage('festive_banner')}
+                          className="text-rose-700 hover:text-rose-900 font-mono text-[10px] font-bold uppercase flex items-center gap-1 transition-colors"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                          Delete Banner
+                        </button>
+                      )}
+                    </div>
+
+                    {/* Image Upload and Live Preview */}
+                    <div className="space-y-2">
+                      <div className="w-full bg-[#FDFBF7] border-2 border-dashed border-brand-dark/20 overflow-hidden relative min-h-[160px] flex items-center justify-center p-2">
+                        {imageFestiveBanner ? (
+                          <div className="w-full relative group">
+                            <img
+                              src={imageFestiveBanner}
+                              alt={festiveBannerAlt || 'Special Offer Banner'}
+                              className="w-full max-h-[360px] object-contain mx-auto shadow-sm"
+                            />
+                            <div className="absolute top-2 right-2 bg-black/75 text-white font-mono text-[10px] px-2 py-0.5 uppercase tracking-wider font-bold">
+                              Active Banner
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="text-center p-6 space-y-2">
+                            <ImageIcon className="w-10 h-10 text-brand-muted/50 mx-auto" />
+                            <div className="font-mono text-xs font-bold text-brand-dark uppercase">
+                              No Graphic Banner Uploaded
+                            </div>
+                            <p className="text-[11px] text-brand-muted max-w-sm mx-auto font-sans">
+                              Upload your flyer, announcement image, or event banner (PNG, JPG, WEBP). Recommended size: 1200x500px or 16:9 ratio.
+                            </p>
+                          </div>
+                        )}
+
+                        {imageUploadLoading === 'festive_banner' && (
+                          <div className="absolute inset-0 bg-brand-dark/70 backdrop-blur-xs flex items-center justify-center text-white font-mono text-xs font-bold uppercase tracking-wider gap-2">
+                            <Loader2 className="w-5 h-5 animate-spin text-brand-accent" />
+                            <span>Uploading Banner Image...</span>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Upload Button */}
+                      <div className="flex flex-wrap gap-2 pt-1">
+                        <label className="flex-1 bg-brand-dark hover:bg-brand-accent text-white py-2.5 px-4 text-center font-mono text-xs font-bold uppercase tracking-wider cursor-pointer active:scale-98 transition-all flex items-center justify-center gap-2">
+                          <Upload className="w-4 h-4" />
+                          <span>{imageFestiveBanner ? 'Upload New Banner / Replace' : 'Select Graphic Banner from Device'}</span>
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={(e) => handleImageFileChange(e, 'festive_banner')}
+                            className="hidden"
+                          />
+                        </label>
+                      </div>
+                    </div>
+
+                    {/* Direct-to-Dish / Target Action Configuration */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-brand-dark/10">
+                      <div className="space-y-1">
+                        <label className="block font-mono text-[11px] text-brand-accent uppercase tracking-widest font-bold flex items-center gap-1">
+                          <MousePointerClick className="w-3.5 h-3.5" />
+                          Target Dish to Order on Click
+                        </label>
+                        <select
+                          value={festiveTargetDishId}
+                          onChange={(e) => setFestiveTargetDishId(e.target.value)}
+                          className="w-full border border-brand-dark/15 p-2 text-xs font-mono focus:border-brand-dark outline-none bg-white rounded-none"
+                        >
+                          <option value="">General Takeaway Menu (Browse all)</option>
+                          <option value="booking">Table Reservation Page</option>
+                          
+                          {/* Categorized Dishes */}
+                          {catalogCategories.map((cat) => {
+                            const catDishes = catalogProducts.filter(p => String(p.categoryId) === String(cat.id) || p.category === cat.name);
+                            if (catDishes.length === 0) return null;
+                            return (
+                              <optgroup key={cat.id} label={`Category: ${cat.name}`}>
+                                {catDishes.map((dish) => (
+                                  <option key={dish.id} value={dish.id}>
+                                    {dish.name} (&euro;{dish.price.toFixed(2)})
+                                  </option>
+                                ))}
+                              </optgroup>
+                            );
+                          })}
+
+                          {/* Combo Deals */}
+                          {catalogDeals && catalogDeals.length > 0 && (
+                            <optgroup label="Special Deals &amp; Combos">
+                              {catalogDeals.map((deal) => (
+                                <option key={deal.id} value={deal.id}>
+                                  {deal.title} (&euro;{deal.bundlePrice.toFixed(2)})
+                                </option>
+                              ))}
+                            </optgroup>
+                          )}
+                        </select>
+                        <span className="block text-[9px] text-brand-muted font-sans">
+                          * When clicked, customer is navigated to ordering and the item customization modal opens instantly.
+                        </span>
+                      </div>
+
+                      <div className="space-y-1">
+                        <label className="block font-mono text-[11px] text-brand-accent uppercase tracking-widest font-bold">
+                          Banner Alt Text / Title
+                        </label>
+                        <input
+                          type="text"
+                          value={festiveBannerAlt}
+                          onChange={(e) => setFestiveBannerAlt(e.target.value)}
+                          placeholder="e.g. Special Weekend Deal"
+                          className="w-full border border-brand-dark/15 p-2 text-xs font-mono focus:border-brand-dark outline-none bg-white rounded-none"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Call to Action Overlay Controls */}
+                    <div className="space-y-2 pt-2 border-t border-brand-dark/10">
+                      <div className="flex items-center justify-between">
+                        <label className="flex items-center gap-2 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={festiveBannerCtaEnabled}
+                            onChange={(e) => setFestiveBannerCtaEnabled(e.target.checked)}
+                            className="w-4 h-4 text-emerald-600 focus:ring-emerald-500 rounded"
+                          />
+                          <span className="font-mono text-xs font-bold text-brand-dark">
+                            Show &quot;Order Now&quot; Button Below Banner
+                          </span>
+                        </label>
+                      </div>
+
+                      {festiveBannerCtaEnabled && (
+                        <div className="space-y-1">
+                          <label className="block font-mono text-[10px] text-brand-accent uppercase tracking-widest font-bold">
+                            CTA Button Text
+                          </label>
+                          <input
+                            type="text"
+                            value={festiveBannerCtaText}
+                            onChange={(e) => setFestiveBannerCtaText(e.target.value)}
+                            placeholder="e.g. Order Special Offer Online"
+                            className="w-full border border-brand-dark/15 p-2 text-xs font-mono focus:border-brand-dark outline-none bg-white rounded-none"
+                          />
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* MODE 2: STRUCTURED TEXT & PLATTER CARD */}
+                {festiveDisplayMode === 'text' && (
+                  <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-6 border border-brand-dark/10 p-4 sm:p-5 bg-white animate-fade-in">
+                    {/* Left Column: Basic Details */}
+                    <div className="lg:col-span-6 space-y-3">
+                      {/* Festive Header / Title */}
+                      <div className="space-y-1">
+                        <label htmlFor="settings-festive-header" className="block font-mono text-xs text-brand-accent uppercase tracking-widest font-bold">
+                          Special Offer Header / Festival Name
+                        </label>
+                        <input
+                          id="settings-festive-header"
+                          type="text"
+                          required
+                          value={festiveHeader}
+                          onChange={(e) => setFestiveHeader(e.target.value)}
+                          className="w-full border border-brand-dark/10 p-2 text-xs font-mono focus:border-brand-dark outline-none bg-brand-beige/10 rounded-none"
+                          placeholder="e.g. FATHER'S DAY DINNER"
+                        />
+                      </div>
+
+                      {/* Subheader / Run Times */}
+                      <div className="space-y-1">
+                        <label htmlFor="settings-festive-subheader" className="block font-mono text-xs text-brand-accent uppercase tracking-widest font-bold">
+                          Subheader / Run Days
+                        </label>
+                        <input
+                          id="settings-festive-subheader"
+                          type="text"
+                          required
+                          value={festiveSubheader}
+                          onChange={(e) => setFestiveSubheader(e.target.value)}
+                          className="w-full border border-brand-dark/10 p-2 text-xs font-mono focus:border-brand-dark outline-none bg-brand-beige/10 rounded-none"
+                          placeholder="e.g. Running: Thursday — Friday — Monday"
+                        />
+                      </div>
+
+                      {/* Price & Label Row */}
+                      <div className="grid grid-cols-2 gap-2">
+                        <div className="space-y-1">
+                          <label htmlFor="settings-festive-price" className="block font-mono text-[10px] text-brand-accent uppercase tracking-widest font-bold">
+                            Offer Price (&euro;)
+                          </label>
+                          <input
+                            id="settings-festive-price"
+                            type="text"
+                            required
+                            value={festivePrice}
+                            onChange={(e) => setFestivePrice(e.target.value)}
+                            className="w-full border border-brand-dark/10 p-2 text-xs font-mono focus:border-brand-dark outline-none bg-brand-beige/10 rounded-none"
+                            placeholder="e.g. 35.00"
+                          />
+                        </div>
+
+                        <div className="space-y-1">
+                          <label htmlFor="settings-festive-price-label" className="block font-mono text-[10px] text-brand-accent uppercase tracking-widest font-bold">
+                            Price Label
+                          </label>
+                          <input
+                            id="settings-festive-price-label"
+                            type="text"
+                            required
+                            value={festivePriceLabel}
+                            onChange={(e) => setFestivePriceLabel(e.target.value)}
+                            className="w-full border border-brand-dark/10 p-2 text-xs font-mono focus:border-brand-dark outline-none bg-brand-beige/10 rounded-none"
+                            placeholder="e.g. FOR 2 PEOPLE:"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Right Column: Description & Items */}
+                    <div className="lg:col-span-6 space-y-3">
+                      {/* Offer Description */}
+                      <div className="space-y-1">
+                        <label htmlFor="settings-festive-desc" className="block font-mono text-xs text-brand-accent uppercase tracking-widest font-bold">
+                          Main Offer Description
+                        </label>
+                        <textarea
+                          id="settings-festive-desc"
+                          rows={2}
+                          required
+                          value={festiveDescription}
+                          onChange={(e) => setFestiveDescription(e.target.value)}
+                          className="w-full border border-brand-dark/10 p-2 text-xs font-mono focus:border-brand-dark outline-none bg-brand-beige/10 rounded-none resize-none"
+                          placeholder="Celebrate the festive weekend with..."
+                        />
+                      </div>
+
+                      {/* Platter Items Editor */}
+                      <div className="space-y-1">
+                        <div className="flex justify-between items-baseline">
+                          <label htmlFor="settings-festive-items" className="block font-mono text-xs text-brand-accent uppercase tracking-widest font-bold">
+                            Platter Items List
+                          </label>
+                          <span className="text-[9px] font-mono text-brand-muted uppercase">Format: Name | Description</span>
+                        </div>
+                        <textarea
+                          id="settings-festive-items"
+                          rows={6}
+                          required
+                          value={festiveItems}
+                          onChange={(e) => setFestiveItems(e.target.value)}
+                          className="w-full border border-brand-dark/10 p-2 text-xs font-mono focus:border-brand-dark outline-none bg-brand-beige/10 rounded-none resize-y"
+                          placeholder="Beef Nihari | Slow-cooked beef shank..."
+                        />
+                        <span className="block text-[9px] text-brand-muted leading-relaxed font-sans font-normal">
+                          * Input each platter item on a new line. Separate item name and description with a pipe (<code>|</code>).
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 

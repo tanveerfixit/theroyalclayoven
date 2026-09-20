@@ -2195,7 +2195,7 @@ app.post('/api/admin/upload-image', requireAdmin, async (req, res) => {
     return res.status(400).json({ error: 'imageType and imageBytes (Base64 string) are required' });
   }
 
-  const allowedTypes = ['hero_bg', 'heritage_left', 'heritage_right'];
+  const allowedTypes = ['hero_bg', 'heritage_left', 'heritage_right', 'festive_banner'];
   if (!allowedTypes.includes(imageType)) {
     return res.status(400).json({ error: 'Invalid imageType specified' });
   }
@@ -2226,6 +2226,25 @@ app.post('/api/admin/upload-image', requireAdmin, async (req, res) => {
   } catch (error) {
     console.error('Error saving uploaded image in database:', error);
     res.status(500).json({ error: 'Failed to process and save gallery image in database settings' });
+  }
+});
+
+// Delete Image API Endpoint
+app.post('/api/admin/delete-image', requireAdmin, async (req, res) => {
+  const { imageType } = req.body;
+  if (!imageType) {
+    return res.status(400).json({ error: 'imageType is required' });
+  }
+
+  const settingKey = `clay_oven_image_${imageType}`;
+  try {
+    await pool.query('DELETE FROM store_settings WHERE setting_key = ?', [settingKey]);
+    settingsCache = null;
+    imageSettingsCache.delete(settingKey);
+    res.json({ success: true, message: 'Image removed successfully' });
+  } catch (error) {
+    console.error('Error deleting image from database:', error);
+    res.status(500).json({ error: 'Failed to delete image' });
   }
 });
 
