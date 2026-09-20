@@ -221,22 +221,22 @@ export default function App() {
   // Drive the cart drawer's enter/exit CSS transition without the motion library
   React.useEffect(() => {
     if (isCartOpen) {
-      setIsCartDrawerMounted(true);
+      setIsCartDrawerMounted(true); // eslint-disable-line react-hooks/set-state-in-effect
       const raf = requestAnimationFrame(() => requestAnimationFrame(() => setIsCartDrawerAnimatingIn(true)));
       return () => cancelAnimationFrame(raf);
     } else {
-      setIsCartDrawerAnimatingIn(false);
+      setIsCartDrawerAnimatingIn(false); // eslint-disable-line react-hooks/set-state-in-effect
       const timeout = setTimeout(() => setIsCartDrawerMounted(false), 250);
       return () => clearTimeout(timeout);
     }
   }, [isCartOpen]);
 
-  // Synchronize cart with localStorage for continuity
+  // Hydrate cart from localStorage on mount
   React.useEffect(() => {
     const savedCart = localStorage.getItem('clay_oven_active_cart');
     if (savedCart) {
       try {
-        setCart(JSON.parse(savedCart));
+        setCart(JSON.parse(savedCart)); // eslint-disable-line react-hooks/set-state-in-effect
       } catch (err) {
         console.error('Failed to parse active cart', err);
       }

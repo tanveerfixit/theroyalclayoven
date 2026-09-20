@@ -4,8 +4,8 @@
  */
 
 export interface OptionItem {
-  id: number | string;
-  groupId: number | string;
+  id: string;
+  groupId: string;
   name: string;
   priceModifier: number; // 0.00 for free, 1.50 for extra
   isDefault?: boolean;
@@ -13,7 +13,7 @@ export interface OptionItem {
 }
 
 export interface OptionGroup {
-  id: number | string;
+  id: string;
   title: string; // e.g. "Select Included Free Drink", "Choice of Side", "Add Extra Dips"
   minSelection: number; // 1 = mandatory, 0 = optional
   maxSelection: number; // 1 = single choice, >1 = multiple choices
@@ -22,14 +22,14 @@ export interface OptionGroup {
 }
 
 export interface MenuCategory {
-  id: number | string;
+  id: string;
   name: string;
   slug: string;
   description?: string;
   displayOrder?: number;
   isActive?: boolean;
   imageUrl?: string;
-  optionGroupIds?: (number | string)[];
+  optionGroupIds?: string[];
 }
 
 export interface MenuItem {
@@ -41,18 +41,18 @@ export interface MenuItem {
   sizeOptions?: { name: string; price: number }[];
   isVeg?: boolean;
   category: string;
-  categoryId?: number | string;
+  categoryId?: string;
   isActive?: boolean;
   isSoldOut?: boolean;
   imageUrl?: string;
   displayOrder?: number;
-  optionGroupIds?: (number | string)[]; // directly assigned modifier groups
+  optionGroupIds?: string[]; // directly assigned modifier groups
 }
 
 export interface DealStep {
   stepName: string; // e.g. "Choose Your Main Karahi"
   categoryName?: string;
-  categoryId?: number | string;
+  categoryId?: string;
   count: number; // e.g. 1
   allowedProductIds?: string[]; // optional specific items filter
 }
@@ -69,9 +69,9 @@ export interface MenuDeal {
 }
 
 export interface SelectedModifier {
-  groupId: number | string;
+  groupId: string;
   groupTitle: string;
-  optionId: number | string;
+  optionId: string;
   optionName: string;
   price: number;
   quantity?: number;
