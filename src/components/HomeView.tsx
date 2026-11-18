@@ -4,7 +4,7 @@
  */
 
 import React from 'react';
-import { ChefHat, ShoppingBag, Calendar, Phone, Clock, MapPin, ArrowRight, ShieldCheck, Heart, Sparkles, X } from 'lucide-react';
+import { ChefHat, ShoppingBag, Calendar, Phone, Clock, MapPin, ArrowRight, ShieldCheck, Heart, Sparkles, X, Check, CheckCircle, Utensils, User, Mail } from 'lucide-react';
 import { MENU_ITEMS } from '../data/menu';
 
 interface HomeViewProps {
@@ -72,31 +72,30 @@ export const HomeView: React.FC<HomeViewProps> = ({ setCurrentTab, businessInfo:
   };
 
   const [festiveEnabled, setFestiveEnabled] = React.useState(localStorage.getItem('clay_oven_festive_enabled') !== 'false');
-  const [festiveDisplayMode, setFestiveDisplayMode] = React.useState<'banner' | 'text'>(() => (localStorage.getItem('clay_oven_festive_display_mode') as any) || 'banner');
-  const [imageFestiveBanner, setImageFestiveBanner] = React.useState(() => getValidImageUrl(localStorage.getItem('clay_oven_image_festive_banner'), ''));
-  const [festiveTargetDishId, setFestiveTargetDishId] = React.useState(localStorage.getItem('clay_oven_festive_target_dish_id') || '');
+  const [festiveDisplayMode, setFestiveDisplayMode] = React.useState<'banner' | 'text' | 'card_with_image'>(() => (localStorage.getItem('clay_oven_festive_display_mode') as any) || 'card_with_image');
+  const [imageFestiveBanner, setImageFestiveBanner] = React.useState(() => getValidImageUrl(localStorage.getItem('clay_oven_image_festive_banner'), '/christmas-platter.webp'));
+  const [festiveTargetDishId, setFestiveTargetDishId] = React.useState(localStorage.getItem('clay_oven_festive_target_dish_id') || 'pk-christmas-platter');
   const [festiveBannerCtaEnabled, setFestiveBannerCtaEnabled] = React.useState(localStorage.getItem('clay_oven_festive_banner_cta_enabled') !== 'false');
-  const [festiveBannerCtaText, setFestiveBannerCtaText] = React.useState(localStorage.getItem('clay_oven_festive_banner_cta_text') || 'Order Special Offer Online');
-  const [festiveBannerAlt, setFestiveBannerAlt] = React.useState(localStorage.getItem('clay_oven_festive_banner_alt') || 'Special Offer Announcement');
-  const [festiveHeader, setFestiveHeader] = React.useState(localStorage.getItem('clay_oven_festive_header') || "FATHER'S DAY DINNER");
-  const [festiveSubheader, setFestiveSubheader] = React.useState(localStorage.getItem('clay_oven_festive_subheader') || 'Sunday, 21st June');
-  const [festiveDescription, setFestiveDescription] = React.useState(localStorage.getItem('clay_oven_festive_description') || `Hello to all our Royal customers!
+  const [festiveBannerCtaText, setFestiveBannerCtaText] = React.useState(localStorage.getItem('clay_oven_festive_banner_cta_text') || 'Order Christmas Platter');
+  const [festiveBannerAlt, setFestiveBannerAlt] = React.useState(localStorage.getItem('clay_oven_festive_banner_alt') || 'Christmas Platter for Two');
+  const [festiveHeader, setFestiveHeader] = React.useState(localStorage.getItem('clay_oven_festive_header') || "CHRISTMAS PLATTER FOR TWO");
+  const [festiveSubheader, setFestiveSubheader] = React.useState(localStorage.getItem('clay_oven_festive_subheader') || 'AVAILABLE FRIDAY 25 – SUNDAY 27');
+  const [festiveDescription, setFestiveDescription] = React.useState(localStorage.getItem('clay_oven_festive_description') || `A festive feast made for sharing!
 
-We are excited to announce our exclusive 4-Course Father’s Day Dinner Menu.
-
-From our signature Peri-Peri Chicken Strips and mouth-watering Smash Burgers to premium upgrades like Prime Sirloin Steak and a perfectly Pan-Seared Sea Bass, we have something spectacular for every dad.
-
-Top it all off with our delicious Milk Cake and freshly brewed tea or coffee.
-
-Booking is highly recommended. Spaces are filling up fast, so make sure you secure your table early to avoid disappointment.
-
-Please note a 10% service charge applies. Location: The Royal Clay Oven, V14 AW71. Call us now at 061 703 513 to book!`);
-  const [festivePrice, setFestivePrice] = React.useState(localStorage.getItem('clay_oven_festive_price') || '39.95');
-  const [festivePriceLabel, setFestivePriceLabel] = React.useState(localStorage.getItem('clay_oven_festive_price_label') || 'FOR 2 PEOPLE:');
-  const [festiveItemsRaw, setFestiveItemsRaw] = React.useState(localStorage.getItem('clay_oven_festive_items') || `Starters | Peri-Peri Chicken Strips & Springrolls (Veg or Chicken)
-Mains | Grilled Peppercorn Chicken, Smash Burger, Sirloin Steak (+€5 supplement) & Pan-seared Fish (+€5 supplement)
-Dessert | Milk Cake
-Beverages | Tea or Coffee`);
+Friday & Saturday: 12pm – 9pm
+Sunday: 1pm – 5pm`);
+  const [festivePrice, setFestivePrice] = React.useState(localStorage.getItem('clay_oven_festive_price') || '60.00');
+  const [festivePriceLabel, setFestivePriceLabel] = React.useState(localStorage.getItem('clay_oven_festive_price_label') || 'FOR TWO:');
+  const [festiveItemsRaw, setFestiveItemsRaw] = React.useState(localStorage.getItem('clay_oven_festive_items') || `The Royal Kebab | Four different chicken marinades, grilled together on a skewer.
+Chapli Kebab | Traditional spiced minced beef kebab, pan-fried to perfection.
+Lamb Rogan Josh | Rich, aromatic lamb curry.
+BBQ Lamb Chops | Tender lamb chops, marinated and grilled with smoky barbecue flavour.
+Fragrant Pilau Rice | Basmati rice cooked with whole aromatic spices.
+2 Fresh Naan | Hot baked in traditional clay oven.
+Mango Chutney | Sweet & tangy mango relish.
+Green Chutney | Fresh mint & coriander dip.
+Mint Yoghurt | Cooling spiced raita dip.
+Gajar Ka Halwa | Traditional sweet carrot dessert.`);
 
   // Self-hosted Gallery Image States
   const [imageHeroBg, setImageHeroBg] = React.useState(() => getValidImageUrl(localStorage.getItem('clay_oven_image_hero_bg'), '/hero-bg.webp'));
@@ -232,11 +231,145 @@ Beverages | Tea or Coffee`);
   const parsedPrice = parseFloat(festivePrice);
   const hasPrice = festivePrice && !isNaN(parsedPrice) && parsedPrice > 0;
 
-  const handleFestiveOfferClick = () => {
-    if (festiveTargetDishId) {
-      localStorage.setItem('clay_oven_pending_order_dish_id', festiveTargetDishId);
+  // Interactive Day & Time selection for event platter (Dine-in booking)
+  const [eventDay, setEventDay] = React.useState<'Friday 25th' | 'Saturday 26th' | 'Sunday 27th'>('Friday 25th');
+  const [eventTimeSlot, setEventTimeSlot] = React.useState<string>('18:00');
+  const [bookingName, setBookingName] = React.useState('');
+  const [bookingEmail, setBookingEmail] = React.useState('');
+  const [bookingPhone, setBookingPhone] = React.useState('');
+  const [bookingGuests, setBookingGuests] = React.useState(2);
+  const [isSubmittingBooking, setIsSubmittingBooking] = React.useState(false);
+  const [bookingSuccess, setBookingSuccess] = React.useState<{ id: string; day: string; time: string; guests: number; name: string; email: string } | null>(null);
+  const [bookingError, setBookingError] = React.useState<string | null>(null);
+
+  // Pre-fill user profile if logged in
+  React.useEffect(() => {
+    const storedUser = localStorage.getItem('clay_oven_google_user');
+    if (storedUser) {
+      try {
+        const u = JSON.parse(storedUser);
+        if (u.name) setBookingName(u.name);
+        if (u.email) setBookingEmail(u.email);
+        if (u.phone) setBookingPhone(u.phone);
+      } catch (e) {
+        // ignore
+      }
     }
-    setCurrentTab('takeaway');
+  }, []);
+
+  const availableTimeSlots = React.useMemo(() => {
+    if (eventDay === 'Sunday 27th') {
+      return [
+        { label: '1:00 PM', value: '13:00' },
+        { label: '1:30 PM', value: '13:30' },
+        { label: '2:00 PM', value: '14:00' },
+        { label: '2:30 PM', value: '14:30' },
+        { label: '3:00 PM', value: '15:00' },
+        { label: '3:30 PM', value: '15:30' },
+        { label: '4:00 PM', value: '16:00' },
+        { label: '4:30 PM', value: '16:30' },
+        { label: '5:00 PM', value: '17:00' },
+      ];
+    }
+    return [
+      { label: '12:00 PM', value: '12:00' },
+      { label: '1:00 PM', value: '13:00' },
+      { label: '2:00 PM', value: '14:00' },
+      { label: '3:00 PM', value: '15:00' },
+      { label: '4:00 PM', value: '16:00' },
+      { label: '5:00 PM', value: '17:00' },
+      { label: '6:00 PM', value: '18:00' },
+      { label: '7:00 PM', value: '19:00' },
+      { label: '8:00 PM', value: '20:00' },
+      { label: '8:30 PM', value: '20:30' },
+    ];
+  }, [eventDay]);
+
+  React.useEffect(() => {
+    const isValid = availableTimeSlots.some(s => s.value === eventTimeSlot);
+    if (!isValid && availableTimeSlots.length > 0) {
+      setEventTimeSlot(availableTimeSlots[0].value);
+    }
+  }, [availableTimeSlots, eventTimeSlot]);
+
+  // Direct Dine-in Table Booking submission
+  const handleDirectDineInBooking = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setBookingError(null);
+
+    if (!bookingName.trim()) {
+      setBookingError('Please enter your full name.');
+      return;
+    }
+    if (!bookingEmail.trim() || !bookingEmail.includes('@')) {
+      setBookingError('Please enter a valid email address.');
+      return;
+    }
+    if (!bookingPhone.trim() || bookingPhone.replace(/\D/g, '').length < 7) {
+      setBookingError('Please enter a valid mobile number.');
+      return;
+    }
+
+    setIsSubmittingBooking(true);
+    try {
+      const slotLabel = availableTimeSlots.find(s => s.value === eventTimeSlot)?.label || eventTimeSlot;
+      const year = new Date().getFullYear();
+      const dateStr = eventDay.includes('25') ? `${year}-12-25` : eventDay.includes('26') ? `${year}-12-26` : `${year}-12-27`;
+      const bookingId = `BK-${Date.now().toString().slice(-6)}`;
+
+      const newBooking = {
+        id: bookingId,
+        name: bookingName.trim(),
+        email: bookingEmail.trim(),
+        phone: bookingPhone.trim(),
+        partySize: bookingGuests,
+        date: dateStr,
+        time: eventTimeSlot,
+        diningArea: 'Indoor',
+        specialRequests: `Christmas Platter for Two (Dine-in Feast - ${eventDay} at ${slotLabel})`,
+        status: 'Pending',
+        createdAt: new Date().toISOString()
+      };
+
+      const res = await fetch('/api/bookings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newBooking)
+      });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || 'Failed to submit booking');
+      }
+
+      // Save locally
+      const existing = JSON.parse(localStorage.getItem('clay_oven_bookings') || '[]');
+      existing.unshift(newBooking);
+      localStorage.setItem('clay_oven_bookings', JSON.stringify(existing));
+      window.dispatchEvent(new Event('booking_created'));
+
+      setBookingSuccess({
+        id: bookingId,
+        day: eventDay,
+        time: slotLabel,
+        guests: bookingGuests,
+        name: bookingName.trim(),
+        email: bookingEmail.trim()
+      });
+    } catch (err: any) {
+      setBookingError(err.message || 'Something went wrong. Please call us directly at 061 703 513.');
+    } finally {
+      setIsSubmittingBooking(false);
+    }
+  };
+
+  const handleFestiveOfferClick = () => {
+    const el = document.getElementById('festive-booking-form');
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } else {
+      setCurrentTab('booking');
+    }
   };
 
   // Highlight some premium items
@@ -290,134 +423,285 @@ Beverages | Tea or Coffee`);
         </div>
       </section>
 
-      {/* Dynamic Festive / Special Offer Section */}
+      {/* Dynamic Festive / Special Offer Section (Dine-In Exclusive) */}
       {festiveEnabled && (
-        <>
-          {/* 1. GRAPHIC BANNER IMAGE MODE */}
-          {festiveDisplayMode === 'banner' && imageFestiveBanner ? (
-            <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-10 sm:mt-14 animate-fade-in">
-              <div className="relative group overflow-hidden border-2 border-brand-accent/40 shadow-2xl bg-stone-950">
-                {/* Decorative Special Offer Tag */}
-                <div className="absolute top-0 right-0 z-10 bg-brand-accent text-white font-mono text-[10px] sm:text-xs uppercase tracking-widest px-4 py-1.5 font-bold flex items-center gap-1.5 shadow-md">
-                  <Sparkles className="w-3.5 h-3.5 animate-pulse" />
-                  <span>Special Offer</span>
-                </div>
+        <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-10 sm:mt-14 animate-fade-in" id="festive-event-section">
+          <div className="relative border-2 border-amber-500/40 bg-gradient-to-br from-stone-950 via-emerald-950 to-stone-950 shadow-2xl overflow-hidden rounded-none">
+            
+            {/* Top Festive Badge */}
+            <div className="absolute top-0 right-0 z-20 bg-gradient-to-r from-amber-600 to-amber-500 text-white font-mono text-[10px] sm:text-xs uppercase tracking-widest px-4 py-1.5 font-bold flex items-center gap-1.5 shadow-md">
+              <Sparkles className="w-3.5 h-3.5 animate-pulse text-amber-200" />
+              <span>DINE-IN EXCLUSIVE EVENT</span>
+            </div>
 
-                {/* Clickable Banner Image */}
-                <div 
-                  onClick={handleFestiveOfferClick}
-                  className="cursor-pointer overflow-hidden block w-full relative group/img bg-stone-950"
-                  title="Click to view and order this special offer"
-                >
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 p-6 sm:p-8 lg:p-10 items-stretch">
+              
+              {/* Left Column: Dish Image Showcase */}
+              <div className="lg:col-span-5 flex flex-col justify-between space-y-4">
+                <div className="relative group overflow-hidden border border-amber-500/30 bg-black shadow-xl aspect-4/3 sm:aspect-auto sm:h-full min-h-[300px]">
                   <img
-                    src={imageFestiveBanner}
-                    alt={festiveBannerAlt || 'Special Offer Banner'}
-                    className="w-full h-auto max-h-[550px] object-cover sm:object-contain mx-auto transition-transform duration-500 group-hover/img:scale-[1.01]"
+                    src={imageFestiveBanner || '/christmas-platter.webp'}
+                    alt={festiveHeader || 'Christmas Platter for Two'}
+                    className="w-full h-full object-cover object-center transition-transform duration-700 group-hover:scale-105"
                   />
-                  <div className="absolute inset-0 bg-black/0 group-hover/img:bg-black/10 transition-colors pointer-events-none" />
-                </div>
-
-                {/* Optional Call to Action Bar */}
-                {festiveBannerCtaEnabled && (
-                  <div className="bg-gradient-to-r from-stone-900 via-brand-dark to-stone-900 p-4 sm:p-5 flex flex-col sm:flex-row items-center justify-between gap-3 border-t border-white/10">
-                    <div className="text-center sm:text-left">
-                      <span className="font-mono text-[10px] sm:text-[11px] text-brand-accent uppercase font-bold tracking-widest block">
-                        LIMITED TIME SPECIAL
-                      </span>
-                      <h4 className="font-serif text-base sm:text-xl font-bold text-white tracking-wide">
-                        {festiveBannerAlt || 'Order Our Special Offer'}
-                      </h4>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={handleFestiveOfferClick}
-                      className="w-full sm:w-auto bg-brand-accent hover:bg-brand-dark text-white font-mono text-xs sm:text-sm font-bold uppercase tracking-widest px-7 sm:px-9 py-3 sm:py-3.5 transition-all duration-200 shadow-md hover:shadow-lg active:scale-95 flex items-center justify-center gap-2 rounded-full cursor-pointer"
-                    >
-                      <span>{festiveBannerCtaText || 'Order Special Offer Online'}</span>
-                      <ArrowRight className="w-4 h-4 ml-1" />
-                    </button>
-                  </div>
-                )}
-              </div>
-            </section>
-          ) : (
-            /* 2. STRUCTURED TEXT & PLATTER CARD MODE */
-            <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-12 sm:mt-16">
-              <div className="border-2 border-emerald-600 bg-emerald-950 p-8 sm:p-12 relative overflow-hidden rounded-none shadow-xl">
-                {/* Decorative limited-time tag */}
-                <div className="absolute top-0 right-0 animate-shimmer text-white font-mono text-[10px] sm:text-xs uppercase tracking-widest px-4 py-2 font-bold flex items-center gap-1.5 shadow-[0_4px_12px_rgba(200,90,50,0.2)]">
-                  <Sparkles className="w-3.5 h-3.5 animate-pulse" />
-                  <span>Special Offer</span>
-                </div>
-                
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent pointer-events-none" />
                   
-                  {/* Column 1: Promo Detail Banner */}
-                  <div className="lg:col-span-5 space-y-4">
-                    <span className="font-mono text-sm tracking-widest text-emerald-400 uppercase font-bold block">
-                      SPECIAL EVENT
+                  {/* Photo Overlays */}
+                  <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between text-white">
+                    <span className="bg-amber-500/90 text-stone-950 font-mono text-[10px] sm:text-xs font-bold uppercase px-2.5 py-1 tracking-wider backdrop-blur-sm">
+                      DINE-IN ONLY &bull; {festiveSubheader || 'FRI 25 – SUN 27'}
                     </span>
-                    <h2 className="font-serif text-3xl sm:text-4xl lg:text-5xl font-extrabold text-white tracking-tight leading-none uppercase whitespace-pre-line">
-                      {festiveHeader}
-                    </h2>
-                    <div className="inline-block bg-emerald-900/50 border border-emerald-700 px-3 py-1">
-                      <p className="font-mono text-[11px] text-emerald-300 tracking-widest uppercase font-bold">
-                        {festiveSubheader}
-                      </p>
-                    </div>
-                    <p className="text-sm text-emerald-100 leading-relaxed font-normal whitespace-pre-line">
-                      {festiveDescription}
-                    </p>
-                    
                     {hasPrice && (
-                      <>
-                        <div className="pt-4 flex items-baseline space-x-2">
-                          <span className="text-xs font-mono text-emerald-300 uppercase">{festivePriceLabel}</span>
-                          <span className="text-4xl font-serif font-black text-white">&euro;{parsedPrice.toFixed(2)}</span>
-                        </div>
-                        <p className="text-[10px] font-mono text-emerald-300 uppercase tracking-wider">
-                          * Service charge will apply
-                        </p>
-                      </>
+                      <span className="bg-black/80 border border-amber-500/50 text-amber-400 font-serif font-black text-sm sm:text-base px-3 py-1">
+                        &euro;{parsedPrice.toFixed(2)} (FOR 2)
+                      </span>
                     )}
                   </div>
+                </div>
 
-                  {/* Column 2: Platter Menu Card */}
-                  <div className="lg:col-span-7 bg-emerald-900/30 border border-emerald-800 p-6 sm:p-8 space-y-6 shadow-sm">
-                    <h3 className="font-serif text-xl font-bold tracking-tight text-white uppercase border-b border-emerald-800 pb-3 flex items-center justify-between">
-                      <span>SPECIAL MENU PLATTER</span>
-                      <Sparkles className="w-5 h-5 text-emerald-400" />
-                    </h3>
-
-                    <ul className="space-y-4 text-sm font-sans text-emerald-100">
-                      {parsedFestiveItems.map((item, idx) => (
-                        <li key={idx} className="flex items-start">
-                          <span className="w-2 h-2 bg-emerald-400 mt-2 mr-3 shrink-0"></span>
-                          <div>
-                            <strong className="font-bold block text-sm text-white">{item.name}</strong>
-                            {item.description && <p className="text-xs text-emerald-300">{item.description}</p>}
-                          </div>
-                        </li>
-                      ))}
-                    </ul>
-
-                    {/* Dynamic CTA button */}
-                    <div className="pt-4 border-t border-emerald-800">
-                      <button
-                        type="button"
-                        onClick={handleFestiveOfferClick}
-                        className="w-full bg-emerald-600 hover:bg-emerald-500 text-white py-3.5 px-6 text-xs sm:text-sm tracking-wider font-bold uppercase transition-all duration-200 text-center rounded-full shadow-md cursor-pointer active:scale-[0.98]"
-                      >
-                        Order Platter Online
-                      </button>
-                    </div>
+                {/* Operating Hours Callout */}
+                <div className="bg-black/40 border border-emerald-500/20 p-3 font-mono text-xs text-emerald-200 flex flex-col sm:flex-row items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <Clock className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                    <span><strong>Fri &amp; Sat:</strong> 12:00 PM – 9:00 PM</span>
                   </div>
-
+                  <div className="flex items-center gap-2">
+                    <Clock className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                    <span><strong>Sunday:</strong> 1:00 PM – 5:00 PM</span>
+                  </div>
                 </div>
               </div>
-            </section>
-          )}
-        </>
+
+              {/* Right Column: Menu Details & Direct Table Booking */}
+              <div className="lg:col-span-7 flex flex-col justify-between space-y-4">
+                
+                {/* Header Information */}
+                <div className="space-y-1.5">
+                  <span className="font-mono text-xs tracking-widest text-amber-400 uppercase font-bold flex items-center gap-1.5">
+                    <Utensils className="w-3.5 h-3.5" />
+                    <span>DINE-IN CELEBRATION &bull; TABLE RESERVATION REQUIRED</span>
+                  </span>
+                  <h2 className="font-serif text-2xl sm:text-3xl lg:text-4xl font-extrabold text-white tracking-tight uppercase">
+                    {festiveHeader || 'CHRISTMAS PLATTER FOR TWO'}
+                  </h2>
+                  <p className="text-xs sm:text-sm text-emerald-100/90 leading-relaxed font-light">
+                    A festive feast made for sharing! Join us in our dining hall to enjoy our signature flame-grilled tandoor selection, aromatics curries, and warm dessert served fresh to your table.
+                  </p>
+                </div>
+
+                {/* Platter Item List (Single clean div with compact padding & margins) */}
+                <div className="bg-black/35 border border-emerald-800/40 p-3 sm:p-3.5 rounded-none text-xs text-stone-200">
+                  <div className="flex items-center justify-between pb-1.5 mb-2 border-b border-emerald-800/40">
+                    <span className="font-serif text-xs sm:text-sm font-bold text-amber-300 uppercase tracking-wide">
+                      WHAT&#39;S INCLUDED IN THE PLATTER
+                    </span>
+                    <span className="font-mono text-[10px] sm:text-xs text-emerald-300">
+                      Serves 2 Guests &bull; Dine-In Feast
+                    </span>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1 leading-snug">
+                    {parsedFestiveItems.map((item, idx) => (
+                      <div key={idx} className="flex items-baseline gap-1.5">
+                        <span className="text-amber-400 font-bold shrink-0">&bull;</span>
+                        <div className="text-[11px] sm:text-xs">
+                          <strong className="text-white font-semibold">{item.name}</strong>
+                          {item.description && (
+                            <span className="text-emerald-200/80 font-normal"> &ndash; {item.description}</span>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Direct Dine-In Table Booking Form */}
+                <div className="bg-stone-900/95 border border-amber-500/35 p-3.5 sm:p-4 space-y-3" id="festive-booking-form">
+                  
+                  {bookingSuccess ? (
+                    <div className="p-4 bg-emerald-950/80 border border-emerald-500/50 space-y-3 text-center animate-fade-in">
+                      <div className="w-10 h-10 bg-emerald-500/20 text-emerald-400 rounded-full flex items-center justify-center mx-auto border border-emerald-500/40">
+                        <CheckCircle className="w-6 h-6" />
+                      </div>
+                      <h4 className="font-serif text-lg sm:text-xl font-bold text-white">
+                        Table Reservation Request Received!
+                      </h4>
+                      <p className="font-mono text-xs text-amber-400 font-bold">
+                        Booking Reference: {bookingSuccess.id}
+                      </p>
+                      <p className="text-xs text-emerald-100 max-w-md mx-auto leading-relaxed">
+                        Thank you, <strong>{bookingSuccess.name}</strong>! Your table for the <strong>Christmas Platter for Two</strong> is booked for <strong>{bookingSuccess.day} at {bookingSuccess.time}</strong> ({bookingSuccess.guests} Guests).
+                      </p>
+                      <p className="text-[11px] text-emerald-300 font-mono">
+                        A confirmation receipt has been sent to <strong>{bookingSuccess.email}</strong>.
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => setBookingSuccess(null)}
+                        className="mt-2 text-xs font-mono uppercase tracking-wider text-amber-400 hover:text-white underline underline-offset-4 cursor-pointer"
+                      >
+                        Book Another Table
+                      </button>
+                    </div>
+                  ) : (
+                    <form onSubmit={handleDirectDineInBooking} className="space-y-3">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 border-b border-white/10 pb-2">
+                        <span className="font-mono text-xs text-amber-400 font-bold uppercase tracking-wider flex items-center gap-1.5">
+                          <Calendar className="w-3.5 h-3.5" />
+                          <span>BOOK YOUR DINE-IN TABLE FOR THE PLATTER</span>
+                        </span>
+                        <span className="font-mono text-[11px] text-stone-300">
+                          Price: <strong className="text-amber-400 text-xs sm:text-sm">&euro;{parsedPrice.toFixed(2)}</strong> (for 2)
+                        </span>
+                      </div>
+
+                      {/* Step 1: Day Picker */}
+                      <div className="space-y-1">
+                        <label className="block font-mono text-[10px] sm:text-[11px] uppercase tracking-wider text-stone-300 font-medium">
+                          1. Select Feast Day:
+                        </label>
+                        <div className="grid grid-cols-3 gap-2">
+                          {(['Friday 25th', 'Saturday 26th', 'Sunday 27th'] as const).map((day) => {
+                            const isSelected = eventDay === day;
+                            return (
+                              <button
+                                key={day}
+                                type="button"
+                                onClick={() => setEventDay(day)}
+                                className={`py-1.5 px-2 text-center font-mono text-xs font-bold uppercase transition-all border cursor-pointer ${
+                                  isSelected
+                                    ? 'bg-amber-500 text-stone-950 border-amber-400 shadow-md scale-[1.02]'
+                                    : 'bg-stone-950 text-stone-300 border-white/10 hover:border-amber-500/50 hover:bg-stone-800'
+                                }`}
+                              >
+                                <span>{day}</span>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+
+                      {/* Step 2: Time Slot & Party Size */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                        <div className="space-y-1">
+                          <label className="block font-mono text-[10px] sm:text-[11px] uppercase tracking-wider text-stone-300 font-medium">
+                            2. Preferred Time Slot:
+                          </label>
+                          <select
+                            value={eventTimeSlot}
+                            onChange={(e) => setEventTimeSlot(e.target.value)}
+                            className="w-full bg-stone-950 border border-amber-500/40 text-white font-mono text-xs py-2 px-2.5 focus:outline-none focus:border-amber-400 cursor-pointer"
+                          >
+                            {availableTimeSlots.map((slot) => (
+                              <option key={slot.value} value={slot.value} className="bg-stone-900 text-white">
+                                {slot.label} ({eventDay})
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+
+                        <div className="space-y-1">
+                          <label className="block font-mono text-[10px] sm:text-[11px] uppercase tracking-wider text-stone-300 font-medium">
+                            3. Party Size (Guests):
+                          </label>
+                          <select
+                            value={bookingGuests}
+                            onChange={(e) => setBookingGuests(parseInt(e.target.value) || 2)}
+                            className="w-full bg-stone-950 border border-amber-500/40 text-white font-mono text-xs py-2 px-2.5 focus:outline-none focus:border-amber-400 cursor-pointer"
+                          >
+                            <option value={2}>2 Guests (1 Platter)</option>
+                            <option value={3}>3 Guests</option>
+                            <option value={4}>4 Guests (2 Platters)</option>
+                            <option value={5}>5 Guests</option>
+                            <option value={6}>6 Guests (3 Platters)</option>
+                            <option value={8}>8+ Guests (Group)</option>
+                          </select>
+                        </div>
+                      </div>
+
+                      {/* Step 3: Contact Details (Name, Email, Mobile) */}
+                      <div className="space-y-1 pt-1 border-t border-white/10">
+                        <label className="block font-mono text-[10px] sm:text-[11px] uppercase tracking-wider text-stone-300 font-medium">
+                          4. Your Contact Details (for confirmation):
+                        </label>
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                          <div className="relative">
+                            <User className="w-3.5 h-3.5 text-amber-400 absolute left-2.5 top-2.5 pointer-events-none" />
+                            <input
+                              type="text"
+                              required
+                              value={bookingName}
+                              onChange={(e) => setBookingName(e.target.value)}
+                              placeholder="Full Name"
+                              className="w-full bg-stone-950 border border-amber-500/30 text-white font-sans text-xs py-2 pl-8 pr-2.5 placeholder:text-stone-500 focus:outline-none focus:border-amber-400"
+                            />
+                          </div>
+
+                          <div className="relative">
+                            <Mail className="w-3.5 h-3.5 text-amber-400 absolute left-2.5 top-2.5 pointer-events-none" />
+                            <input
+                              type="email"
+                              required
+                              value={bookingEmail}
+                              onChange={(e) => setBookingEmail(e.target.value)}
+                              placeholder="Email Address"
+                              className="w-full bg-stone-950 border border-amber-500/30 text-white font-sans text-xs py-2 pl-8 pr-2.5 placeholder:text-stone-500 focus:outline-none focus:border-amber-400"
+                            />
+                          </div>
+
+                          <div className="relative">
+                            <Phone className="w-3.5 h-3.5 text-amber-400 absolute left-2.5 top-2.5 pointer-events-none" />
+                            <input
+                              type="tel"
+                              required
+                              value={bookingPhone}
+                              onChange={(e) => setBookingPhone(e.target.value)}
+                              placeholder="Mobile Number"
+                              className="w-full bg-stone-950 border border-amber-500/30 text-white font-sans text-xs py-2 pl-8 pr-2.5 placeholder:text-stone-500 focus:outline-none focus:border-amber-400"
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Error Banner */}
+                      {bookingError && (
+                        <div className="p-2 bg-red-950/80 border border-red-500/40 text-red-200 text-xs font-mono">
+                          {bookingError}
+                        </div>
+                      )}
+
+                      {/* Action Button */}
+                      <div className="pt-1">
+                        <button
+                          type="submit"
+                          disabled={isSubmittingBooking}
+                          className="w-full bg-amber-500 hover:bg-amber-400 disabled:opacity-50 text-stone-950 py-3 px-5 font-mono text-xs sm:text-sm font-bold uppercase tracking-wider transition-all duration-200 shadow-lg hover:shadow-amber-500/20 active:scale-[0.98] flex items-center justify-center gap-2 cursor-pointer"
+                        >
+                          {isSubmittingBooking ? (
+                            <span>Submitting Reservation...</span>
+                          ) : (
+                            <>
+                              <Calendar className="w-4 h-4" />
+                              <span>Book Table for Dine-In Platter</span>
+                            </>
+                          )}
+                        </button>
+                        <p className="text-[10px] font-mono text-stone-400 text-center mt-1.5">
+                          Instant email confirmation dispatched. No deposit or advance card payment required.
+                        </p>
+                      </div>
+
+                    </form>
+                  )}
+
+                </div>
+
+              </div>
+
+            </div>
+
+          </div>
+        </section>
       )}
 
       {/* Triple Advantage Row */}

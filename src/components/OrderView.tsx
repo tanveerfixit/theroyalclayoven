@@ -580,6 +580,15 @@ export const OrderView: React.FC<OrderViewProps> = ({
       if (matchedProduct.category) {
         setSelectedCategory(matchedProduct.category);
       }
+      const preferredTimeStored = localStorage.getItem('clay_oven_preferred_platter_time');
+      if (preferredTimeStored) {
+        setPreferredTime(preferredTimeStored);
+        setCustomNotes(prev => ({
+          ...prev,
+          [matchedProduct.id]: preferredTimeStored
+        }));
+        localStorage.removeItem('clay_oven_preferred_platter_time');
+      }
       handleOpenCustomization(matchedProduct);
       setTimeout(() => {
         const el = document.getElementById(`dish-card-${matchedProduct.id}`);

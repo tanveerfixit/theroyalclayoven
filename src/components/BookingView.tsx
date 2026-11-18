@@ -242,12 +242,28 @@ The Royal Clay Oven`);
     fetchBookings();
   };
 
-  // Default date setup
+  // Default date setup, pending festive bookings & initial load
   React.useEffect(() => {
-    const today = new Date();
-    today.setDate(today.getDate() + 1); // Default to tomorrow
-    const tomorrowStr = today.toISOString().split('T')[0];
-    setBookingDate(tomorrowStr);
+    const pendingNotes = localStorage.getItem('clay_oven_pending_booking_notes');
+    if (pendingNotes) {
+      setSpecialRequests(prev => prev ? `${prev} | ${pendingNotes}` : pendingNotes);
+      localStorage.removeItem('clay_oven_pending_booking_notes');
+    }
+    const pendingDate = localStorage.getItem('clay_oven_pending_booking_date');
+    if (pendingDate) {
+      setBookingDate(pendingDate);
+      localStorage.removeItem('clay_oven_pending_booking_date');
+    } else {
+      const today = new Date();
+      today.setDate(today.getDate() + 1); // Default to tomorrow
+      const tomorrowStr = today.toISOString().split('T')[0];
+      setBookingDate(tomorrowStr);
+    }
+    const pendingTime = localStorage.getItem('clay_oven_pending_booking_time');
+    if (pendingTime) {
+      setBookingTime(pendingTime);
+      localStorage.removeItem('clay_oven_pending_booking_time');
+    }
     
     // Retrieve historical logs
     fetchBookings();

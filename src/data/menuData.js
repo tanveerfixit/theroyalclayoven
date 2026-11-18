@@ -133,6 +133,15 @@ export const MENU_ITEMS = [
 
   // --- CLAY OVEN SPECIALS ---
   {
+    id: 'pk-christmas-platter',
+    name: 'Christmas Platter for Two',
+    price: 60.00,
+    description: 'A festive feast made for sharing! The Royal Kebab (4 chicken marinades on a skewer), Chapli Kebab, Lamb Rogan Josh, BBQ Lamb Chops, Fragrant Pilau Rice, 2 Fresh Naan, Mango Chutney, Green Chutney, Mint Yoghurt, and Gajar Ka Halwa dessert. Available Friday 25 – Sunday 27.',
+    allergens: [1, 7, 8, 11],
+    category: 'Clay Oven Specials',
+    imageUrl: '/christmas-platter.webp'
+  },
+  {
     id: 'co-peppercorn',
     name: 'Grilled Peppercorn Chicken',
     price: 16.95,
