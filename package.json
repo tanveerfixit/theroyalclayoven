@@ -29,7 +29,7 @@
     "jwt-decode": "^4.0.0",
     "lucide-react": "^0.546.0",
     "mysql2": "^3.22.3",
-    "nodemailer": "^9.0.3",
+    "nodemailer": "^10.6.0",
     "react": "^19.0.1",
     "react-dom": "^19.0.1",
     "vite": "^6.2.3"
