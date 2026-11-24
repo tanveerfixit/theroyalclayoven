@@ -128,6 +128,8 @@ export interface Order {
   packagingFee: number;
   deliveryFee?: number;
   deliveryZone?: string;
+  discountCode?: string;
+  discountAmount?: number;
   subtotal: number;
   total: number;
   serviceType: 'takeaway' | 'delivery';

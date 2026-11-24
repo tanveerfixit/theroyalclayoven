@@ -21,6 +21,7 @@ import {
   getDefaultDeliveryZones,
   parseDeliveryZones
 } from '../utils/deliveryScheduler';
+import { evaluatePromoCode } from '../utils/promoCodes';
 
 interface OrderViewProps {
   cart: CartItem[];
@@ -167,6 +168,11 @@ export const OrderView: React.FC<OrderViewProps> = ({
   });
   const [checkoutNotes, setCheckoutNotes] = React.useState('');
   const [validationError, setValidationError] = React.useState('');
+
+  // Promo / Discount code state
+  const [promoInput, setPromoInput] = React.useState('');
+  const [appliedPromoCode, setAppliedPromoCode] = React.useState<string | null>(null);
+  const [promoFeedback, setPromoFeedback] = React.useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   const loadUserProfile = () => {
     const storedUser = localStorage.getItem('clay_oven_google_user');
@@ -612,7 +618,125 @@ export const OrderView: React.FC<OrderViewProps> = ({
 
   const packagingFee = subtotal > 0 ? takeawayCharges : 0.00;
   const deliveryCharges = serviceType === 'delivery' ? (activeDeliveryZone ? activeDeliveryZone.fee : deliveryChargesSetting) : 0.00;
-  const total = subtotal + packagingFee + deliveryCharges;
+  const activePromo = React.useMemo(
+    () => (appliedPromoCode ? evaluatePromoCode(appliedPromoCode, subtotal) : { valid: false, code: null, discountAmount: 0, discountPercent: 0, error: null }),
+    [appliedPromoCode, subtotal]
+  );
+  const discountAmount = activePromo.valid ? activePromo.discountAmount : 0;
+  const total = Math.max(0, subtotal - discountAmount) + packagingFee + deliveryCharges;
+
+  // Automatically revoke applied promo code if cart subtotal drops below the minimum
+  React.useEffect(() => {
+    if (appliedPromoCode && !activePromo.valid && activePromo.error) {
+      setAppliedPromoCode(null);
+      setPromoFeedback({ type: 'error', text: activePromo.error });
+    }
+  }, [appliedPromoCode, activePromo]);
+
+  const handleApplyPromoCode = () => {
+    const trimmed = promoInput.trim();
+    if (!trimmed) {
+      setPromoFeedback({ type: 'error', text: 'Please enter a promo code.' });
+      return;
+    }
+    const result = evaluatePromoCode(trimmed, subtotal);
+    if (!result.valid) {
+      setAppliedPromoCode(null);
+      setPromoFeedback({ type: 'error', text: result.error || 'Invalid promo code.' });
+      return;
+    }
+    setAppliedPromoCode(result.code);
+    setPromoInput(result.code || trimmed.toUpperCase());
+    setPromoFeedback({
+      type: 'success',
+      text: `${result.code} applied! ${result.discountPercent}% off (-€${result.discountAmount.toFixed(2)}).`,
+    });
+  };
+
+  const handleRemovePromoCode = () => {
+    setAppliedPromoCode(null);
+    setPromoInput('');
+    setPromoFeedback(null);
+  };
+
+  const handleQuickApply10ClayOven = () => {
+    setPromoInput('10CLAYOVEN');
+    const result = evaluatePromoCode('10CLAYOVEN', subtotal);
+    if (!result.valid) {
+      setAppliedPromoCode(null);
+      setPromoFeedback({ type: 'error', text: result.error || 'Minimum €15.00 subtotal required.' });
+      return;
+    }
+    setAppliedPromoCode(result.code);
+    setPromoFeedback({
+      type: 'success',
+      text: `${result.code} applied! ${result.discountPercent}% off (-€${result.discountAmount.toFixed(2)}).`,
+    });
+  };
+
+  const renderPromoCodeBox = (idSuffix: string) => (
+    <div className="border-t border-brand-dark/10 pt-3 space-y-2">
+      <div className="flex items-center justify-between gap-2">
+        <label htmlFor={`checkout-promo-input-${idSuffix}`} className="flex items-center gap-1.5 text-[11px] font-mono uppercase tracking-wider text-brand-dark font-bold">
+          <Tag className="w-3.5 h-3.5 text-brand-accent" />
+          <span>Promo / Discount Code</span>
+        </label>
+        {!appliedPromoCode && (
+          <button
+            type="button"
+            onClick={handleQuickApply10ClayOven}
+            className="text-[11px] font-mono font-bold text-brand-accent hover:text-brand-dark bg-brand-accent/10 hover:bg-brand-accent/20 px-2 py-0.5 rounded-md transition-colors cursor-pointer"
+          >
+            Tap to apply: 10CLAYOVEN
+          </button>
+        )}
+      </div>
+      <div className="flex gap-2">
+        <input
+          id={`checkout-promo-input-${idSuffix}`}
+          type="text"
+          value={promoInput}
+          onChange={(e) => setPromoInput(e.target.value.toUpperCase())}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              e.preventDefault();
+              handleApplyPromoCode();
+            }
+          }}
+          disabled={Boolean(appliedPromoCode)}
+          placeholder="Enter code (e.g. 10CLAYOVEN)"
+          className="flex-1 min-w-0 bg-brand-beige/60 border border-brand-dark/15 rounded-xl px-3 py-2 text-xs font-mono uppercase text-brand-dark placeholder:text-brand-muted/60 focus:outline-none focus:border-brand-accent disabled:opacity-70"
+        />
+        {appliedPromoCode ? (
+          <button
+            type="button"
+            id={`checkout-promo-remove-btn-${idSuffix}`}
+            onClick={handleRemovePromoCode}
+            className="px-3.5 py-2 bg-stone-200 hover:bg-stone-300 text-brand-dark text-xs font-mono font-bold uppercase rounded-xl transition-colors cursor-pointer shrink-0"
+          >
+            Remove
+          </button>
+        ) : (
+          <button
+            type="button"
+            id={`checkout-promo-apply-btn-${idSuffix}`}
+            onClick={handleApplyPromoCode}
+            className="px-4 py-2 bg-brand-dark hover:bg-brand-accent text-white text-xs font-mono font-bold uppercase rounded-xl transition-colors cursor-pointer shrink-0"
+          >
+            Apply
+          </button>
+        )}
+      </div>
+      <p className="text-[11px] text-brand-muted">
+        Get <strong>10% off</strong> on €15.00+ menu orders with code <strong className="font-mono text-brand-dark">10CLAYOVEN</strong>.
+      </p>
+      {promoFeedback && (
+        <p className={`text-[11px] font-semibold ${promoFeedback.type === 'success' ? 'text-emerald-700' : 'text-red-600'}`}>
+          {promoFeedback.text}
+        </p>
+      )}
+    </div>
+  );
 
   // Today's Delivery status & simple time options
   const deliveryStatusToday = React.useMemo(
@@ -730,6 +854,8 @@ export const OrderView: React.FC<OrderViewProps> = ({
       packagingFee,
       deliveryFee: serviceType === 'delivery' ? deliveryCharges : 0,
       deliveryZone: serviceType === 'delivery' && activeDeliveryZone ? activeDeliveryZone.name : undefined,
+      discountCode: activePromo.valid && activePromo.code ? activePromo.code : undefined,
+      discountAmount: discountAmount > 0 ? discountAmount : 0,
       subtotal,
       total,
       serviceType,
@@ -807,6 +933,9 @@ export const OrderView: React.FC<OrderViewProps> = ({
     setCart([]);
     setPlacedOrder(finalOrder);
     setIsCheckoutMode(false);
+    setAppliedPromoCode(null);
+    setPromoInput('');
+    setPromoFeedback(null);
 
     // Notify all views of the profile update
     window.dispatchEvent(new Event('profile_updated'));
@@ -898,6 +1027,12 @@ export const OrderView: React.FC<OrderViewProps> = ({
                   <span>Menu Subtotal:</span>
                   <span>&euro;{placedOrder.subtotal.toFixed(2)}</span>
                 </div>
+                {placedOrder.discountAmount && placedOrder.discountAmount > 0 && (
+                  <div className="flex justify-between text-emerald-700 font-semibold">
+                    <span>Discount ({placedOrder.discountCode || 'PROMO'}):</span>
+                    <span>-&euro;{placedOrder.discountAmount.toFixed(2)}</span>
+                  </div>
+                )}
                 {placedOrder.packagingFee > 0 && (
                   <div className="flex justify-between text-brand-muted">
                     <span>Packaging Fee:</span>
@@ -941,12 +1076,55 @@ export const OrderView: React.FC<OrderViewProps> = ({
   return (
     <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 pb-28 lg:pb-20 animate-fade-in" id="order-takeaway-view">
       
-      {/* Short Mobile-Responsive Header */}
+      {/* Short Mobile-Responsive Header & Promo Banner */}
       {!isCheckoutMode && takeawayEnabled && (
-        <div className="text-center max-w-xl mx-auto pt-2 sm:pt-4 mb-3 sm:mb-5">
-          <h1 className="text-xl sm:text-3xl font-bold tracking-tight text-brand-dark">
-            Order Online
-          </h1>
+        <div className="space-y-3 pt-2 sm:pt-4 mb-4 sm:mb-6">
+          <div className="text-center max-w-xl mx-auto">
+            <h1 className="text-xl sm:text-3xl font-bold tracking-tight text-brand-dark">
+              Order Online
+            </h1>
+          </div>
+
+          <div
+            id="takeaway-promo-banner"
+            className="bg-gradient-to-r from-brand-dark via-stone-900 to-brand-dark text-white rounded-2xl px-4 py-3 sm:px-6 sm:py-3.5 shadow-md border border-brand-accent/30 flex flex-col sm:flex-row items-center justify-between gap-2.5"
+          >
+            <div className="flex items-center gap-2.5 text-center sm:text-left">
+              <span className="bg-brand-accent text-white p-2 rounded-xl shrink-0 hidden sm:inline-flex">
+                <Tag className="w-4 h-4" />
+              </span>
+              <div className="text-xs sm:text-sm leading-snug">
+                <span className="font-bold text-amber-300 uppercase tracking-wide mr-1.5">
+                  10% OFF (€15+ Orders)
+                </span>
+                <span className="text-brand-beige/90">
+                  Use code <strong className="font-mono bg-white/15 px-1.5 py-0.5 rounded text-white">10CLAYOVEN</strong> at checkout
+                  {subtotal > 0 && subtotal < 15 && (
+                    <span className="ml-1 text-amber-200">
+                      — add <strong>&euro;{(15 - subtotal).toFixed(2)}</strong> more to unlock!
+                    </span>
+                  )}
+                </span>
+              </div>
+            </div>
+
+            {subtotal >= 15 && (
+              appliedPromoCode === '10CLAYOVEN' ? (
+                <span className="inline-flex items-center gap-1.5 bg-emerald-600/90 text-white text-xs font-mono font-bold uppercase px-3 py-1.5 rounded-full shrink-0">
+                  <Check className="w-3.5 h-3.5" />
+                  10CLAYOVEN Applied (-&euro;{discountAmount.toFixed(2)})
+                </span>
+              ) : (
+                <button
+                  type="button"
+                  onClick={handleQuickApply10ClayOven}
+                  className="bg-brand-accent hover:bg-amber-500 text-white hover:text-stone-950 text-xs font-mono font-bold uppercase tracking-wider px-4 py-1.5 rounded-full transition-colors cursor-pointer shrink-0 shadow-xs"
+                >
+                  Apply 10CLAYOVEN (-&euro;{(subtotal * 0.10).toFixed(2)})
+                </button>
+              )
+            )}
+          </div>
         </div>
       )}
 
@@ -1061,6 +1239,12 @@ export const OrderView: React.FC<OrderViewProps> = ({
                     <span>Menu Subtotal</span>
                     <span className="text-brand-dark font-semibold">&euro;{subtotal.toFixed(2)}</span>
                   </div>
+                  {discountAmount > 0 && (
+                    <div className="flex justify-between text-emerald-700 font-semibold">
+                      <span>Discount ({appliedPromoCode})</span>
+                      <span>-&euro;{discountAmount.toFixed(2)}</span>
+                    </div>
+                  )}
                   <div className="flex justify-between">
                     <span>Statutory Packaging Fee</span>
                     <span className="text-brand-dark font-semibold">&euro;{packagingFee.toFixed(2)}</span>
@@ -1078,6 +1262,9 @@ export const OrderView: React.FC<OrderViewProps> = ({
                 </div>
               </div>
             )}
+
+            {/* Always-visible Promo Code Box on Mobile */}
+            {renderPromoCodeBox('mobile')}
           </div>
 
           {/* Form Side - Balanced authentic typography card */}
@@ -1420,12 +1607,20 @@ export const OrderView: React.FC<OrderViewProps> = ({
               })}
             </div>
 
+            {renderPromoCodeBox('desktop')}
+
             {/* Calculations block */}
             <div className="border-t border-brand-dark/5 pt-4 space-y-2 text-xs sm:text-sm text-brand-muted">
               <div className="flex justify-between">
                 <span>Subtotal</span>
                 <span className="text-brand-dark font-semibold">&euro;{subtotal.toFixed(2)}</span>
               </div>
+              {discountAmount > 0 && (
+                <div className="flex justify-between text-emerald-700 font-semibold">
+                  <span>Discount ({appliedPromoCode})</span>
+                  <span>-&euro;{discountAmount.toFixed(2)}</span>
+                </div>
+              )}
               <div className="flex justify-between">
                 <span className="flex items-center">
                   Packaging Fee <span className="ml-1 text-[11px] bg-brand-dark/5 px-1.5 py-0.5 rounded-md font-sans">Statutory</span>

@@ -281,6 +281,12 @@ export const HistoryView: React.FC<{ hideHeader?: boolean; showArchivedOnly?: bo
                     </ul>
                   </div>
 
+                  {order.discountAmount && order.discountAmount > 0 ? (
+                    <div className="pt-2 border-t border-brand-dark/5 flex justify-between items-baseline font-mono text-xs text-emerald-700 font-semibold">
+                      <span>Discount ({order.discountCode || 'PROMO'})</span>
+                      <span>-&euro;{order.discountAmount.toFixed(2)}</span>
+                    </div>
+                  ) : null}
                   <div className="pt-2 border-t border-brand-dark/5 flex justify-between items-baseline font-mono text-sm">
                     <span className="text-brand-muted font-normal">
                       {order.status === 'Cancelled' ? 'Total (Cancelled)' : 'Price Paid (incl. Packaging Fee)'}

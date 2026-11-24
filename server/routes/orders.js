@@ -3,6 +3,7 @@ import pool from '../db/pool.js';
 import { getMailSender, getTransporter, getOrderNotificationEmails, escapeHtml } from '../utils/email.js';
 import { orderLimiter } from '../middleware/rateLimiters.js';
 import { ordersLastUpdated, updateOrdersLastUpdated } from '../cache/index.js';
+import { evaluatePromoCode } from '../../src/utils/promoCodes.js';
 
 const router = express.Router();
 
@@ -30,6 +31,9 @@ router.get('/api/orders', async (req, res) => {
         id: order.id,
         items,
         packagingFee: parseFloat(order.packagingFee),
+        deliveryFee: order.deliveryFee != null ? parseFloat(order.deliveryFee) : undefined,
+        discountCode: order.discountCode || undefined,
+        discountAmount: order.discountAmount != null ? parseFloat(order.discountAmount) : 0,
         subtotal: parseFloat(order.subtotal),
         total: parseFloat(order.total),
         serviceType: order.serviceType,
@@ -57,22 +61,42 @@ router.get('/api/orders', async (req, res) => {
 });
 
 router.post('/api/orders', orderLimiter, async (req, res) => {
-  const { id, items, packagingFee, subtotal, total, serviceType, customerInfo, status, createdAt } = req.body;
-  if (!id || !items || packagingFee === undefined || !subtotal || !total || !serviceType || !customerInfo || !status || !createdAt) {
+  const { id, items, packagingFee, deliveryFee = 0, discountCode, subtotal, total, serviceType, customerInfo, status, createdAt } = req.body;
+  if (!id || !items || packagingFee === undefined || subtotal === undefined || total === undefined || !serviceType || !customerInfo || !status || !createdAt) {
     return res.status(400).json({ error: 'Missing required order fields' });
   }
+
+  const numericSubtotal = parseFloat(subtotal);
+  const numericPackaging = parseFloat(packagingFee);
+  const verifiedDeliveryFee = serviceType === 'delivery' ? Math.max(0, parseFloat(deliveryFee) || 0) : 0;
+
+  let verifiedDiscountCode = null;
+  let verifiedDiscountAmount = 0;
+  if (discountCode && String(discountCode).trim() !== '') {
+    const promoResult = evaluatePromoCode(discountCode, numericSubtotal);
+    if (!promoResult.valid) {
+      return res.status(400).json({ error: promoResult.error });
+    }
+    verifiedDiscountCode = promoResult.code;
+    verifiedDiscountAmount = promoResult.discountAmount;
+  }
+
+  const verifiedTotal = Number((Math.max(0, numericSubtotal - verifiedDiscountAmount) + numericPackaging + verifiedDeliveryFee).toFixed(2));
 
   try {
     const serializedItems = JSON.stringify(items);
     await pool.query(
-      `INSERT INTO orders (id, items, packagingFee, subtotal, total, serviceType, customer_name, customer_email, customer_phone, customer_address, preferredTime, notes, status, createdAt)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO orders (id, items, packagingFee, deliveryFee, discountCode, discountAmount, subtotal, total, serviceType, customer_name, customer_email, customer_phone, customer_address, preferredTime, notes, status, createdAt)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         id,
         serializedItems,
-        packagingFee,
-        subtotal,
-        total,
+        numericPackaging,
+        verifiedDeliveryFee,
+        verifiedDiscountCode,
+        verifiedDiscountAmount,
+        numericSubtotal,
+        verifiedTotal,
         serviceType,
         customerInfo.name,
         customerInfo.email,
@@ -202,21 +226,27 @@ router.post('/api/orders', orderLimiter, async (req, res) => {
             <table style="width: 100%; border-collapse: collapse; margin-top: 15px; font-family: monospace; font-size: 13px; border-top: 2px solid #2C2621; pt-10px;">
               <tr>
                 <td style="padding: 6px 8px; text-align: right; color: #666;">Subtotal:</td>
-                <td style="padding: 6px 8px; text-align: right; font-weight: bold; width: 100px;">&euro;${parseFloat(subtotal).toFixed(2)}</td>
+                <td style="padding: 6px 8px; text-align: right; font-weight: bold; width: 100px;">&euro;${numericSubtotal.toFixed(2)}</td>
               </tr>
+              ${verifiedDiscountAmount > 0 ? `
+              <tr>
+                <td style="padding: 6px 8px; text-align: right; color: #15803d; font-weight: bold;">Discount (${escapeHtml(verifiedDiscountCode)}):</td>
+                <td style="padding: 6px 8px; text-align: right; font-weight: bold; color: #15803d;">-&euro;${verifiedDiscountAmount.toFixed(2)}</td>
+              </tr>
+              ` : ''}
               <tr>
                 <td style="padding: 6px 8px; text-align: right; color: #666;">Packaging:</td>
-                <td style="padding: 6px 8px; text-align: right; font-weight: bold;">&euro;${parseFloat(packagingFee).toFixed(2)}</td>
+                <td style="padding: 6px 8px; text-align: right; font-weight: bold;">&euro;${numericPackaging.toFixed(2)}</td>
               </tr>
-              ${parseFloat(total) - parseFloat(subtotal) - parseFloat(packagingFee) > 0.1 ? `
+              ${verifiedDeliveryFee > 0 ? `
               <tr>
                 <td style="padding: 6px 8px; text-align: right; color: #666;">Delivery Charge:</td>
-                <td style="padding: 6px 8px; text-align: right; font-weight: bold;">&euro;${(parseFloat(total) - parseFloat(subtotal) - parseFloat(packagingFee)).toFixed(2)}</td>
+                <td style="padding: 6px 8px; text-align: right; font-weight: bold;">&euro;${verifiedDeliveryFee.toFixed(2)}</td>
               </tr>
               ` : ''}
               <tr style="font-size: 15px; background: #FDFBF7; border-top: 1px dashed #2C2621;">
                 <td style="padding: 8px; text-align: right; font-weight: bold; color: #C85A32;">GRAND TOTAL:</td>
-                <td style="padding: 8px; text-align: right; font-weight: bold; color: #C85A32; font-size: 16px;">&euro;${parseFloat(total).toFixed(2)}</td>
+                <td style="padding: 8px; text-align: right; font-weight: bold; color: #C85A32; font-size: 16px;">&euro;${verifiedTotal.toFixed(2)}</td>
               </tr>
             </table>
 

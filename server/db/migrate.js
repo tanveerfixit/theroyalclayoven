@@ -25,7 +25,7 @@ async function createIndexIfNotExists(connection, tableName, indexName, columnsS
   }
 }
 
-const TARGET_SCHEMA_VERSION = 4;
+const TARGET_SCHEMA_VERSION = 5;
 
 export async function runMigrations(pool) {
   try {
@@ -96,6 +96,9 @@ export async function runMigrations(pool) {
         id VARCHAR(100) PRIMARY KEY,
         items TEXT NOT NULL,
         packagingFee DECIMAL(10,2) NOT NULL,
+        deliveryFee DECIMAL(10,2) DEFAULT 0.00,
+        discountCode VARCHAR(50) NULL,
+        discountAmount DECIMAL(10,2) DEFAULT 0.00,
         subtotal DECIMAL(10,2) NOT NULL,
         total DECIMAL(10,2) NOT NULL,
         serviceType VARCHAR(50) NOT NULL,
@@ -110,6 +113,19 @@ export async function runMigrations(pool) {
         createdAt VARCHAR(100) NOT NULL
       )
     `);
+
+    // Ensure discount & deliveryFee columns exist on pre-v5 databases
+    for (const alterSql of [
+      'ALTER TABLE orders ADD COLUMN deliveryFee DECIMAL(10,2) DEFAULT 0.00',
+      'ALTER TABLE orders ADD COLUMN discountCode VARCHAR(50) NULL',
+      'ALTER TABLE orders ADD COLUMN discountAmount DECIMAL(10,2) DEFAULT 0.00',
+    ]) {
+      try {
+        await connection.query(alterSql);
+      } catch {
+        // Column already exists
+      }
+    }
 
     await connection.query(`
       CREATE TABLE IF NOT EXISTS smtp_settings (
