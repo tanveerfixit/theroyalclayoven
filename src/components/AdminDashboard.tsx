@@ -1526,7 +1526,8 @@ Beverages | Tea or Coffee`);
   const [muteSound, setMuteSound] = useState(false);
 
   // Keep track of order count to play audio alert on increment
-  const prevOrderCountRef = useRef<number>(0);
+  const seenReceivedOrderIdsRef = useRef<Set<string>>(new Set());
+  const hasInitializedOrdersRef = useRef<boolean>(false);
   const lastOrdersSyncModifiedRef = useRef<string | null>(null);
   const lastBookingsSyncModifiedRef = useRef<string | null>(null);
 
@@ -1621,20 +1622,19 @@ Beverages | Tea or Coffee`);
         const lastMod = ordersRes.headers.get('Last-Modified');
         if (lastMod) lastOrdersSyncModifiedRef.current = lastMod;
 
-        // Sound Notification Logic: If order count has increased, play alert chime & show popup!
+        // Sound Notification Logic: Detect any newly received orders by ID (independent of stale count or closures)
         const receivedOrders = ordersData.filter(o => o.status === 'Received');
-        const activeNewOrders = receivedOrders.length;
-        if (prevOrderCountRef.current !== undefined && activeNewOrders > prevOrderCountRef.current) {
-          playNewOrderChime();
-          const existingIds = new Set(orders.map(o => o.id));
-          const brandNewOrders = receivedOrders.filter(o => !existingIds.has(o.id));
+        if (!hasInitializedOrdersRef.current) {
+          receivedOrders.forEach(o => seenReceivedOrderIdsRef.current.add(o.id));
+          hasInitializedOrdersRef.current = true;
+        } else {
+          const brandNewOrders = receivedOrders.filter(o => !seenReceivedOrderIdsRef.current.has(o.id));
+          receivedOrders.forEach(o => seenReceivedOrderIdsRef.current.add(o.id));
           if (brandNewOrders.length > 0) {
+            playNewOrderChime();
             setActiveNewOrderNotification(brandNewOrders[0]);
-          } else if (receivedOrders.length > 0) {
-            setActiveNewOrderNotification(receivedOrders[0]);
           }
         }
-        prevOrderCountRef.current = activeNewOrders;
         setOrders(ordersData);
       }
 
@@ -1685,14 +1685,9 @@ Beverages | Tea or Coffee`);
     const getPollInterval = () => {
       // Background tab throttle
       if (document.hidden) {
-        return 90000; // 90 seconds when tab is hidden
+        return 60000; // 60 seconds when tab is hidden
       }
-      // Check if delivery or kitchen is open right now
-      const deliveryStatus = getTodayDeliveryStatus(deliverySchedule);
-      if (deliveryStatus.isOpenNow) {
-        return 15000; // 15 seconds during active delivery hours
-      }
-      return 300000; // 5 minutes outside delivery/business hours
+      return 10000; // 10 seconds while kitchen console is open
     };
 
     let timer: any = null;
