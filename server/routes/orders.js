@@ -3,9 +3,27 @@ import pool from '../db/pool.js';
 import { getMailSender, getTransporter, getOrderNotificationEmails, escapeHtml } from '../utils/email.js';
 import { orderLimiter } from '../middleware/rateLimiters.js';
 import { ordersLastUpdated, updateOrdersLastUpdated } from '../cache/index.js';
-import { evaluatePromoCode } from '../../src/utils/promoCodes.js';
+import { evaluateVoucherOrPromo } from '../utils/vouchers.js';
 
 const router = express.Router();
+
+router.post('/api/vouchers/validate', async (req, res) => {
+  const { code, subtotal } = req.body || {};
+  if (!code || String(code).trim() === '') {
+    return res.status(400).json({ valid: false, error: 'Please enter a voucher or promo code.' });
+  }
+
+  try {
+    const result = await evaluateVoucherOrPromo(pool, code, subtotal);
+    if (!result.valid) {
+      return res.status(400).json(result);
+    }
+    return res.json(result);
+  } catch (error) {
+    console.error('Error validating voucher:', error);
+    return res.status(500).json({ valid: false, error: 'Failed to validate voucher code.' });
+  }
+});
 
 router.get('/api/orders', async (req, res) => {
   const { email } = req.query;
@@ -72,20 +90,48 @@ router.post('/api/orders', orderLimiter, async (req, res) => {
 
   let verifiedDiscountCode = null;
   let verifiedDiscountAmount = 0;
-  if (discountCode && String(discountCode).trim() !== '') {
-    const promoResult = evaluatePromoCode(discountCode, numericSubtotal);
-    if (!promoResult.valid) {
-      return res.status(400).json({ error: promoResult.error });
-    }
-    verifiedDiscountCode = promoResult.code;
-    verifiedDiscountAmount = promoResult.discountAmount;
-  }
+  let verifiedTotal = Number((numericSubtotal + numericPackaging + verifiedDeliveryFee).toFixed(2));
 
-  const verifiedTotal = Number((Math.max(0, numericSubtotal - verifiedDiscountAmount) + numericPackaging + verifiedDeliveryFee).toFixed(2));
-
+  const connection = await pool.getConnection();
   try {
+    await connection.beginTransaction();
+
+    if (discountCode && String(discountCode).trim() !== '') {
+      const promoResult = await evaluateVoucherOrPromo(connection, discountCode, numericSubtotal);
+      if (!promoResult.valid) {
+        await connection.rollback();
+        return res.status(400).json({ error: promoResult.error });
+      }
+
+      if (promoResult.source === 'db' && promoResult.voucherId) {
+        const [redeemResult] = await connection.query(
+          `UPDATE vouchers
+           SET used_at = NOW(), used_by_email = ?, used_order_id = ?
+           WHERE id = ?
+             AND is_active = 1
+             AND (expires_at IS NULL OR expires_at > NOW())
+             AND (is_one_time = 0 OR used_at IS NULL)`,
+          [
+            customerInfo.email ? String(customerInfo.email).trim().toLowerCase() : null,
+            id,
+            promoResult.voucherId,
+          ]
+        );
+
+        if (redeemResult.affectedRows === 0) {
+          await connection.rollback();
+          return res.status(400).json({ error: `Voucher "${promoResult.code}" has already been redeemed or is no longer valid.` });
+        }
+      }
+
+      verifiedDiscountCode = promoResult.code;
+      verifiedDiscountAmount = promoResult.discountAmount;
+    }
+
+    verifiedTotal = Number((Math.max(0, numericSubtotal - verifiedDiscountAmount) + numericPackaging + verifiedDeliveryFee).toFixed(2));
+
     const serializedItems = JSON.stringify(items);
-    await pool.query(
+    await connection.query(
       `INSERT INTO orders (id, items, packagingFee, deliveryFee, discountCode, discountAmount, subtotal, total, serviceType, customer_name, customer_email, customer_phone, customer_address, preferredTime, notes, status, createdAt)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
@@ -108,6 +154,21 @@ router.post('/api/orders', orderLimiter, async (req, res) => {
         createdAt
       ]
     );
+
+    await connection.commit();
+  } catch (error) {
+    try {
+      await connection.rollback();
+    } catch {
+      // Ignore rollback errors
+    }
+    console.error('Error inserting order:', error);
+    return res.status(500).json({ error: 'Database save failed' });
+  } finally {
+    connection.release();
+  }
+
+  try {
     
     const recipientEmails = await getOrderNotificationEmails();
 

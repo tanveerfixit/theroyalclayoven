@@ -122,6 +122,22 @@ export interface DeliveryZone {
   isActive: boolean;
 }
 
+export interface Voucher {
+  id: number;
+  code: string;
+  discountType: 'percent' | 'fixed';
+  discountValue: number;
+  minSubtotal: number;
+  isOneTime: boolean;
+  isActive: boolean;
+  expiresAt: string | null;
+  note: string | null;
+  usedAt: string | null;
+  usedByEmail: string | null;
+  usedOrderId: string | null;
+  createdAt: string | null;
+}
+
 export interface Order {
   id: string;
   items: OrderItem[];
@@ -130,6 +146,9 @@ export interface Order {
   deliveryZone?: string;
   discountCode?: string;
   discountAmount?: number;
+  discountType?: 'percent' | 'fixed';
+  discountValue?: number;
+  isOneTimeVoucher?: boolean;
   subtotal: number;
   total: number;
   serviceType: 'takeaway' | 'delivery';

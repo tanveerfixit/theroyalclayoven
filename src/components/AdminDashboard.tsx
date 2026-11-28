@@ -9,6 +9,7 @@ import {
   Image as ImageIcon, Upload, MousePointerClick
 } from 'lucide-react';
 import { Order, Reservation, MenuCategory, MenuItem, OptionGroup, OptionItem, MenuDeal } from '../types';
+import { AdminVouchersTab } from './AdminVouchersTab';
 import { ALLERGENS, MENU_ITEMS, CATEGORIES } from '../data/menu';
 import {
   DeliverySchedule,
@@ -62,7 +63,7 @@ export const AdminDashboard: React.FC = () => {
   const [authChecking, setAuthChecking] = useState(true); // checking existing token on mount
 
   // Console active sub-tabs
-  const [adminTab, setAdminTab] = useState<'orders' | 'bookings' | 'functions' | 'catalog' | 'settings'>('orders');
+  const [adminTab, setAdminTab] = useState<'orders' | 'bookings' | 'functions' | 'catalog' | 'vouchers' | 'settings'>('orders');
 
   // Form states for creating a new Function booking
   const [funcName, setFuncName] = useState('');
@@ -2210,6 +2211,17 @@ Beverages | Tea or Coffee`);
         >
           <ListFilter className="w-3.5 h-3.5" />
           <span>Catalog Directory</span>
+        </button>
+        <button
+          onClick={() => setAdminTab('vouchers')}
+          className={`pb-2.5 px-1 sm:px-2 font-mono text-xs font-bold uppercase tracking-wider border-b-2 flex items-center gap-1.5 transition-all shrink-0 ${
+            adminTab === 'vouchers'
+              ? 'border-brand-dark text-brand-dark'
+              : 'border-transparent text-brand-muted hover:text-brand-dark'
+          }`}
+        >
+          <Tag className="w-3.5 h-3.5" />
+          <span>Vouchers</span>
         </button>
         <button
           onClick={() => setAdminTab('settings')}
@@ -6134,11 +6146,50 @@ Beverages | Tea or Coffee`);
                 </div>
               </div>
 
-              <div className="border-t border-brand-dark/10 pt-2.5 flex justify-between font-mono text-xs font-bold text-brand-dark">
-                <span>Total Amount:</span>
-                <span className="text-sm text-brand-accent">
-                  €{activeNewOrderNotification.total.toFixed(2)}
-                </span>
+              <div className="border-t border-brand-dark/10 pt-2.5 space-y-1.5 font-mono text-xs text-brand-dark">
+                <div className="flex justify-between text-brand-muted">
+                  <span>Subtotal:</span>
+                  <span>€{activeNewOrderNotification.subtotal.toFixed(2)}</span>
+                </div>
+                {activeNewOrderNotification.packagingFee > 0 && (
+                  <div className="flex justify-between text-brand-muted">
+                    <span>Packaging:</span>
+                    <span>€{activeNewOrderNotification.packagingFee.toFixed(2)}</span>
+                  </div>
+                )}
+                {(activeNewOrderNotification.deliveryFee ?? 0) > 0 && (
+                  <div className="flex justify-between text-brand-muted">
+                    <span>Delivery Fee:</span>
+                    <span>€{(activeNewOrderNotification.deliveryFee ?? 0).toFixed(2)}</span>
+                  </div>
+                )}
+                {((activeNewOrderNotification.discountAmount ?? 0) > 0 || activeNewOrderNotification.discountCode) && (
+                  <div className="flex justify-between items-center text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-1">
+                    <span className="flex flex-wrap items-center gap-1.5 font-bold">
+                      <Tag className="w-3 h-3 shrink-0" />
+                      <span>
+                        {activeNewOrderNotification.isOneTimeVoucher ? 'One-Time Voucher' : 'Discount'}
+                        {activeNewOrderNotification.discountCode ? ` (${activeNewOrderNotification.discountCode})` : ''}
+                      </span>
+                      {activeNewOrderNotification.discountType && activeNewOrderNotification.discountValue != null && (
+                        <span className="text-[10px] font-normal px-1.5 py-0.2 bg-white border border-emerald-300 text-emerald-800 uppercase">
+                          {activeNewOrderNotification.discountType === 'fixed'
+                            ? `€${activeNewOrderNotification.discountValue.toFixed(2)} OFF`
+                            : `${activeNewOrderNotification.discountValue}% OFF`}
+                        </span>
+                      )}
+                    </span>
+                    <span className="font-bold shrink-0">
+                      -€{(activeNewOrderNotification.discountAmount ?? 0).toFixed(2)}
+                    </span>
+                  </div>
+                )}
+                <div className="flex justify-between font-bold pt-1 border-t border-brand-dark/10">
+                  <span>Total Amount:</span>
+                  <span className="text-sm text-brand-accent">
+                    €{activeNewOrderNotification.total.toFixed(2)}
+                  </span>
+                </div>
               </div>
             </div>
 
@@ -7197,6 +7248,16 @@ Beverages | Tea or Coffee`);
           </div>
         </div>,
         document.body
+      )}
+
+      {/* VOUCHERS MANAGEMENT TAB */}
+      {adminTab === 'vouchers' && (
+        <AdminVouchersTab
+          adminHeaders={adminHeaders}
+          onUnauthorized={handleUnauthorized}
+          onNotify={setNotificationBox}
+          onViewOrder={() => setAdminTab('orders')}
+        />
       )}
 
       {/* STANDARD FLOATING NOTIFICATION BOX */}

@@ -141,7 +141,10 @@ router.get('/api/admin/orders', requireAdmin, async (req, res) => {
     }
 
     const [rows] = await pool.query(
-      'SELECT * FROM orders ORDER BY createdAt DESC LIMIT 150'
+      `SELECT o.*, v.discount_type AS voucher_discount_type, v.discount_value AS voucher_discount_value, v.is_one_time AS voucher_is_one_time
+       FROM orders o
+       LEFT JOIN vouchers v ON o.discountCode = v.code
+       ORDER BY o.createdAt DESC LIMIT 150`
     );
     
     const formattedOrders = rows.map((order) => {
@@ -159,6 +162,11 @@ router.get('/api/admin/orders', requireAdmin, async (req, res) => {
         deliveryFee: order.deliveryFee != null ? parseFloat(order.deliveryFee) : undefined,
         discountCode: order.discountCode || undefined,
         discountAmount: order.discountAmount != null ? parseFloat(order.discountAmount) : 0,
+        discountType: order.voucher_discount_type || (order.discountCode === '10CLAYOVEN' ? 'percent' : undefined),
+        discountValue: order.voucher_discount_value != null
+          ? parseFloat(order.voucher_discount_value)
+          : (order.discountCode === '10CLAYOVEN' ? 10 : undefined),
+        isOneTimeVoucher: order.voucher_is_one_time != null ? Boolean(order.voucher_is_one_time) : undefined,
         subtotal: parseFloat(order.subtotal),
         total: parseFloat(order.total),
         serviceType: order.serviceType,
@@ -968,6 +976,201 @@ router.delete('/api/admin/deals/:id', requireAdmin, async (req, res) => {
   } catch (error) {
     console.error('Error deleting deal:', error);
     res.status(500).json({ error: 'Failed to delete deal' });
+  }
+});
+
+// --- VOUCHER MANAGEMENT ENDPOINTS ---
+
+function generateRandomVoucherCode(prefix = 'RCO') {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  const bytes = crypto.randomBytes(6);
+  let suffix = '';
+  for (let i = 0; i < 6; i++) {
+    suffix += chars[bytes[i] % chars.length];
+  }
+  const cleanPrefix = String(prefix || 'RCO').trim().toUpperCase().replace(/[^A-Z0-9_-]/g, '');
+  return cleanPrefix ? `${cleanPrefix}-${suffix}` : suffix;
+}
+
+router.get('/api/admin/vouchers', requireAdmin, async (req, res) => {
+  const { status = 'all', q = '' } = req.query;
+  try {
+    const conditions = [];
+    const params = [];
+
+    if (status === 'used') {
+      conditions.push('used_at IS NOT NULL');
+    } else if (status === 'available') {
+      conditions.push('is_active = 1 AND (is_one_time = 0 OR used_at IS NULL) AND (expires_at IS NULL OR expires_at > NOW())');
+    } else if (status === 'disabled') {
+      conditions.push('is_active = 0');
+    } else if (status === 'expired') {
+      conditions.push('expires_at IS NOT NULL AND expires_at <= NOW() AND used_at IS NULL');
+    }
+
+    const search = String(q || '').trim();
+    if (search) {
+      conditions.push('(code LIKE ? OR used_by_email LIKE ? OR used_order_id LIKE ? OR note LIKE ?)');
+      const like = `%${search}%`;
+      params.push(like, like, like, like);
+    }
+
+    const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
+    const [rows] = await pool.query(
+      `SELECT id, code, discount_type, discount_value, min_subtotal, is_one_time, is_active, expires_at, note, used_at, used_by_email, used_order_id, created_at
+       FROM vouchers
+       ${whereClause}
+       ORDER BY created_at DESC, id DESC`,
+      params
+    );
+
+    const vouchers = rows.map((v) => ({
+      id: v.id,
+      code: v.code,
+      discountType: v.discount_type,
+      discountValue: parseFloat(v.discount_value),
+      minSubtotal: parseFloat(v.min_subtotal),
+      isOneTime: Boolean(v.is_one_time),
+      isActive: Boolean(v.is_active),
+      expiresAt: v.expires_at ? new Date(v.expires_at).toISOString() : null,
+      note: v.note || null,
+      usedAt: v.used_at ? new Date(v.used_at).toISOString() : null,
+      usedByEmail: v.used_by_email || null,
+      usedOrderId: v.used_order_id || null,
+      createdAt: v.created_at ? new Date(v.created_at).toISOString() : null,
+    }));
+
+    res.json({ vouchers });
+  } catch (error) {
+    console.error('Error fetching vouchers:', error);
+    res.status(500).json({ error: 'Failed to fetch vouchers' });
+  }
+});
+
+router.post('/api/admin/vouchers', requireAdmin, async (req, res) => {
+  const {
+    code,
+    prefix = 'RCO',
+    discountType = 'percent',
+    discountValue,
+    minSubtotal = 0,
+    isOneTime = true,
+    expiresAt = null,
+    note = null,
+    count = 1,
+  } = req.body || {};
+
+  const numericValue = parseFloat(discountValue);
+  const numericMinSubtotal = Math.max(0, parseFloat(minSubtotal) || 0);
+  const batchCount = Math.min(100, Math.max(1, parseInt(count, 10) || 1));
+
+  if (!['percent', 'fixed'].includes(discountType)) {
+    return res.status(400).json({ error: 'discountType must be "percent" or "fixed"' });
+  }
+  if (!Number.isFinite(numericValue) || numericValue <= 0) {
+    return res.status(400).json({ error: 'discountValue must be a positive number' });
+  }
+  if (discountType === 'percent' && numericValue > 100) {
+    return res.status(400).json({ error: 'Percentage discount cannot exceed 100%' });
+  }
+
+  let parsedExpiry = null;
+  if (expiresAt && String(expiresAt).trim() !== '') {
+    const raw = String(expiresAt).trim();
+    const dateStr = /^\d{4}-\d{2}-\d{2}$/.test(raw) ? `${raw} 23:59:59` : raw;
+    const d = new Date(dateStr);
+    if (Number.isNaN(d.getTime())) {
+      return res.status(400).json({ error: 'Invalid expiry date' });
+    }
+    parsedExpiry = d;
+  }
+
+  try {
+    const createdCodes = [];
+    if (batchCount === 1) {
+      const normalizedCode = code && String(code).trim() !== ''
+        ? String(code).trim().toUpperCase().replace(/\s+/g, '')
+        : generateRandomVoucherCode(prefix);
+
+      if (!/^[A-Z0-9_-]{3,50}$/.test(normalizedCode)) {
+        return res.status(400).json({ error: 'Voucher code must be 3-50 characters (letters, numbers, - or _)' });
+      }
+
+      await pool.query(
+        `INSERT INTO vouchers (code, discount_type, discount_value, min_subtotal, is_one_time, is_active, expires_at, note)
+         VALUES (?, ?, ?, ?, ?, 1, ?, ?)`,
+        [normalizedCode, discountType, numericValue, numericMinSubtotal, isOneTime ? 1 : 0, parsedExpiry, note ? String(note).trim() : null]
+      );
+      createdCodes.push(normalizedCode);
+    } else {
+      let attempts = 0;
+      while (createdCodes.length < batchCount && attempts < batchCount * 5) {
+        attempts++;
+        const candidate = generateRandomVoucherCode(prefix);
+        try {
+          await pool.query(
+            `INSERT INTO vouchers (code, discount_type, discount_value, min_subtotal, is_one_time, is_active, expires_at, note)
+             VALUES (?, ?, ?, ?, ?, 1, ?, ?)`,
+            [candidate, discountType, numericValue, numericMinSubtotal, isOneTime ? 1 : 0, parsedExpiry, note ? String(note).trim() : null]
+          );
+          createdCodes.push(candidate);
+        } catch (err) {
+          if (err.code !== 'ER_DUP_ENTRY') throw err;
+        }
+      }
+    }
+
+    res.status(201).json({
+      success: true,
+      createdCount: createdCodes.length,
+      codes: createdCodes,
+      message: createdCodes.length === 1
+        ? `Voucher ${createdCodes[0]} created successfully`
+        : `${createdCodes.length} vouchers generated successfully`,
+    });
+  } catch (error) {
+    if (error.code === 'ER_DUP_ENTRY') {
+      return res.status(409).json({ error: 'A voucher with this code already exists' });
+    }
+    console.error('Error creating voucher:', error);
+    res.status(500).json({ error: 'Failed to create voucher' });
+  }
+});
+
+router.patch('/api/admin/vouchers/:id', requireAdmin, async (req, res) => {
+  const { id } = req.params;
+  const { isActive } = req.body || {};
+  if (typeof isActive !== 'boolean') {
+    return res.status(400).json({ error: 'isActive boolean is required' });
+  }
+
+  try {
+    const [result] = await pool.query('UPDATE vouchers SET is_active = ? WHERE id = ?', [isActive ? 1 : 0, id]);
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: 'Voucher not found' });
+    }
+    res.json({ success: true, message: `Voucher ${isActive ? 'enabled' : 'disabled'}` });
+  } catch (error) {
+    console.error('Error updating voucher:', error);
+    res.status(500).json({ error: 'Failed to update voucher' });
+  }
+});
+
+router.delete('/api/admin/vouchers/:id', requireAdmin, async (req, res) => {
+  const { id } = req.params;
+  try {
+    const [rows] = await pool.query('SELECT used_at FROM vouchers WHERE id = ? LIMIT 1', [id]);
+    if (rows.length === 0) {
+      return res.status(404).json({ error: 'Voucher not found' });
+    }
+    if (rows[0].used_at !== null) {
+      return res.status(400).json({ error: 'Cannot delete a redeemed voucher because its audit record is preserved' });
+    }
+    await pool.query('DELETE FROM vouchers WHERE id = ?', [id]);
+    res.json({ success: true, message: 'Unused voucher deleted' });
+  } catch (error) {
+    console.error('Error deleting voucher:', error);
+    res.status(500).json({ error: 'Failed to delete voucher' });
   }
 });
 

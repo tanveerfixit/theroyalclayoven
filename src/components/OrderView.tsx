@@ -172,6 +172,13 @@ export const OrderView: React.FC<OrderViewProps> = ({
   // Promo / Discount code state
   const [promoInput, setPromoInput] = React.useState('');
   const [appliedPromoCode, setAppliedPromoCode] = React.useState<string | null>(null);
+  const [appliedVoucher, setAppliedVoucher] = React.useState<{
+    code: string;
+    discountType: 'percent' | 'fixed';
+    discountValue: number;
+    minSubtotal: number;
+  } | null>(null);
+  const [isValidatingPromo, setIsValidatingPromo] = React.useState(false);
   const [promoFeedback, setPromoFeedback] = React.useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   const loadUserProfile = () => {
@@ -618,10 +625,34 @@ export const OrderView: React.FC<OrderViewProps> = ({
 
   const packagingFee = subtotal > 0 ? takeawayCharges : 0.00;
   const deliveryCharges = serviceType === 'delivery' ? (activeDeliveryZone ? activeDeliveryZone.fee : deliveryChargesSetting) : 0.00;
-  const activePromo = React.useMemo(
-    () => (appliedPromoCode ? evaluatePromoCode(appliedPromoCode, subtotal) : { valid: false, code: null, discountAmount: 0, discountPercent: 0, error: null }),
-    [appliedPromoCode, subtotal]
-  );
+  const activePromo = React.useMemo(() => {
+    if (!appliedPromoCode) {
+      return { valid: false, code: null, discountAmount: 0, discountPercent: 0, error: null };
+    }
+    if (appliedVoucher && appliedVoucher.code === appliedPromoCode) {
+      if (subtotal < appliedVoucher.minSubtotal) {
+        return {
+          valid: false,
+          code: null,
+          discountAmount: 0,
+          discountPercent: 0,
+          error: `Minimum menu subtotal of €${appliedVoucher.minSubtotal.toFixed(2)} is required for voucher ${appliedVoucher.code} (current: €${subtotal.toFixed(2)}).`,
+        };
+      }
+      const computedDiscount =
+        appliedVoucher.discountType === 'fixed'
+          ? Number(Math.min(subtotal, appliedVoucher.discountValue).toFixed(2))
+          : Number(((subtotal * appliedVoucher.discountValue) / 100).toFixed(2));
+      return {
+        valid: true,
+        code: appliedVoucher.code,
+        discountAmount: computedDiscount,
+        discountPercent: appliedVoucher.discountType === 'percent' ? appliedVoucher.discountValue : 0,
+        error: null,
+      };
+    }
+    return evaluatePromoCode(appliedPromoCode, subtotal);
+  }, [appliedPromoCode, appliedVoucher, subtotal]);
   const discountAmount = activePromo.valid ? activePromo.discountAmount : 0;
   const total = Math.max(0, subtotal - discountAmount) + packagingFee + deliveryCharges;
 
@@ -629,32 +660,74 @@ export const OrderView: React.FC<OrderViewProps> = ({
   React.useEffect(() => {
     if (appliedPromoCode && !activePromo.valid && activePromo.error) {
       setAppliedPromoCode(null);
+      setAppliedVoucher(null);
       setPromoFeedback({ type: 'error', text: activePromo.error });
     }
   }, [appliedPromoCode, activePromo]);
 
-  const handleApplyPromoCode = () => {
-    const trimmed = promoInput.trim();
+  const handleApplyPromoCode = async () => {
+    const trimmed = promoInput.trim().toUpperCase();
     if (!trimmed) {
-      setPromoFeedback({ type: 'error', text: 'Please enter a promo code.' });
+      setPromoFeedback({ type: 'error', text: 'Please enter a promo or voucher code.' });
       return;
     }
-    const result = evaluatePromoCode(trimmed, subtotal);
-    if (!result.valid) {
-      setAppliedPromoCode(null);
-      setPromoFeedback({ type: 'error', text: result.error || 'Invalid promo code.' });
-      return;
+
+    setIsValidatingPromo(true);
+    try {
+      const res = await fetch('/api/vouchers/validate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code: trimmed, subtotal }),
+      });
+      const data = await res.json().catch(() => null);
+
+      if (!res.ok || !data?.valid) {
+        setAppliedPromoCode(null);
+        setAppliedVoucher(null);
+        setPromoFeedback({ type: 'error', text: data?.error || 'Invalid promo or voucher code.' });
+        return;
+      }
+
+      setAppliedPromoCode(data.code);
+      setAppliedVoucher({
+        code: data.code,
+        discountType: data.discountType === 'fixed' ? 'fixed' : 'percent',
+        discountValue: Number(data.discountValue) || 0,
+        minSubtotal: Number(data.minSubtotal) || 0,
+      });
+      setPromoInput(data.code || trimmed);
+      const discountDesc =
+        data.discountType === 'fixed'
+          ? `€${Number(data.discountValue).toFixed(2)} off`
+          : `${data.discountValue}% off`;
+      setPromoFeedback({
+        type: 'success',
+        text: `${data.code} applied! ${discountDesc} (-€${Number(data.discountAmount).toFixed(2)}).`,
+      });
+    } catch {
+      // Fallback to local static promo code evaluation if network is unavailable
+      const result = evaluatePromoCode(trimmed, subtotal);
+      if (!result.valid) {
+        setAppliedPromoCode(null);
+        setAppliedVoucher(null);
+        setPromoFeedback({ type: 'error', text: result.error || 'Invalid promo code.' });
+        return;
+      }
+      setAppliedPromoCode(result.code);
+      setAppliedVoucher(null);
+      setPromoInput(result.code || trimmed);
+      setPromoFeedback({
+        type: 'success',
+        text: `${result.code} applied! ${result.discountPercent}% off (-€${result.discountAmount.toFixed(2)}).`,
+      });
+    } finally {
+      setIsValidatingPromo(false);
     }
-    setAppliedPromoCode(result.code);
-    setPromoInput(result.code || trimmed.toUpperCase());
-    setPromoFeedback({
-      type: 'success',
-      text: `${result.code} applied! ${result.discountPercent}% off (-€${result.discountAmount.toFixed(2)}).`,
-    });
   };
 
   const handleRemovePromoCode = () => {
     setAppliedPromoCode(null);
+    setAppliedVoucher(null);
     setPromoInput('');
     setPromoFeedback(null);
   };
@@ -664,10 +737,12 @@ export const OrderView: React.FC<OrderViewProps> = ({
     const result = evaluatePromoCode('10CLAYOVEN', subtotal);
     if (!result.valid) {
       setAppliedPromoCode(null);
+      setAppliedVoucher(null);
       setPromoFeedback({ type: 'error', text: result.error || 'Minimum €15.00 subtotal required.' });
       return;
     }
     setAppliedPromoCode(result.code);
+    setAppliedVoucher(null);
     setPromoFeedback({
       type: 'success',
       text: `${result.code} applied! ${result.discountPercent}% off (-€${result.discountAmount.toFixed(2)}).`,
@@ -721,9 +796,10 @@ export const OrderView: React.FC<OrderViewProps> = ({
             type="button"
             id={`checkout-promo-apply-btn-${idSuffix}`}
             onClick={handleApplyPromoCode}
-            className="px-4 py-2 bg-brand-dark hover:bg-brand-accent text-white text-xs font-mono font-bold uppercase rounded-xl transition-colors cursor-pointer shrink-0"
+            disabled={isValidatingPromo}
+            className="px-4 py-2 bg-brand-dark hover:bg-brand-accent text-white text-xs font-mono font-bold uppercase rounded-xl transition-colors cursor-pointer shrink-0 disabled:opacity-50"
           >
-            Apply
+            {isValidatingPromo ? 'Checking...' : 'Apply'}
           </button>
         )}
       </div>
@@ -880,7 +956,17 @@ export const OrderView: React.FC<OrderViewProps> = ({
         body: JSON.stringify(finalOrder)
       });
       if (!response.ok) {
-        throw new Error('Database save failed');
+        const errData = await response.json().catch(() => null);
+        if (response.status === 400 && errData?.error) {
+          setValidationError(errData.error);
+          if (appliedPromoCode) {
+            setAppliedPromoCode(null);
+            setAppliedVoucher(null);
+            setPromoFeedback({ type: 'error', text: errData.error });
+          }
+          return;
+        }
+        throw new Error(errData?.error || 'Database save failed');
       }
     } catch (err) {
       console.error('Failed to submit order to server, saving locally', err);

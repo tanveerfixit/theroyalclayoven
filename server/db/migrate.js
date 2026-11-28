@@ -25,7 +25,7 @@ async function createIndexIfNotExists(connection, tableName, indexName, columnsS
   }
 }
 
-const TARGET_SCHEMA_VERSION = 5;
+const TARGET_SCHEMA_VERSION = 6;
 
 export async function runMigrations(pool) {
   try {
@@ -560,6 +560,27 @@ Complimentary green tea | Beverage`,
     if (!fs.existsSync(uploadsDir)) {
       fs.mkdirSync(uploadsDir, { recursive: true });
     }
+
+    await connection.query(`
+      CREATE TABLE IF NOT EXISTS vouchers (
+        id INT PRIMARY KEY AUTO_INCREMENT,
+        code VARCHAR(50) NOT NULL UNIQUE,
+        discount_type ENUM('percent', 'fixed') NOT NULL DEFAULT 'percent',
+        discount_value DECIMAL(10,2) NOT NULL,
+        min_subtotal DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+        is_one_time TINYINT(1) NOT NULL DEFAULT 1,
+        is_active TINYINT(1) NOT NULL DEFAULT 1,
+        expires_at DATETIME NULL,
+        note VARCHAR(255) NULL,
+        used_at DATETIME NULL,
+        used_by_email VARCHAR(255) NULL,
+        used_order_id VARCHAR(100) NULL,
+        created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    await createIndexIfNotExists(connection, 'vouchers', 'idx_vouchers_used_email', 'used_by_email');
+    await createIndexIfNotExists(connection, 'vouchers', 'idx_vouchers_used_order', 'used_order_id');
 
     await connection.query(`
       INSERT INTO _schema_migrations (version, applied_at)

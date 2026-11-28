@@ -1,4 +1,4 @@
-import{R as a,j as e,b as J}from"./vendor-0pzkkS-l.js";import{y as I,X as Y,e as ye,a as pe}from"./vendor-icons-CB1d7rzh.js";const we=({businessInfo:E,storeSettings:g})=>{const[Q,Z]=a.useState(localStorage.getItem("clay_oven_booking_notice_text")||`Assalamu Alaikum, dear friends and valued guests,
+import{R as a,j as e,b as J}from"./vendor-0pzkkS-l.js";import{y as I,X as Y,e as ye,a as pe}from"./vendor-icons-CWs-uMHw.js";const we=({businessInfo:E,storeSettings:g})=>{const[Q,Z]=a.useState(localStorage.getItem("clay_oven_booking_notice_text")||`Assalamu Alaikum, dear friends and valued guests,
 
 We are incredibly grateful for the wonderful love and support you show us every single day!
 
