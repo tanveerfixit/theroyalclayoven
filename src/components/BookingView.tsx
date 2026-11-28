@@ -7,6 +7,7 @@ import React from 'react';
 import { createPortal } from 'react-dom';
 import { Calendar, Users, Home, Compass, PhoneCall, HelpCircle, ShieldCheck, Mail, ArrowRight, Sparkles, X } from 'lucide-react';
 import { Reservation } from '../types';
+import { userAuthHeaders } from '../utils/authHeaders';
 
 interface BookingViewProps {
   businessInfo: {
@@ -281,7 +282,9 @@ The Royal Clay Oven`);
     if (storedUser) {
       try {
         const user = JSON.parse(storedUser);
-        const res = await fetch(`/api/bookings?email=${encodeURIComponent(user.email)}`);
+        const res = await fetch(`/api/bookings?email=${encodeURIComponent(user.email)}`, {
+          headers: userAuthHeaders()
+        });
         if (res.ok) {
           const data = await res.json();
           setLocalBookings(data);
@@ -341,16 +344,21 @@ The Royal Clay Oven`);
     try {
       const response = await fetch('/api/bookings', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
+        headers: userAuthHeaders(),
         body: JSON.stringify(newReservation)
       });
+      const data = await response.json().catch(() => null);
       if (!response.ok) {
-        throw new Error('Database save failed');
+        setValidationError(data?.error || 'Could not submit your booking request. Please try again or call us directly.');
+        return;
+      }
+      if (data?.bookingId) {
+        newReservation.id = data.bookingId;
       }
     } catch (err) {
-      console.error('Failed to save booking to server, saving locally', err);
+      console.error('Failed to save booking to server:', err);
+      setValidationError('Network error while submitting your reservation. Please check your connection and try again.');
+      return;
     }
 
     // Save to local storage as secondary backup / cache
@@ -385,9 +393,7 @@ The Royal Clay Oven`);
     try {
       await fetch('/api/users', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
+        headers: userAuthHeaders(),
         body: JSON.stringify(updatedUser)
       });
     } catch (err) {

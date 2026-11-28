@@ -6,6 +6,7 @@
 import React from 'react';
 import { ShoppingBag, Calendar, Trash2, Clock, MapPin, Coffee, HelpCircle, CheckCircle2 } from 'lucide-react';
 import { Order, Reservation } from '../types';
+import { userAuthHeaders } from '../utils/authHeaders';
 
 export const HistoryView: React.FC<{ hideHeader?: boolean; showArchivedOnly?: boolean }> = ({ 
   hideHeader = false,
@@ -50,9 +51,10 @@ export const HistoryView: React.FC<{ hideHeader?: boolean; showArchivedOnly?: bo
     if (storedUser) {
       try {
         const user = JSON.parse(storedUser);
+        const authHeaders = userAuthHeaders();
         const [ordersRes, bookingsRes] = await Promise.all([
-          fetch(`/api/orders?email=${encodeURIComponent(user.email)}`),
-          fetch(`/api/bookings?email=${encodeURIComponent(user.email)}`)
+          fetch(`/api/orders?email=${encodeURIComponent(user.email)}`, { headers: authHeaders }),
+          fetch(`/api/bookings?email=${encodeURIComponent(user.email)}`, { headers: authHeaders })
         ]);
         if (ordersRes.ok && bookingsRes.ok) {
           const ordersData = await ordersRes.json();
@@ -81,9 +83,7 @@ export const HistoryView: React.FC<{ hideHeader?: boolean; showArchivedOnly?: bo
     try {
       const response = await fetch(`/api/bookings/${bookingId}/status`, {
         method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json'
-        },
+        headers: userAuthHeaders(),
         body: JSON.stringify({ status: 'Cancelled' })
       });
       if (!response.ok) {
@@ -107,7 +107,8 @@ export const HistoryView: React.FC<{ hideHeader?: boolean; showArchivedOnly?: bo
 
     try {
       const response = await fetch(`/api/orders/${orderId}`, {
-        method: 'DELETE'
+        method: 'DELETE',
+        headers: userAuthHeaders()
       });
       if (!response.ok) {
         throw new Error('Server delete failed');

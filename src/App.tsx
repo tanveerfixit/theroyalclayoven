@@ -56,15 +56,18 @@ export default function App() {
         // Save user to localStorage
         localStorage.setItem('clay_oven_google_user', JSON.stringify(user));
 
-        // Sync profile with database server
+        // Verify Google ID token server-side and sync profile
         try {
-          const response = await fetch('/api/users', {
+          const response = await fetch('/api/auth/google', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(user)
+            body: JSON.stringify({ idToken: token })
           });
           if (response.ok) {
             const dbUser = await response.json();
+            if (dbUser.userToken) {
+              localStorage.setItem('clay_oven_user_token', dbUser.userToken);
+            }
             if (dbUser.adminToken) {
               localStorage.setItem('clay_oven_admin_token', dbUser.adminToken);
               // Dispatch admin updated state event

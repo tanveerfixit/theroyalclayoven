@@ -22,6 +22,7 @@ import {
   parseDeliveryZones
 } from '../utils/deliveryScheduler';
 import { evaluatePromoCode } from '../utils/promoCodes';
+import { userAuthHeaders } from '../utils/authHeaders';
 
 interface OrderViewProps {
   cart: CartItem[];
@@ -614,7 +615,7 @@ export const OrderView: React.FC<OrderViewProps> = ({
   const subtotal = cart.reduce((acc, curr) => {
     const basePrice = curr.selectedSize ? curr.selectedSize.price : curr.menuItem.price;
     const modExtra = curr.selectedModifiers
-      ? curr.selectedModifiers.reduce((mAcc, m) => mAcc + (m.price || 0), 0)
+      ? curr.selectedModifiers.reduce((mAcc, m) => mAcc + (m.price || 0) * (m.quantity || 1), 0)
       : 0;
     return acc + (basePrice + modExtra) * curr.quantity;
   }, 0);
@@ -919,6 +920,7 @@ export const OrderView: React.FC<OrderViewProps> = ({
           ? item.selectedModifiers.reduce((acc, m) => acc + (m.price || 0) * (m.quantity || 1), 0)
           : 0;
         return {
+          id: item.menuItem.id,
           name: item.menuItem.name,
           quantity: item.quantity,
           price: basePrice + modExtra,
@@ -955,21 +957,28 @@ export const OrderView: React.FC<OrderViewProps> = ({
         },
         body: JSON.stringify(finalOrder)
       });
+      const resData = await response.json().catch(() => null);
       if (!response.ok) {
-        const errData = await response.json().catch(() => null);
-        if (response.status === 400 && errData?.error) {
-          setValidationError(errData.error);
-          if (appliedPromoCode) {
-            setAppliedPromoCode(null);
-            setAppliedVoucher(null);
-            setPromoFeedback({ type: 'error', text: errData.error });
-          }
-          return;
+        const msg = resData?.error || 'Could not submit your order to the kitchen. Please try again or call us directly.';
+        setValidationError(msg);
+        if (response.status === 400 && appliedPromoCode) {
+          setAppliedPromoCode(null);
+          setAppliedVoucher(null);
+          setPromoFeedback({ type: 'error', text: msg });
         }
-        throw new Error(errData?.error || 'Database save failed');
+        return;
       }
+      if (resData?.orderId) finalOrder.id = resData.orderId;
+      if (typeof resData?.subtotal === 'number') finalOrder.subtotal = resData.subtotal;
+      if (typeof resData?.packagingFee === 'number') finalOrder.packagingFee = resData.packagingFee;
+      if (typeof resData?.deliveryFee === 'number') finalOrder.deliveryFee = resData.deliveryFee;
+      if (typeof resData?.discountAmount === 'number') finalOrder.discountAmount = resData.discountAmount;
+      if (resData?.discountCode) finalOrder.discountCode = resData.discountCode;
+      if (typeof resData?.total === 'number') finalOrder.total = resData.total;
     } catch (err) {
-      console.error('Failed to submit order to server, saving locally', err);
+      console.error('Failed to submit order to server:', err);
+      setValidationError('Network error while sending your order to the kitchen. Please check your connection and try again.');
+      return;
     }
 
     // Store in LocalStorage as secondary backup / cache
@@ -1006,9 +1015,7 @@ export const OrderView: React.FC<OrderViewProps> = ({
     try {
       await fetch('/api/users', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
+        headers: userAuthHeaders(),
         body: JSON.stringify(updatedUser)
       });
     } catch (err) {
@@ -1658,7 +1665,7 @@ export const OrderView: React.FC<OrderViewProps> = ({
               {cart.map((item) => {
                 const basePrice = item.selectedSize ? item.selectedSize.price : item.menuItem.price;
                 const modExtra = item.selectedModifiers
-                  ? item.selectedModifiers.reduce((acc, m) => acc + (m.price || 0), 0)
+                  ? item.selectedModifiers.reduce((acc, m) => acc + (m.price || 0) * (m.quantity || 1), 0)
                   : 0;
                 const itemTotal = (basePrice + modExtra) * item.quantity;
                 return (

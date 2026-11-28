@@ -1820,17 +1820,36 @@ Beverages | Tea or Coffee`);
       return it;
     });
 
-    const newSubtotal = updatedItems
-      .filter(it => !it.cancelled)
-      .reduce((sum, it) => sum + (it.price * it.quantity), 0);
-    const packagingFee = order.packagingFee || 0;
-    const newTotal = Number((newSubtotal + packagingFee).toFixed(2));
+    const newSubtotal = Number(
+      updatedItems
+        .filter(it => !it.cancelled)
+        .reduce((sum, it) => sum + (it.price * it.quantity), 0)
+        .toFixed(2)
+    );
+    const packagingFee = newSubtotal > 0 ? (order.packagingFee || 0) : 0;
+    const deliveryFee = newSubtotal > 0 && order.serviceType === 'delivery' ? (order.deliveryFee || 0) : 0;
+
+    let newDiscountAmount = 0;
+    if (newSubtotal > 0 && (order.discountAmount || 0) > 0) {
+      if (order.discountType === 'percent' && order.discountValue != null) {
+        newDiscountAmount = Number(((newSubtotal * order.discountValue) / 100).toFixed(2));
+      } else if (order.discountType === 'fixed' && order.discountValue != null) {
+        newDiscountAmount = Number(Math.min(newSubtotal, order.discountValue).toFixed(2));
+      } else if (order.subtotal > 0) {
+        // Fallback: preserve proportional discount when type is unknown
+        const ratio = Math.min(1, (order.discountAmount || 0) / order.subtotal);
+        newDiscountAmount = Number((newSubtotal * ratio).toFixed(2));
+      }
+    }
+
+    const newTotal = Number((Math.max(0, newSubtotal - newDiscountAmount) + packagingFee + deliveryFee).toFixed(2));
 
     // Optimistically update frontend state
     setOrders(prev => prev.map(o => o.id === order.id ? {
       ...o,
       items: updatedItems,
-      subtotal: Number(newSubtotal.toFixed(2)),
+      subtotal: newSubtotal,
+      discountAmount: newDiscountAmount,
       total: newTotal
     } : o));
 
@@ -1843,7 +1862,8 @@ Beverages | Tea or Coffee`);
         headers: adminHeaders(),
         body: JSON.stringify({
           items: updatedItems,
-          subtotal: Number(newSubtotal.toFixed(2)),
+          subtotal: newSubtotal,
+          discountAmount: newDiscountAmount,
           total: newTotal,
           adminNotes: `Item "${targetItem.name}" cancelled: ${itemReason}`
         })

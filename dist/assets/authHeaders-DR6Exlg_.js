@@ -1,0 +1,1 @@
+const n="clay_oven_user_token",o="clay_oven_admin_token";function r(){return localStorage.getItem(n)||localStorage.getItem(o)}function a(t={}){const e=r();return{"Content-Type":"application/json",...e?{Authorization:`Bearer ${e}`}:{},...t}}export{a as u};

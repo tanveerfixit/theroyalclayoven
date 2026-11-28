@@ -1,21 +1,31 @@
 import express from 'express';
+import crypto from 'crypto';
 import pool from '../db/pool.js';
 import { getMailSender, getTransporter, escapeHtml } from '../utils/email.js';
 import { orderLimiter } from '../middleware/rateLimiters.js';
-import { bookingsLastUpdated, updateBookingsLastUpdated } from '../cache/index.js';
+import { getAuthActor } from '../middleware/requireAdmin.js';
+import { updateBookingsLastUpdated } from '../cache/index.js';
 
 const router = express.Router();
 
 router.get('/api/bookings', async (req, res) => {
-  const { email } = req.query;
-  if (!email) {
+  const targetEmail = String(req.query.email || '').trim().toLowerCase();
+  if (!targetEmail) {
     return res.status(400).json({ error: 'Email query parameter is required' });
+  }
+
+  const actor = getAuthActor(req);
+  if (!actor) {
+    return res.status(401).json({ error: 'Authentication required' });
+  }
+  if (actor.role !== 'admin' && actor.email !== targetEmail) {
+    return res.status(403).json({ error: 'Forbidden' });
   }
 
   try {
     const [rows] = await pool.query(
-      'SELECT * FROM bookings WHERE email = ? ORDER BY createdAt DESC', 
-      [email]
+      'SELECT * FROM bookings WHERE LOWER(email) = ? ORDER BY createdAt DESC',
+      [targetEmail]
     );
     res.json(rows);
   } catch (error) {
@@ -26,22 +36,65 @@ router.get('/api/bookings', async (req, res) => {
 
 router.post('/api/bookings', orderLimiter, async (req, res) => {
   const { id, name, email, phone, partySize, date, time, diningArea, specialRequests, status, createdAt } = req.body;
-  if (!id || !name || !email || !phone || !partySize || !date || !time || !diningArea || !status || !createdAt) {
+  if (!name || !email || !phone || !partySize || !date || !time || !diningArea) {
     return res.status(400).json({ error: 'Missing required booking fields' });
   }
 
-  try {
-    await pool.query(
-      `INSERT INTO bookings (id, name, email, phone, partySize, date, time, diningArea, specialRequests, status, createdAt)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [id, name, email, phone, partySize, date, time, diningArea, specialRequests || null, status, createdAt]
-    );
+  const actor = getAuthActor(req);
+  const safeStatus = actor?.role === 'admin' && status ? String(status) : 'Pending';
+  const safeCreatedAt = createdAt || new Date().toISOString();
+  const normalizedEmail = String(email).trim().toLowerCase();
+  const numericPartySize = Math.max(1, Math.min(200, parseInt(partySize, 10) || 1));
 
+  // Prefix preserve FUNC- for admin function bookings, otherwise BK-
+  const requestedPrefix = typeof id === 'string' && id.startsWith('FUNC-') && actor?.role === 'admin' ? 'FUNC' : 'BK';
+  let finalBookingId = typeof id === 'string' && id.trim() ? id.trim() : `${requestedPrefix}-${crypto.randomInt(100000, 1000000)}`;
+
+  let inserted = false;
+  for (let attempt = 0; attempt < 5; attempt++) {
+    try {
+      await pool.query(
+        `INSERT INTO bookings (id, name, email, phone, partySize, date, time, diningArea, specialRequests, status, createdAt)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          finalBookingId,
+          String(name).trim(),
+          normalizedEmail,
+          String(phone).trim(),
+          numericPartySize,
+          String(date).trim(),
+          String(time).trim(),
+          String(diningArea).trim(),
+          specialRequests ? String(specialRequests) : null,
+          safeStatus,
+          safeCreatedAt
+        ]
+      );
+      inserted = true;
+      break;
+    } catch (error) {
+      if (error.code === 'ER_DUP_ENTRY') {
+        finalBookingId = `${requestedPrefix}-${crypto.randomInt(100000, 1000000)}`;
+        continue;
+      }
+      console.error('Error inserting booking into database:', error);
+      return res.status(500).json({ error: 'Failed to save booking. Please try again.' });
+    }
+  }
+
+  if (!inserted) {
+    return res.status(500).json({ error: 'Could not generate a unique booking reference. Please try again.' });
+  }
+
+  updateBookingsLastUpdated();
+
+  // Send acknowledgement email independently so SMTP failure does not hide a saved booking
+  try {
     const mailSender = await getMailSender();
     const mailOptions = {
       from: `"The Royal Clay Oven" <${mailSender}>`,
-      to: email,
-      subject: `Reservation Request Received - ${id}`,
+      to: normalizedEmail,
+      subject: `Reservation Request Received - ${finalBookingId}`,
       html: `
         <div style="font-family: sans-serif; padding: 24px; max-width: 600px; margin: auto; border: 1px solid #eee; background-color: #ffffff;">
           <div style="text-align: center; margin-bottom: 24px;">
@@ -49,7 +102,7 @@ router.post('/api/bookings', orderLimiter, async (req, res) => {
             <p style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.2em; color: #777; margin: 5px 0 0 0;">Reservation Request Received</p>
           </div>
           <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;" />
-          <p style="font-size: 14px; line-height: 1.5; color: #333;">Dear ${escapeHtml(name)},</p>
+          <p style="font-size: 14px; line-height: 1.5; color: #333;">Dear ${escapeHtml(String(name))},</p>
           <p style="font-size: 14px; line-height: 1.5; color: #333;">Assalamu Alaikum! Thank you for submitting a table reservation request at <strong>The Royal Clay Oven</strong>.</p>
           <p style="font-size: 14px; line-height: 1.5; color: #333;">We have received your reservation request and our restaurant team is currently reviewing table availability. <strong>We will let you know and send you a final confirmation email shortly once your table is secured.</strong></p>
           
@@ -58,28 +111,28 @@ router.post('/api/bookings', orderLimiter, async (req, res) => {
             <table style="width: 100%; border-collapse: collapse; font-family: monospace; font-size: 13px; color: #555;">
               <tr>
                 <td style="padding: 6px 0; font-weight: bold; width: 40%;">Request Reference:</td>
-                <td style="padding: 6px 0; color: #2C2621; font-weight: bold;">${id}</td>
+                <td style="padding: 6px 0; color: #2C2621; font-weight: bold;">${escapeHtml(finalBookingId)}</td>
               </tr>
               <tr>
                 <td style="padding: 6px 0; font-weight: bold;">Date Requested:</td>
-                <td style="padding: 6px 0; color: #2C2621; font-weight: bold;">${date}</td>
+                <td style="padding: 6px 0; color: #2C2621; font-weight: bold;">${escapeHtml(String(date))}</td>
               </tr>
               <tr>
                 <td style="padding: 6px 0; font-weight: bold;">Requested Time:</td>
-                <td style="padding: 6px 0; color: #2C2621; font-weight: bold;">${time}</td>
+                <td style="padding: 6px 0; color: #2C2621; font-weight: bold;">${escapeHtml(String(time))}</td>
               </tr>
               <tr>
                 <td style="padding: 6px 0; font-weight: bold;">Guests Attending:</td>
-                <td style="padding: 6px 0; color: #2C2621; font-weight: bold;">${partySize} Pax</td>
+                <td style="padding: 6px 0; color: #2C2621; font-weight: bold;">${numericPartySize} Pax</td>
               </tr>
               <tr>
                 <td style="padding: 6px 0; font-weight: bold;">Dining Zone:</td>
-                <td style="padding: 6px 0; color: #2C2621; font-weight: bold;">${diningArea}</td>
+                <td style="padding: 6px 0; color: #2C2621; font-weight: bold;">${escapeHtml(String(diningArea))}</td>
               </tr>
               ${specialRequests ? `
               <tr>
                 <td style="padding: 6px 0; font-weight: bold; vertical-align: top;">Requests / Package:</td>
-                <td style="padding: 6px 0; color: #777; font-family: sans-serif; font-style: italic;">${escapeHtml(specialRequests)}</td>
+                <td style="padding: 6px 0; color: #777; font-family: sans-serif; font-style: italic;">${escapeHtml(String(specialRequests))}</td>
               </tr>` : ''}
             </table>
           </div>
@@ -96,15 +149,12 @@ router.post('/api/bookings', orderLimiter, async (req, res) => {
 
     const activeTransporter = await getTransporter();
     await activeTransporter.sendMail(mailOptions);
-    console.log(`Dispatched initial booking request receipt email to customer ${email} for reference ${id}`);
-
-    updateBookingsLastUpdated();
-    res.status(201).json({ success: true, bookingId: id });
-  } catch (error) {
-    console.error('Error inserting booking or sending acknowledgement email:', error);
-    updateBookingsLastUpdated();
-    res.status(201).json({ success: true, bookingId: id });
+    console.log(`Dispatched initial booking request receipt email to customer ${normalizedEmail} for reference ${finalBookingId}`);
+  } catch (mailErr) {
+    console.error('Booking saved, but acknowledgement email failed:', mailErr);
   }
+
+  res.status(201).json({ success: true, bookingId: finalBookingId, status: safeStatus });
 });
 
 router.put('/api/bookings/:id/status', async (req, res) => {
@@ -114,23 +164,33 @@ router.put('/api/bookings/:id/status', async (req, res) => {
     return res.status(400).json({ error: 'Status is required' });
   }
 
+  const actor = getAuthActor(req);
+  if (!actor) {
+    return res.status(401).json({ error: 'Authentication required' });
+  }
+
   try {
-    const [result] = await pool.query(
-      'UPDATE bookings SET status = ? WHERE id = ?',
-      [status, id]
-    );
-    
-    if (result.affectedRows === 0) {
+    const [existingRows] = await pool.query('SELECT * FROM bookings WHERE id = ? LIMIT 1', [id]);
+    if (existingRows.length === 0) {
       return res.status(404).json({ error: 'Booking not found' });
     }
+    const booking = existingRows[0];
 
+    // Non-admin customers may only cancel their own bookings and cannot trigger confirmation emails
+    if (actor.role !== 'admin') {
+      if (status !== 'Cancelled' || sendEmail) {
+        return res.status(403).json({ error: 'Admin privileges required for this booking update' });
+      }
+      if (String(booking.email || '').trim().toLowerCase() !== actor.email) {
+        return res.status(403).json({ error: 'You can only cancel your own reservations' });
+      }
+    }
+
+    await pool.query('UPDATE bookings SET status = ? WHERE id = ?', [status, id]);
     updateBookingsLastUpdated();
 
-    if (status === 'Confirmed' && sendEmail) {
-      const [rows] = await pool.query('SELECT * FROM bookings WHERE id = ?', [id]);
-      if (rows.length > 0) {
-        const booking = rows[0];
-        
+    if (actor.role === 'admin' && status === 'Confirmed' && sendEmail) {
+      try {
         const mailSender = await getMailSender();
         const mailOptions = {
           from: `"The Royal Clay Oven" <${mailSender}>`,
@@ -143,7 +203,7 @@ router.put('/api/bookings/:id/status', async (req, res) => {
                 <p style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.2em; color: #777; margin: 5px 0 0 0;">Table Reservation Confirmed</p>
               </div>
               <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;" />
-              <p style="font-size: 14px; line-height: 1.5; color: #333;">Dear ${booking.name},</p>
+              <p style="font-size: 14px; line-height: 1.5; color: #333;">Dear ${escapeHtml(String(booking.name))},</p>
               <p style="font-size: 14px; line-height: 1.5; color: #333;">We are absolutely delighted to confirm your upcoming reservation at <strong>The Royal Clay Oven</strong>! We are hard at work preparing for your visit and cannot wait to host you.</p>
               
               <div style="background-color: #FDFBF7; border: 1px solid #C85A32; padding: 20px; margin: 24px 0;">
@@ -151,28 +211,28 @@ router.put('/api/bookings/:id/status', async (req, res) => {
                 <table style="width: 100%; border-collapse: collapse; font-family: monospace; font-size: 13px; color: #555;">
                   <tr>
                     <td style="padding: 6px 0; font-weight: bold; width: 40%;">Reservation Reference:</td>
-                    <td style="padding: 6px 0; color: #2C2621; font-weight: bold;">${booking.id}</td>
+                    <td style="padding: 6px 0; color: #2C2621; font-weight: bold;">${escapeHtml(String(booking.id))}</td>
                   </tr>
                   <tr>
                     <td style="padding: 6px 0; font-weight: bold;">Date Scheduled:</td>
-                    <td style="padding: 6px 0; color: #2C2621; font-weight: bold;">${booking.date}</td>
+                    <td style="padding: 6px 0; color: #2C2621; font-weight: bold;">${escapeHtml(String(booking.date))}</td>
                   </tr>
                   <tr>
                     <td style="padding: 6px 0; font-weight: bold;">Fulfillment Time:</td>
-                    <td style="padding: 6px 0; color: #2C2621; font-weight: bold;">${booking.time}</td>
+                    <td style="padding: 6px 0; color: #2C2621; font-weight: bold;">${escapeHtml(String(booking.time))}</td>
                   </tr>
                   <tr>
                     <td style="padding: 6px 0; font-weight: bold;">Guests Attending:</td>
-                    <td style="padding: 6px 0; color: #2C2621; font-weight: bold;">${booking.partySize} Pax</td>
+                    <td style="padding: 6px 0; color: #2C2621; font-weight: bold;">${Number(booking.partySize) || 1} Pax</td>
                   </tr>
                   <tr>
                     <td style="padding: 6px 0; font-weight: bold;">Dining Zone:</td>
-                    <td style="padding: 6px 0; color: #2C2621; font-weight: bold;">${booking.diningArea}</td>
+                    <td style="padding: 6px 0; color: #2C2621; font-weight: bold;">${escapeHtml(String(booking.diningArea))}</td>
                   </tr>
                   ${booking.specialRequests ? `
                   <tr>
                     <td style="padding: 6px 0; font-weight: bold; vertical-align: top;">Requests / Package:</td>
-                    <td style="padding: 6px 0; color: #777; font-family: sans-serif; font-style: italic;">${booking.specialRequests}</td>
+                    <td style="padding: 6px 0; color: #777; font-family: sans-serif; font-style: italic;">${escapeHtml(String(booking.specialRequests))}</td>
                   </tr>` : ''}
                 </table>
               </div>
@@ -191,9 +251,11 @@ router.put('/api/bookings/:id/status', async (req, res) => {
         const activeTransporter = await getTransporter();
         await activeTransporter.sendMail(mailOptions);
         console.log(`Successfully dispatched booking confirmation email to: ${booking.email}`);
+      } catch (mailErr) {
+        console.error('Booking confirmed, but confirmation email failed:', mailErr);
       }
     }
-    
+
     res.json({ success: true, message: `Booking status updated to ${status}` });
   } catch (error) {
     console.error('Error updating booking status:', error);

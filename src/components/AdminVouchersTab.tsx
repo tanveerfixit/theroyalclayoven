@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Tag, Plus, Search, RefreshCw, Copy, Check, Trash2, Loader2,
   CheckCircle2, Ban, Clock, Mail, ShoppingBag, Sparkles
@@ -22,7 +22,19 @@ export const AdminVouchersTab: React.FC<AdminVouchersTabProps> = ({
   const [loading, setLoading] = useState(false);
   const [statusFilter, setStatusFilter] = useState<'all' | 'available' | 'used' | 'disabled' | 'expired'>('all');
   const [searchQuery, setSearchQuery] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
+
+  // Keep latest callbacks in refs so polling re-renders of AdminDashboard don't trigger redundant voucher fetches
+  const adminHeadersRef = useRef(adminHeaders);
+  adminHeadersRef.current = adminHeaders;
+  const onUnauthorizedRef = useRef(onUnauthorized);
+  onUnauthorizedRef.current = onUnauthorized;
+
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(searchQuery.trim()), 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
 
   // Create form state
   const [mode, setMode] = useState<'single' | 'bulk'>('single');
@@ -43,13 +55,13 @@ export const AdminVouchersTab: React.FC<AdminVouchersTabProps> = ({
     try {
       const params = new URLSearchParams();
       if (statusFilter !== 'all') params.set('status', statusFilter);
-      if (searchQuery.trim()) params.set('q', searchQuery.trim());
+      if (debouncedSearch) params.set('q', debouncedSearch);
 
       const res = await fetch(`/api/admin/vouchers?${params.toString()}`, {
-        headers: adminHeaders(),
+        headers: adminHeadersRef.current(),
       });
       if (res.status === 401) {
-        onUnauthorized();
+        onUnauthorizedRef.current();
         return;
       }
       const data = await res.json();
@@ -61,7 +73,7 @@ export const AdminVouchersTab: React.FC<AdminVouchersTabProps> = ({
     } finally {
       setLoading(false);
     }
-  }, [adminHeaders, onUnauthorized, statusFilter, searchQuery]);
+  }, [statusFilter, debouncedSearch]);
 
   useEffect(() => {
     fetchVouchers();
@@ -168,6 +180,9 @@ export const AdminVouchersTab: React.FC<AdminVouchersTabProps> = ({
   };
 
   const handleDelete = async (voucher: Voucher) => {
+    if (!window.confirm(`Delete unused voucher "${voucher.code}"? This cannot be undone.`)) {
+      return;
+    }
     try {
       const res = await fetch(`/api/admin/vouchers/${voucher.id}`, {
         method: 'DELETE',

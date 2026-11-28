@@ -2,8 +2,8 @@ import express from 'express';
 import pool from '../db/pool.js';
 import crypto from 'crypto';
 import jwt from 'jsonwebtoken';
-import { requireAdmin, ADMIN_JWT_SECRET } from '../middleware/requireAdmin.js';
-import { otpLimiter } from '../middleware/rateLimiters.js';
+import { requireAdmin, ADMIN_JWT_SECRET, signAdminToken } from '../middleware/requireAdmin.js';
+import { otpLimiter, otpVerifyLimiter } from '../middleware/rateLimiters.js';
 import { getMailSender, getTransporter, getSmtpConfig, getOrderNotificationEmails } from '../utils/email.js';
 import { 
   ordersLastUpdated, updateOrdersLastUpdated,
@@ -14,6 +14,8 @@ import {
 } from '../cache/index.js';
 
 const router = express.Router();
+const adminOtpFailedAttempts = new Map();
+const MAX_ADMIN_OTP_ATTEMPTS = 5;
 
 router.post('/api/admin/request-otp', otpLimiter, async (req, res) => {
   const { email } = req.body;
@@ -21,13 +23,15 @@ router.post('/api/admin/request-otp', otpLimiter, async (req, res) => {
     return res.status(400).json({ error: 'Email address is required' });
   }
 
+  const normalizedEmail = String(email).toLowerCase().trim();
+
   try {
-    const [adminRows] = await pool.query('SELECT * FROM admin_emails WHERE email = ?', [email.toLowerCase().trim()]);
+    const [adminRows] = await pool.query('SELECT * FROM admin_emails WHERE LOWER(email) = ?', [normalizedEmail]);
     if (adminRows.length === 0) {
       return res.status(403).json({ error: 'This email address is not authorized for admin access' });
     }
 
-    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const otp = crypto.randomInt(100000, 1000000).toString();
     const hashedOtp = crypto.createHash('sha256').update(otp).digest('hex');
     const expiresAt = new Date(Date.now() + 60 * 60 * 1000);
 
@@ -35,8 +39,9 @@ router.post('/api/admin/request-otp', otpLimiter, async (req, res) => {
       `INSERT INTO admin_otps (email, otp, expires_at)
        VALUES (?, ?, ?)
        ON DUPLICATE KEY UPDATE otp = VALUES(otp), expires_at = VALUES(expires_at)`,
-      [email.toLowerCase().trim(), hashedOtp, expiresAt]
+      [normalizedEmail, hashedOtp, expiresAt]
     );
+    adminOtpFailedAttempts.delete(normalizedEmail);
 
     const mailSender = await getMailSender();
     const mailOptions = {
@@ -73,16 +78,18 @@ router.post('/api/admin/request-otp', otpLimiter, async (req, res) => {
   }
 });
 
-router.post('/api/admin/verify-otp', async (req, res) => {
+router.post('/api/admin/verify-otp', otpVerifyLimiter, async (req, res) => {
   const { email, otp } = req.body;
   if (!email || !otp) {
     return res.status(400).json({ error: 'Email and access code are required' });
   }
 
+  const normalizedEmail = String(email).toLowerCase().trim();
+
   try {
     const [rows] = await pool.query(
-      'SELECT * FROM admin_otps WHERE email = ?',
-      [email.toLowerCase().trim()]
+      'SELECT * FROM admin_otps WHERE LOWER(email) = ?',
+      [normalizedEmail]
     );
 
     if (rows.length === 0) {
@@ -91,23 +98,30 @@ router.post('/api/admin/verify-otp', async (req, res) => {
 
     const record = rows[0];
     const expiresAt = new Date(record.expires_at);
-    const hashedInput = crypto.createHash('sha256').update(otp.trim()).digest('hex');
-
-    if (record.otp !== otp.trim() && record.otp !== hashedInput) {
-      return res.status(400).json({ error: 'Incorrect access code. Please check your email and try again.' });
-    }
+    const trimmedOtp = String(otp).trim();
+    const hashedInput = crypto.createHash('sha256').update(trimmedOtp).digest('hex');
 
     if (expiresAt.getTime() < Date.now()) {
+      await pool.query('DELETE FROM admin_otps WHERE LOWER(email) = ?', [normalizedEmail]);
+      adminOtpFailedAttempts.delete(normalizedEmail);
       return res.status(400).json({ error: 'Access code has expired. Please request a new one.' });
     }
 
-    await pool.query('DELETE FROM admin_otps WHERE email = ?', [email.toLowerCase().trim()]);
+    if (record.otp !== trimmedOtp && record.otp !== hashedInput) {
+      const attempts = (adminOtpFailedAttempts.get(normalizedEmail) || 0) + 1;
+      if (attempts >= MAX_ADMIN_OTP_ATTEMPTS) {
+        await pool.query('DELETE FROM admin_otps WHERE LOWER(email) = ?', [normalizedEmail]);
+        adminOtpFailedAttempts.delete(normalizedEmail);
+        return res.status(429).json({ error: 'Too many incorrect attempts. Access code invalidated; please request a new one.' });
+      }
+      adminOtpFailedAttempts.set(normalizedEmail, attempts);
+      return res.status(400).json({ error: 'Incorrect access code. Please check your email and try again.' });
+    }
 
-    const token = jwt.sign(
-      { email: email.toLowerCase().trim(), role: 'admin' },
-      ADMIN_JWT_SECRET,
-      { expiresIn: '24h' }
-    );
+    await pool.query('DELETE FROM admin_otps WHERE LOWER(email) = ?', [normalizedEmail]);
+    adminOtpFailedAttempts.delete(normalizedEmail);
+
+    const token = signAdminToken(normalizedEmail);
 
     res.json({ success: true, token, message: 'Authentication successful.' });
   } catch (error) {
@@ -124,6 +138,9 @@ router.get('/api/admin/verify', (req, res) => {
 
   try {
     const decoded = jwt.verify(authHeader.split(' ')[1], ADMIN_JWT_SECRET);
+    if (!decoded || decoded.role !== 'admin') {
+      return res.status(401).json({ valid: false });
+    }
     res.json({ valid: true, email: decoded.email });
   } catch (err) {
     res.status(401).json({ valid: false });
@@ -278,7 +295,7 @@ router.put('/api/admin/orders/:id/status', requireAdmin, async (req, res) => {
 
 router.put('/api/admin/orders/:id/items', requireAdmin, async (req, res) => {
   const { id } = req.params;
-  const { items, subtotal, total, adminNotes } = req.body;
+  const { items, subtotal, total, discountAmount, adminNotes } = req.body;
   if (!items || subtotal === undefined || total === undefined) {
     return res.status(400).json({ error: 'Items, subtotal, and total are required' });
   }
@@ -288,6 +305,10 @@ router.put('/api/admin/orders/:id/items', requireAdmin, async (req, res) => {
     let updateQuery = 'UPDATE orders SET items = ?, subtotal = ?, total = ?';
     const params = [serializedItems, subtotal, total];
 
+    if (discountAmount !== undefined && Number.isFinite(parseFloat(discountAmount))) {
+      updateQuery += ', discountAmount = ?';
+      params.push(Math.max(0, parseFloat(discountAmount)));
+    }
     if (adminNotes !== undefined) {
       updateQuery += ', admin_notes = ?';
       params.push(adminNotes);

@@ -85,14 +85,17 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onLoginSu
         window.dispatchEvent(new Event('profile_updated'));
         onClose();
 
-        // 2. Asynchronous background database synchronization
-        fetch('/api/users', {
+        // 2. Server-side Google access token verification & database sync
+        fetch('/api/auth/google', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(userProfile)
+          body: JSON.stringify({ accessToken: tokenResponse.access_token })
         }).then(async (res) => {
           if (res.ok) {
             const dbUser = await res.json();
+            if (dbUser.userToken) {
+              localStorage.setItem('clay_oven_user_token', dbUser.userToken);
+            }
             if (dbUser.adminToken) {
               localStorage.setItem('clay_oven_admin_token', dbUser.adminToken);
               window.dispatchEvent(new Event('admin_session_updated'));
@@ -160,6 +163,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onLoginSu
         throw new Error(data.error || 'Login failed');
       }
 
+      if (data.userToken) {
+        localStorage.setItem('clay_oven_user_token', data.userToken);
+      }
+
       onLoginSuccess({
         name: data.name,
         email: data.email,
@@ -203,6 +210,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onLoginSu
       const data = await response.json();
       if (!response.ok) {
         throw new Error(data.error || 'Signup failed');
+      }
+
+      if (data.userToken) {
+        localStorage.setItem('clay_oven_user_token', data.userToken);
       }
 
       onLoginSuccess({

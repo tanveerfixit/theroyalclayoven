@@ -25,7 +25,7 @@ async function createIndexIfNotExists(connection, tableName, indexName, columnsS
   }
 }
 
-const TARGET_SCHEMA_VERSION = 6;
+const TARGET_SCHEMA_VERSION = 7;
 
 export async function runMigrations(pool) {
   try {
@@ -149,23 +149,6 @@ export async function runMigrations(pool) {
         process.env.SMTP_SECURE || 'true',
         process.env.SMTP_USER || '',
         process.env.SMTP_PASS || ''
-      ]);
-    } else if (
-      (process.env.SMTP_USER && smtpRows[0].user !== process.env.SMTP_USER) ||
-      (process.env.SMTP_PASS && smtpRows[0].password !== process.env.SMTP_PASS) ||
-      (process.env.SMTP_HOST && smtpRows[0].host !== process.env.SMTP_HOST)
-    ) {
-      await connection.query(`
-        UPDATE smtp_settings 
-        SET host = ?, port = ?, secure = ?, user = ?, password = ?
-        WHERE id = ?
-      `, [
-        process.env.SMTP_HOST || 'smtp.gmail.com',
-        parseInt(process.env.SMTP_PORT || '465'),
-        process.env.SMTP_SECURE || 'true',
-        process.env.SMTP_USER,
-        process.env.SMTP_PASS || '',
-        smtpRows[0].id
       ]);
     }
 
@@ -328,6 +311,9 @@ Complimentary green tea | Beverage`,
 
     try {
       await connection.query('ALTER TABLE admin_otps MODIFY COLUMN otp VARCHAR(255) NOT NULL');
+    } catch (e) {}
+    try {
+      await connection.query('ALTER TABLE password_reset_otps MODIFY COLUMN otp VARCHAR(255) NOT NULL');
     } catch (e) {}
 
     const adminSeedEmails = (process.env.ADMIN_SEED_EMAILS || '')

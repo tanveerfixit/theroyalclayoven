@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { UserProfile } from '../types';
 import { HistoryView } from './HistoryView';
+import { userAuthHeaders } from '../utils/authHeaders';
 
 export const ProfileView: React.FC = () => {
   const [profile, setProfile] = useState<UserProfile | null>(null);
@@ -28,7 +29,9 @@ export const ProfileView: React.FC = () => {
         setDietary(parsed.dietaryPreferences || '');
 
         // Fetch fresh copy from database
-        fetch(`/api/users/${encodeURIComponent(parsed.email)}`)
+        fetch(`/api/users/${encodeURIComponent(parsed.email)}`, {
+          headers: userAuthHeaders()
+        })
           .then(res => {
             if (!res.ok) throw new Error('User not found in DB');
             return res.json();
@@ -74,9 +77,7 @@ export const ProfileView: React.FC = () => {
     try {
       const response = await fetch('/api/users', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
+        headers: userAuthHeaders(),
         body: JSON.stringify(updatedProfile)
       });
       if (response.ok) {
