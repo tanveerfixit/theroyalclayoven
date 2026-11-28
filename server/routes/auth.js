@@ -8,9 +8,21 @@ import { signAdminToken, signUserToken } from '../middleware/requireAdmin.js';
 
 const router = express.Router();
 
-const EXPECTED_GOOGLE_CLIENT_ID =
-  process.env.GOOGLE_CLIENT_ID ||
+const DEFAULT_GOOGLE_CLIENT_ID =
   '1002488832719-mkmp4n48l15f0rbsqdec95phfj6h7apm.apps.googleusercontent.com';
+
+const ALLOWED_GOOGLE_CLIENT_IDS = new Set([DEFAULT_GOOGLE_CLIENT_ID]);
+if (
+  process.env.GOOGLE_CLIENT_ID &&
+  process.env.GOOGLE_CLIENT_ID.trim() &&
+  !process.env.GOOGLE_CLIENT_ID.includes('your-google-oauth-client-id')
+) {
+  ALLOWED_GOOGLE_CLIENT_IDS.add(process.env.GOOGLE_CLIENT_ID.trim());
+}
+
+function isAllowedGoogleClientId(candidate) {
+  return Boolean(candidate && ALLOWED_GOOGLE_CLIENT_IDS.has(String(candidate).trim()));
+}
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const resetOtpFailedAttempts = new Map();
@@ -32,11 +44,14 @@ router.post('/api/auth/google', authLimiter, async (req, res) => {
         `https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(String(idToken))}`
       );
       if (!tokenRes.ok) {
+        console.warn('Google ID tokeninfo rejected with status:', tokenRes.status);
         return res.status(401).json({ error: 'Invalid Google ID token' });
       }
       const tokenData = await tokenRes.json();
       const emailVerified = tokenData.email_verified === true || tokenData.email_verified === 'true';
-      if (tokenData.aud !== EXPECTED_GOOGLE_CLIENT_ID || !emailVerified || !tokenData.email) {
+      const audValid = isAllowedGoogleClientId(tokenData.aud) || isAllowedGoogleClientId(tokenData.azp);
+      if (!audValid || !emailVerified || !tokenData.email) {
+        console.warn('Google ID token verification mismatch:', { aud: tokenData.aud, azp: tokenData.azp, emailVerified });
         return res.status(401).json({ error: 'Google token verification failed' });
       }
       googleEmail = String(tokenData.email).trim().toLowerCase();
@@ -51,17 +66,27 @@ router.post('/api/auth/google', authLimiter, async (req, res) => {
       ]);
 
       if (!tokenInfoRes.ok || !userInfoRes.ok) {
+        console.warn('Google access token check failed:', {
+          tokenInfoStatus: tokenInfoRes.status,
+          userInfoStatus: userInfoRes.status,
+        });
         return res.status(401).json({ error: 'Invalid Google access token' });
       }
 
       const [tokenInfo, userInfo] = await Promise.all([tokenInfoRes.json(), userInfoRes.json()]);
       const audMatches =
-        tokenInfo.aud === EXPECTED_GOOGLE_CLIENT_ID ||
-        tokenInfo.azp === EXPECTED_GOOGLE_CLIENT_ID ||
-        tokenInfo.issued_to === EXPECTED_GOOGLE_CLIENT_ID;
+        isAllowedGoogleClientId(tokenInfo.aud) ||
+        isAllowedGoogleClientId(tokenInfo.azp) ||
+        isAllowedGoogleClientId(tokenInfo.issued_to) ||
+        isAllowedGoogleClientId(tokenInfo.audience);
       const emailVerified = userInfo.email_verified === true || userInfo.email_verified === 'true';
 
       if (!audMatches || !emailVerified || !userInfo.email) {
+        console.warn('Google access token verification mismatch:', {
+          aud: tokenInfo.aud,
+          azp: tokenInfo.azp,
+          emailVerified,
+        });
         return res.status(401).json({ error: 'Google account verification failed' });
       }
 

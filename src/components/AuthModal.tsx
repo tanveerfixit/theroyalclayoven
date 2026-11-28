@@ -60,65 +60,45 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onLoginSu
     }, 1000);
   };
 
-  // Custom Google Login Hook with fast optimistic login & background sync
+  // Custom Google Login Hook verified directly by backend (/api/auth/google)
   const googleLoginTrigger = useGoogleLogin({
     onSuccess: async (tokenResponse) => {
       try {
-        const userInfoRes = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
-          headers: { Authorization: `Bearer ${tokenResponse.access_token}` }
+        const res = await fetch('/api/auth/google', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ accessToken: tokenResponse.access_token })
         });
 
-        if (!userInfoRes.ok) {
-          throw new Error('Could not retrieve profile from Google.');
+        const dbUser = await res.json().catch(() => null);
+        if (!res.ok || !dbUser?.email) {
+          throw new Error(dbUser?.error || 'Could not verify Google account with server.');
         }
 
-        const decoded = await userInfoRes.json();
+        if (dbUser.userToken) {
+          localStorage.setItem('clay_oven_user_token', dbUser.userToken);
+        }
+        if (dbUser.adminToken) {
+          localStorage.setItem('clay_oven_admin_token', dbUser.adminToken);
+          window.dispatchEvent(new Event('admin_session_updated'));
+        }
+
         const userProfile: UserProfile = {
-          name: decoded.name || 'Google User',
-          picture: decoded.picture || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=120',
-          email: decoded.email
+          name: dbUser.name || 'Google User',
+          picture: dbUser.picture || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=120',
+          email: dbUser.email,
+          phone: dbUser.phone || undefined,
+          address: dbUser.address || undefined,
+          eircode: dbUser.eircode || undefined,
+          dietaryPreferences: dbUser.dietaryPreferences || undefined
         };
 
-        // 1. Instant optimistic login & close modal immediately
         localStorage.setItem('clay_oven_google_user', JSON.stringify(userProfile));
         onLoginSuccess(userProfile);
         window.dispatchEvent(new Event('profile_updated'));
         onClose();
-
-        // 2. Server-side Google access token verification & database sync
-        fetch('/api/auth/google', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ accessToken: tokenResponse.access_token })
-        }).then(async (res) => {
-          if (res.ok) {
-            const dbUser = await res.json();
-            if (dbUser.userToken) {
-              localStorage.setItem('clay_oven_user_token', dbUser.userToken);
-            }
-            if (dbUser.adminToken) {
-              localStorage.setItem('clay_oven_admin_token', dbUser.adminToken);
-              window.dispatchEvent(new Event('admin_session_updated'));
-            }
-            if (dbUser.phone || dbUser.address || dbUser.eircode || dbUser.dietaryPreferences) {
-              const enrichedProfile: UserProfile = {
-                ...userProfile,
-                phone: dbUser.phone || undefined,
-                address: dbUser.address || undefined,
-                eircode: dbUser.eircode || undefined,
-                dietaryPreferences: dbUser.dietaryPreferences || undefined
-              };
-              localStorage.setItem('clay_oven_google_user', JSON.stringify(enrichedProfile));
-              onLoginSuccess(enrichedProfile);
-              window.dispatchEvent(new Event('profile_updated'));
-            }
-          }
-        }).catch((syncErr) => {
-          console.warn('Background profile sync deferred:', syncErr);
-        });
-
       } catch (err: any) {
-        console.error('Google token exchange or DB sync failed', err);
+        console.error('Google authentication failed', err);
         setErrorMessage(err.message || 'Failed to complete Google authentication.');
       } finally {
         setIsGoogleLoading(false);

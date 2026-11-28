@@ -70,9 +70,18 @@ export default function App() {
             }
             if (dbUser.adminToken) {
               localStorage.setItem('clay_oven_admin_token', dbUser.adminToken);
-              // Dispatch admin updated state event
               window.dispatchEvent(new Event('admin_session_updated'));
             }
+            const mergedUser = {
+              ...user,
+              name: dbUser.name || user.name,
+              picture: dbUser.picture || user.picture,
+              phone: dbUser.phone || undefined,
+              address: dbUser.address || undefined,
+              eircode: dbUser.eircode || undefined,
+              dietaryPreferences: dbUser.dietaryPreferences || undefined
+            };
+            localStorage.setItem('clay_oven_google_user', JSON.stringify(mergedUser));
           }
         } catch (err) {
           console.error('Failed to sync google auto-login profile with database:', err);
@@ -88,7 +97,7 @@ export default function App() {
       // Graceful silence for dev/localhost or dismissed prompts
     },
     disabled: hasUserSession || isAdminView,
-    auto_select: false,
+    auto_select: true,
     use_fedcm_for_prompt: false
   });
 

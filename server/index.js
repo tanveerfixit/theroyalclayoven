@@ -56,7 +56,9 @@ app.use(helmet({
         "https://analytics.google.com",
         "https://stats.g.doubleclick.net",
         "https://www.googletagmanager.com",
-        "https://accounts.google.com"
+        "https://accounts.google.com",
+        "https://www.googleapis.com",
+        "https://oauth2.googleapis.com"
       ],
       frameSrc: [
         "'self'",
